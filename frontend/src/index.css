@@ -29,7 +29,8 @@ body {
 
 .main-wrapper {
   flex: 1;
-  margin-left: 280px; /* Sidebar width */
+  margin-left: 280px;
+  /* Sidebar width */
   display: flex;
   flex-direction: column;
 }
@@ -42,7 +43,7 @@ body {
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
 }
 
