@@ -5,7 +5,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <span><strong>ADMIN</strong></span>
+        <span style={{fontSize: '18px', display: 'flex', flexDirection: 'column'}}>
+          <strong>Modern Interior</strong>
+          <span style={{fontSize: '12px', color: 'var(--text-muted)'}}>Management System</span>
+        </span>
       </div>
       
       <div className="sidebar-menu">

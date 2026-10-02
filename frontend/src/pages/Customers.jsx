@@ -80,6 +80,24 @@ const Customers = () => {
             </div>
             
             <form onSubmit={(e) => { e.preventDefault(); setShowAddModal(false); }}>
+              <div style={{display: 'flex', gap: '15px', marginBottom: '15px'}}>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Customer ID</label>
+                  <input type="text" placeholder="e.g. CUST-003" style={{
+                    width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', outline: 'none'
+                  }} required />
+                </div>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Status</label>
+                  <select style={{
+                    width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', outline: 'none', backgroundColor: '#fff'
+                  }}>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
               <div style={{marginBottom: '15px'}}>
                 <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Full Name</label>
                 <input type="text" placeholder="Enter customer name" style={{
@@ -102,10 +120,17 @@ const Customers = () => {
                 </div>
               </div>
               
-              <div style={{marginBottom: '25px'}}>
+              <div style={{marginBottom: '15px'}}>
                 <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Address</label>
                 <textarea placeholder="Enter address (optional)" style={{
-                  width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', minHeight: '80px', resize: 'vertical', outline: 'none'
+                  width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', minHeight: '60px', resize: 'vertical', outline: 'none'
+                }}></textarea>
+              </div>
+
+              <div style={{marginBottom: '25px'}}>
+                <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Notes</label>
+                <textarea placeholder="Additional notes about the customer" style={{
+                  width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', minHeight: '60px', resize: 'vertical', outline: 'none'
                 }}></textarea>
               </div>
 

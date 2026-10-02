@@ -29,7 +29,8 @@ body {
 
 .main-wrapper {
   flex: 1;
-  margin-left: 280px; /* Sidebar width */
+  margin-left: 280px;
+  /* Sidebar width */
   display: flex;
   flex-direction: column;
 }
@@ -42,8 +43,19 @@ body {
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary:hover {
+  background: #2a9df4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(59, 178, 255, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
 }
 
 .btn-success {
@@ -55,6 +67,17 @@ body {
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-success:hover {
+  background: #2db863;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(55, 200, 113, 0.3);
+}
+
+.btn-success:active {
+  transform: translateY(0);
 }
 
 .btn-danger {
@@ -66,4 +89,24 @@ body {
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-danger:hover {
+  background: #e64545;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(243, 89, 88, 0.3);
+}
+
+.btn-danger:active {
+  transform: translateY(0);
+}
+
+/* Interactive Table Rows */
+table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+table tbody tr:hover {
+  background-color: #f8faff !important;
 }
