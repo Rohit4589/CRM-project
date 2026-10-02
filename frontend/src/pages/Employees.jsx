@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const Employees = () => {
+  const [showAddModal, setShowAddModal] = useState(false);
+
   return (
     <main className="dashboard-content">
       <div className="page-header">
@@ -11,7 +13,7 @@ const Employees = () => {
               <input type="text" placeholder="Search employees..." />
               <i className="fa-solid fa-search"></i>
             </div>
-            <button className="btn-primary"><i className="fa-solid fa-plus"></i> Add Employee</button>
+            <button className="btn-primary" onClick={() => setShowAddModal(true)}><i className="fa-solid fa-plus"></i> Add Employee</button>
           </div>
         </div>
       </div>
@@ -64,6 +66,112 @@ const Employees = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Add Employee Modal */}
+      {showAddModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', 
+          justifyContent: 'center', alignItems: 'center', zIndex: 1000
+        }}>
+          <div style={{
+            background: '#fff', padding: '30px', borderRadius: '12px', 
+            width: '100%', maxWidth: '600px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+            maxHeight: '90vh', overflowY: 'auto'
+          }}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+              <h2 style={{margin: 0, fontSize: '1.25rem', color: '#333'}}>Add New Employee</h2>
+              <button onClick={() => setShowAddModal(false)} style={{
+                background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#666', padding: 0, lineHeight: 1
+              }}>&times;</button>
+            </div>
+            
+            <form onSubmit={(e) => { e.preventDefault(); setShowAddModal(false); }}>
+              
+              <div style={{display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px'}}>
+                <div style={{width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed #ccc'}}>
+                  <i className="fa-solid fa-camera" style={{color: '#999', fontSize: '24px'}}></i>
+                </div>
+                <div>
+                  <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Profile Photo</label>
+                  <input type="file" accept="image/*" style={{fontSize: '14px'}} />
+                </div>
+              </div>
+
+              <div style={{display: 'flex', gap: '15px', marginBottom: '15px'}}>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Employee ID</label>
+                  <input type="text" placeholder="e.g. EMP-103" style={{
+                    width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', outline: 'none'
+                  }} required />
+                </div>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Status</label>
+                  <select style={{
+                    width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', outline: 'none', backgroundColor: '#fff'
+                  }}>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{marginBottom: '15px'}}>
+                <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Employee Name</label>
+                <input type="text" placeholder="Enter full name" style={{
+                  width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', outline: 'none'
+                }} required />
+              </div>
+
+              <div style={{display: 'flex', gap: '15px', marginBottom: '15px'}}>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Mobile Number</label>
+                  <input type="tel" placeholder="e.g. +91 9876543210" style={{
+                    width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', outline: 'none'
+                  }} required />
+                </div>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Emergency Contact</label>
+                  <input type="tel" placeholder="e.g. +91 9123456780" style={{
+                    width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', outline: 'none'
+                  }} required />
+                </div>
+              </div>
+
+              <div style={{display: 'flex', gap: '15px', marginBottom: '15px'}}>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Joining Date</label>
+                  <input type="date" style={{
+                    width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', outline: 'none'
+                  }} required />
+                </div>
+                <div style={{flex: 1}}>
+                  <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Designation / Role</label>
+                  <input type="text" placeholder="e.g. Carpenter, Painter" style={{
+                    width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', outline: 'none'
+                  }} required />
+                </div>
+              </div>
+
+              <div style={{marginBottom: '25px'}}>
+                <label style={{display: 'block', marginBottom: '5px', color: '#555', fontWeight: '500', fontSize: '0.9rem'}}>Daily Salary (₹)</label>
+                <input type="number" placeholder="e.g. 1000" min="0" style={{
+                  width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', boxSizing: 'border-box', outline: 'none'
+                }} required />
+              </div>
+
+              <div style={{display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+                <button type="button" onClick={() => setShowAddModal(false)} style={{
+                  padding: '10px 20px', borderRadius: '6px', border: '1px solid #ddd', background: '#fff', color: '#333', cursor: 'pointer', fontWeight: '500', transition: 'background 0.2s'
+                }}>Cancel</button>
+                <button type="submit" style={{
+                  padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#3ba2f2', color: '#fff', cursor: 'pointer', fontWeight: '500', transition: 'background 0.2s'
+                }}>Save Employee</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

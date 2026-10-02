@@ -8,10 +8,12 @@ import Employees from './pages/Employees';
 import Attendance from './pages/Attendance';
 import Salary from './pages/Salary';
 import Reports from './pages/Reports';
+import Login from './pages/Login';
 import './index.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -26,11 +28,15 @@ function App() {
     }
   };
 
+  if (!isLoggedIn) {
+    return <Login onLogin={() => setIsLoggedIn(true)} />;
+  }
+
   return (
     <div className="layout">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <div className="main-wrapper">
-        <Header />
+        <Header onLogout={() => setIsLoggedIn(false)} />
         {renderContent()}
       </div>
     </div>
