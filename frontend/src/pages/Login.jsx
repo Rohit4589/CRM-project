@@ -337,7 +337,7 @@ const Login = ({ onLogin }) => {
             </div>
 
             {/* Center Content */}
-            <div style={{ marginTop: '100px', maxWidth: '600px' }} className={isLoaded ? 'animate-fade' : ''} style={{animationDelay: '0.1s'}}>
+            <div style={{ marginTop: '100px', maxWidth: '600px', animationDelay: '0.1s' }} className={isLoaded ? 'animate-fade' : ''}>
               <div style={{ fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', color: 'var(--brand-accent)', fontWeight: '700', marginBottom: '20px' }}>
                 DESIGN · MANAGE · GROW
               </div>

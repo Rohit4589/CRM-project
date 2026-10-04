@@ -1,18 +1,11 @@
-const express = require('express');
+require('dotenv').config({ override: true });
+const app = require('./app');
 
-const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(express.json());
-
-app.get('/', (req, res) => {
-  res.json({ message: 'Modern Interior CRM Backend API is running' });
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date() });
-});
-
 app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
+  console.log(`\n======================================================`);
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.log(`🩺 Health Check API: http://localhost:${PORT}/api/health`);
+  console.log(`======================================================\n`);
 });
