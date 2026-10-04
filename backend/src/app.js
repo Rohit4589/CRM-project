@@ -3,7 +3,8 @@ const { Pool } = require('pg');
 
 const app = express();
 
-// Initialize Database connection pool
+console.log('Using DB URL:', process.env.DATABASE_URL);
+console.log('PGHOST:', process.env.PGHOST);
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
