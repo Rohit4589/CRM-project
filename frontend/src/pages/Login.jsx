@@ -29,10 +29,31 @@ const Login = ({ onLogin }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (username === 'admin' && password === 'admin123') {
-      onLogin();
+    const cleanUser = username.trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    if (cleanUser === 'admin' && cleanPass === 'admin123') {
+      onLogin({
+        role: 'admin',
+        name: 'Bryan Maxim',
+        fullName: 'Bryan Maxim',
+        roleTitle: 'Administrator',
+        id: 'ADMIN-01',
+        avatar: 'https://i.pravatar.cc/150?img=11'
+      });
+    } else if ((cleanUser === '9209036661' || cleanUser === 'anurag') && cleanPass === '9164') {
+      onLogin({
+        role: 'employee',
+        name: 'Anurag',
+        fullName: 'Anurag Sharma',
+        mobile: '9209036661',
+        roleTitle: 'Carpenter & Site Specialist',
+        id: 'EMP-101',
+        dailyRate: 1000,
+        avatar: 'https://i.pravatar.cc/150?img=12'
+      });
     } else {
-      setError('Invalid credentials. Use admin / admin123');
+      setError('Invalid credentials. Admin: admin / admin123 | Employee: 9209036661 / 9164');
     }
   };
 
@@ -330,15 +351,15 @@ const Login = ({ onLogin }) => {
                 </span> Lifestyles.
               </h1>
               <p style={{ fontSize: '1.15rem', color: '#334155', lineHeight: '1.7', marginBottom: '40px', maxWidth: '450px', fontWeight: '500' }}>
-                Welcome to the Modern Interior Management System.<br/>Access your personalized dashboard to manage<br/>projects, clients, and operations seamlessly.
+                Welcome to the Modern Interior Management System.<br/>Access your personalized dashboard to manage<br/>sites, clients, and operations seamlessly.
               </p>
             </div>
             
             {/* Bottom Feature Cards (Interactive) */}
             <div className={`feature-cards-container ${isLoaded ? 'animate-fade' : ''}`} style={{animationDelay: '0.2s'}}>
               <div className="feature-card interactive-card">
-                <div className="feature-icon" style={{color: '#B47B3B'}}><i className="fa-solid fa-folder-open"></i></div>
-                <div className="feature-text">Project<br/>Management</div>
+                <div className="feature-icon" style={{color: '#B47B3B'}}><i className="fa-solid fa-location-dot"></i></div>
+                <div className="feature-text">Sites & Clients<br/>Management</div>
               </div>
               <div className="feature-card interactive-card">
                 <div className="feature-icon" style={{color: '#3B82F6'}}><i className="fa-solid fa-users"></i></div>
@@ -391,14 +412,16 @@ const Login = ({ onLogin }) => {
 
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--brand-primary)', fontSize: '13px', fontWeight: '600' }}>Email Address</label>
+                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--brand-primary)', fontSize: '13px', fontWeight: '600' }}>
+                  Username / Mobile Number
+                </label>
                 <div className="input-group" style={{ position: 'relative' }}>
                   <i className="fa-regular fa-user input-icon"></i>
                   <input 
                     type="text" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your email"
+                    placeholder="admin or 9209036661"
                     className="premium-input"
                     required 
                   />
@@ -406,14 +429,16 @@ const Login = ({ onLogin }) => {
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--brand-primary)', fontSize: '13px', fontWeight: '600' }}>Password</label>
+                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--brand-primary)', fontSize: '13px', fontWeight: '600' }}>
+                  Password / PIN
+                </label>
                 <div className="input-group" style={{ position: 'relative' }}>
                   <i className="fa-solid fa-lock input-icon"></i>
                   <input 
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="admin123 or 9164"
                     className="premium-input"
                     required 
                   />
@@ -427,12 +452,12 @@ const Login = ({ onLogin }) => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--brand-primary)', fontSize: '13px', fontWeight: '500' }}>
-                  <input type="checkbox" className="custom-checkbox" />
+                  <input type="checkbox" className="custom-checkbox" defaultChecked />
                   Remember me
                 </label>
-                <a href="#" style={{ color: 'var(--btn-blue)', fontSize: '13px', textDecoration: 'none', fontWeight: '600' }}>Forgot password?</a>
+                <span style={{ color: '#64748B', fontSize: '12px' }}>Role auto-detected</span>
               </div>
 
               <button type="submit" style={{
@@ -455,8 +480,45 @@ const Login = ({ onLogin }) => {
               onMouseOver={(e) => { e.currentTarget.style.background = '#1e40af'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(29, 78, 216, 0.3)'; }}
               onMouseOut={(e) => { e.currentTarget.style.background = 'var(--btn-blue)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(29, 78, 216, 0.2)'; }}
               >
-                Sign In <i className="fa-solid fa-arrow-right" style={{fontSize: '12px'}}></i>
+                Sign In to Panel <i className="fa-solid fa-arrow-right" style={{fontSize: '12px'}}></i>
               </button>
+
+              {/* Quick Demo Login Switcher */}
+              <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #E2E8F0' }}>
+                <div style={{ fontSize: '11px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px', textAlign: 'center', letterSpacing: '0.5px' }}>
+                  Quick 1-Click Demo Login
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUsername('admin');
+                      setPassword('admin123');
+                    }}
+                    style={{
+                      flex: 1, padding: '9px 10px', borderRadius: '6px', border: '1px solid #CBD5E1',
+                      background: '#F8FAFC', color: '#0F172A', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                    }}
+                  >
+                    <i className="fa-solid fa-user-shield" style={{color: 'var(--btn-blue)'}}></i> Admin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUsername('9209036661');
+                      setPassword('9164');
+                    }}
+                    style={{
+                      flex: 1, padding: '9px 10px', borderRadius: '6px', border: '1px solid rgba(185, 120, 45, 0.4)',
+                      background: 'rgba(185, 120, 45, 0.08)', color: 'var(--gold, #B9782D)', fontSize: '12px', fontWeight: '700', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                    }}
+                  >
+                    <i className="fa-solid fa-helmet-safety"></i> Employee (Anurag)
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
           

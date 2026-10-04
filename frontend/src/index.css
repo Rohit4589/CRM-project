@@ -1,26 +1,91 @@
+/* ============================================
+   Modern Interior — Design System
+   Premium Interior Design Management Platform
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 :root {
-  --primary-blue: #3bb2ff;
-  --bg-light: #f4f7f6;
-  --bg-white: #ffffff;
-  --text-dark: #3a3a3a;
-  --text-muted: #8e8e8e;
-  --border-light: #e5e5e5;
-  --success-green: #37c871;
-  --danger-red: #f35958;
+  /* Primary Palette */
+  --navy: #111827;
+  --navy-light: #1F2937;
+  --navy-muted: #374151;
+
+  /* Accent */
+  --gold: #B9782D;
+  --gold-light: #D4993F;
+  --gold-bg: rgba(185, 120, 45, 0.08);
+  --gold-border: rgba(185, 120, 45, 0.2);
+
+  /* Neutrals */
+  --bg-page: #F8F9FA;
+  --bg-card: #FFFFFF;
+  --bg-hover: #F3F4F6;
+  --bg-subtle: #F9FAFB;
+
+  /* Borders */
+  --border: #E5E7EB;
+  --border-light: #F3F4F6;
+
+  /* Text */
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  --text-inverse: #FFFFFF;
+
+  /* Status */
+  --success: #059669;
+  --success-bg: #ECFDF5;
+  --success-border: #A7F3D0;
+  --warning: #D97706;
+  --warning-bg: #FFFBEB;
+  --warning-border: #FDE68A;
+  --danger: #DC2626;
+  --danger-bg: #FEF2F2;
+  --danger-border: #FECACA;
+  --info: #2563EB;
+  --info-bg: #EFF6FF;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --header-height: 64px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /* Transitions */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+html {
+  font-size: 14px;
 }
 
 body {
-  background-color: var(--bg-light);
-  color: var(--text-dark);
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
 }
+
+/* ============================================
+   Layout
+   ============================================ */
 
 .layout {
   display: flex;
@@ -29,29 +94,37 @@ body {
 
 .main-wrapper {
   flex: 1;
-  margin-left: 280px;
-  /* Sidebar width */
+  margin-left: var(--sidebar-width);
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 
-/* Common utility classes */
+/* ============================================
+   Button System
+   ============================================ */
+
 .btn-primary {
-  background: var(--primary-blue);
-  color: white;
+  background: var(--gold);
+  color: var(--text-inverse);
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 15px;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.01em;
 }
 
 .btn-primary:hover {
-  background: #2a9df4;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(59, 178, 255, 0.3);
+  background: var(--gold-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(185, 120, 45, 0.25);
 }
 
 .btn-primary:active {
@@ -59,21 +132,22 @@ body {
 }
 
 .btn-success {
-  background: var(--success-green);
-  color: white;
+  background: var(--success);
+  color: var(--text-inverse);
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s var(--ease);
 }
 
 .btn-success:hover {
-  background: #2db863;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(55, 200, 113, 0.3);
+  background: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
 }
 
 .btn-success:active {
@@ -81,32 +155,156 @@ body {
 }
 
 .btn-danger {
-  background: var(--danger-red);
-  color: white;
+  background: var(--danger);
+  color: var(--text-inverse);
   border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s var(--ease);
 }
 
 .btn-danger:hover {
-  background: #e64545;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(243, 89, 88, 0.3);
+  background: #B91C1C;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
 }
 
 .btn-danger:active {
   transform: translateY(0);
 }
 
-/* Interactive Table Rows */
+/* ============================================
+   Table System
+   ============================================ */
+
 table tbody tr {
-  transition: background-color 0.2s ease;
+  transition: background-color 0.15s var(--ease);
 }
 
 table tbody tr:hover {
-  background-color: #f8faff !important;
+  background-color: var(--bg-subtle) !important;
+}
+
+/* ============================================
+   Scrollbar
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ============================================
+   Responsive Utilities & Breakpoints
+   ============================================ */
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .main-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .dashboard-content {
+    padding: 20px 18px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 13.5px;
+  }
+
+  .dashboard-content {
+    padding: 16px 12px !important;
+  }
+
+  .page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+    padding-bottom: 14px !important;
+  }
+
+  .page-title {
+    font-size: 19px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .header-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .search-box {
+    width: 100% !important;
+  }
+
+  .btn-primary, .btn-secondary, .btn-success, .btn-danger {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .panel {
+    padding: 14px 12px !important;
+    border-radius: 8px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Table safety on mobile */
+  table {
+    min-width: 600px;
+  }
+
+  /* Modal responsiveness on mobile */
+  .modal-dialog, div[style*="maxWidth: 620px"], div[style*="maxWidth: 600px"], div[style*="maxWidth: 580px"], div[style*="maxWidth: 500px"] {
+    width: 95% !important;
+    max-width: 95vw !important;
+    margin: 10px auto !important;
+    padding: 18px 14px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-content {
+    padding: 12px 8px !important;
+  }
+
+  .page-title {
+    font-size: 17px !important;
+  }
 }
