@@ -1,49 +1,297 @@
+/* ============================================
+   Header — Modern Interior (Dark Theme Matching Sidebar)
+   ============================================ */
+
 .header {
-  height: 80px;
-  background-color: var(--primary-blue);
+  height: var(--header-height);
+  background-color: var(--navy);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: 0 30px;
+  justify-content: space-between;
+  padding: 0 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.header-user-info {
+/* Mobile Toggle Hamburger Button */
+.mobile-toggle-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  color: #F9FAFB;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  flex-shrink: 0;
+}
+
+.mobile-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--gold-light);
+}
+
+/* Left side */
+.header-left {
   display: flex;
   align-items: center;
-  color: white;
-  gap: 15px;
+  gap: 14px;
+  flex: 1;
+  max-width: 480px;
 }
 
-.user-details {
-  text-align: right;
+.header-search {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+}
+
+.header-search input {
+  width: 100%;
+  padding: 8px 14px 8px 36px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: #F9FAFB;
+  background: rgba(255, 255, 255, 0.06);
+  transition: all 0.2s var(--ease);
+}
+
+.header-search input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.header-search input:focus {
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(185, 120, 45, 0.25);
+}
+
+.header-search i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.45);
   font-size: 12px;
 }
 
-.user-welcome {
-  margin-bottom: 4px;
-}
-
-.user-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.user-actions a {
-  color: white;
-  text-decoration: none;
+/* Right side */
+.header-right {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.user-actions a:hover {
-  text-decoration: underline;
+.header-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s var(--ease);
+  position: relative;
 }
 
-.profile-pic {
-  width: 45px;
-  height: 45px;
+.header-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFF;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.header-notification-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: var(--gold);
   border-radius: 50%;
+  border: 2px solid var(--navy);
+}
+
+.header-divider {
+  width: 1px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 4px;
+}
+
+.header-lang {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s var(--ease);
+}
+
+.header-lang:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #FFF;
+}
+
+.header-lang option {
+  background: #1F2937;
+  color: #FFF;
+}
+
+/* User Profile */
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s var(--ease);
+}
+
+.header-user:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.header-user-info {
+  text-align: right;
+}
+
+.header-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #F9FAFB;
+  line-height: 1.2;
+}
+
+.header-user-role {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 400;
+}
+
+.header-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  border: 2px solid rgba(185, 120, 45, 0.4);
+}
+
+/* Dropdown */
+.header-dropdown {
+  position: relative;
+}
+
+.header-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1F2937;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  min-width: 190px;
+  padding: 6px;
+  z-index: 1000;
+  animation: dropdownFade 0.15s var(--ease);
+}
+
+@keyframes dropdownFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.12s var(--ease);
+  border: none;
+  background: none;
+  width: 100%;
+  font-family: inherit;
+}
+
+.header-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFF;
+}
+
+.header-dropdown-item i {
+  width: 16px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.header-dropdown-item.danger {
+  color: #F87171;
+}
+
+.header-dropdown-item.danger:hover {
+  background: rgba(220, 38, 38, 0.15);
+  color: #FCA5A5;
+}
+
+.header-dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 4px 0;
+}
+
+/* ============================================
+   Header Responsive
+   ============================================ */
+@media (max-width: 1024px) {
+  .header {
+    padding: 0 16px;
+  }
+
+  .mobile-toggle-btn {
+    display: flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .header-search {
+    display: none; /* Hide full search on very small screens to avoid header squish */
+  }
+
+  .header-user-info {
+    display: none; /* Hide name/role text, keep avatar on mobile phones */
+  }
+
+  .header-lang {
+    padding: 5px 6px;
+    font-size: 11px;
+  }
+
+  .header-divider {
+    margin: 0 2px;
+  }
 }
