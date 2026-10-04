@@ -11,7 +11,7 @@ const Reports = () => {
         </div>
       </div>
 
-      <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
+      <div className="dashboard-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px'}}>
         
         <div className="panel" style={{background: '#fff', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', padding: '30px', textAlign: 'center'}}>
           <i className="fa-solid fa-file-pdf" style={{fontSize: '48px', color: '#d93025', marginBottom: '20px'}}></i>
