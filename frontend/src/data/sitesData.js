@@ -1,0 +1,62 @@
+export const ACTIVE_SITES = [
+  {
+    id: 'SITE-001',
+    customerName: 'Rahul Deshmukh',
+    phone: '+91 98765 43210',
+    email: 'rahul.d@email.com',
+    location: 'Kothrud, Pune',
+    fullAddress: 'Flat 402, Rohan Tarang, Near MIT College, Kothrud, Pune - 411038',
+    latLng: '18.5074, 73.8077',
+    startDate: '2026-09-01',
+    targetDate: '2026-11-15',
+    status: 'Running',
+    progress: 72,
+    supervisor: 'Bryan Maxim',
+    notes: '3BHK complete interior renovation, modular kitchen and false ceiling work.'
+  },
+  {
+    id: 'SITE-002',
+    customerName: 'Priya Sharma',
+    phone: '+91 99887 76655',
+    email: 'priya.s@email.com',
+    location: 'Baner, Pune',
+    fullAddress: 'B-12, Orchid Towers, Pan Card Club Road, Baner, Pune - 411045',
+    latLng: '18.5590, 73.7868',
+    startDate: '2026-09-15',
+    targetDate: '2026-12-01',
+    status: 'Running',
+    progress: 45,
+    supervisor: 'Bryan Maxim',
+    notes: 'Full apartment interior woodwork, master bedroom wardrobe and TV unit.'
+  },
+  {
+    id: 'SITE-003',
+    customerName: 'Amit Patel',
+    phone: '+91 98220 12345',
+    email: 'amit.patel@email.com',
+    location: 'Wakad, Pune',
+    fullAddress: 'A-701, Signature Heights, Datta Mandir Road, Wakad, Pune - 411057',
+    latLng: '18.5987, 73.7686',
+    startDate: '2026-08-01',
+    targetDate: '2026-09-28',
+    status: 'Running',
+    progress: 88,
+    supervisor: 'Rajesh Verma',
+    notes: 'Living room interior, designer wallpaper, and smart electrical fittings.'
+  },
+  {
+    id: 'SITE-004',
+    customerName: 'Sunil Kadam',
+    phone: '+91 97654 32109',
+    email: 'sunil.kadam@email.com',
+    location: 'Aundh, Pune',
+    fullAddress: 'Plot 18, Sindh Society, Aundh, Pune - 411007',
+    latLng: '18.5626, 73.8087',
+    startDate: '2026-10-10',
+    targetDate: '2026-12-25',
+    status: 'Running',
+    progress: 25,
+    supervisor: 'Bryan Maxim',
+    notes: 'Balcony extension and custom wooden paneling.'
+  }
+];
