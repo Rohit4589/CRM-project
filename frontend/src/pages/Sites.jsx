@@ -1,81 +1,26 @@
-import React, { useState } from 'react';
-
-const INITIAL_SITES = [
-  {
-    id: 'SITE-001',
-    customerName: 'Rahul Deshmukh',
-    phone: '+91 98765 43210',
-    email: 'rahul.d@email.com',
-    location: 'Kothrud, Pune',
-    fullAddress: 'Flat 402, Rohan Tarang, Near MIT College, Kothrud, Pune - 411038',
-    latLng: '18.5074, 73.8077',
-    startDate: '2026-09-01',
-    targetDate: '2026-11-15',
-    status: 'Running',
-    progress: 72,
-    notes: '3BHK complete interior renovation, modular kitchen and false ceiling work.',
-    assignedTeam: ['Ramesh Kumar (Carpenter)']
-  },
-  {
-    id: 'SITE-002',
-    customerName: 'Priya Sharma',
-    phone: '+91 99887 76655',
-    email: 'priya.s@email.com',
-    location: 'Baner, Pune',
-    fullAddress: 'B-12, Orchid Towers, Pan Card Club Road, Baner, Pune - 411045',
-    latLng: '18.5590, 73.7868',
-    startDate: '2026-09-15',
-    targetDate: '2026-12-01',
-    status: 'Running',
-    progress: 45,
-    notes: 'Full apartment interior woodwork, master bedroom wardrobe and TV unit.',
-    assignedTeam: ['Ramesh Kumar (Carpenter)', 'Suresh Patil (Painter)']
-  },
-  {
-    id: 'SITE-003',
-    customerName: 'Amit Patel',
-    phone: '+91 98220 12345',
-    email: 'amit.patel@email.com',
-    location: 'Wakad, Pune',
-    fullAddress: 'A-701, Signature Heights, Datta Mandir Road, Wakad, Pune - 411057',
-    latLng: '18.5987, 73.7686',
-    startDate: '2026-08-01',
-    targetDate: '2026-09-28',
-    status: 'Completed',
-    progress: 100,
-    notes: 'Living room interior, designer wallpaper, and smart electrical fittings completed.',
-    assignedTeam: ['Suresh Patil (Painter)']
-  },
-  {
-    id: 'SITE-004',
-    customerName: 'Sunil Kadam',
-    phone: '+91 97654 32109',
-    email: 'sunil.kadam@email.com',
-    location: 'Aundh, Pune',
-    fullAddress: 'Plot 18, Sindh Society, Aundh, Pune - 411007',
-    latLng: '18.5626, 73.8087',
-    startDate: '2026-10-10',
-    targetDate: '2026-12-25',
-    status: 'On Hold',
-    progress: 15,
-    notes: 'Awaiting architectural drawing confirmation for balcony extension.',
-    assignedTeam: []
-  }
-];
+import React, { useState, useEffect } from 'react';
+import LocationMapPicker from '../components/LocationMapPicker';
 
 const Sites = () => {
-  const [sites, setSites] = useState(INITIAL_SITES);
+  const [sites, setSites] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('Running');
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
   const [editingSite, setEditingSite] = useState(null);
 
+  // Map Picker & Geocoding State
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [mapPickerTarget, setMapPickerTarget] = useState('add'); // 'add' or 'edit'
+  const [quickGeocoding, setQuickGeocoding] = useState(false);
+  const [geoNotice, setGeoNotice] = useState('');
+
   // New site form state
   const [formData, setFormData] = useState({
-    id: '',
+    siteCode: '',
     customerName: '',
     phone: '',
     email: '',
@@ -88,11 +33,43 @@ const Sites = () => {
     notes: ''
   });
 
-  const nextSiteId = `SITE-${String(sites.length + 1).padStart(3, '0')}`;
+  // Fetch sites from live database
+  const fetchSites = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('http://localhost:5000/api/sites');
+      const data = await res.json();
+      if (data.success) {
+        setSites(data.sites);
+      }
+    } catch (err) {
+      console.error('Error fetching sites from database:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setStatusFilter('Running');
+    fetchSites();
+  }, []);
 
   const openAddModal = () => {
+    // Auto-calculate next site numeric code suggestion (e.g. 001, 002)
+    let nextNum = 1;
+    if (sites && sites.length > 0) {
+      const nums = sites.map(s => {
+        const match = String(s.siteCode || s.id || '').match(/\d+/);
+        return match ? parseInt(match[0], 10) : 0;
+      }).filter(n => !isNaN(n) && n > 0);
+      if (nums.length > 0) {
+        nextNum = Math.max(...nums) + 1;
+      }
+    }
+    const defaultCode = String(nextNum).padStart(3, '0');
+
     setFormData({
-      id: nextSiteId,
+      siteCode: defaultCode,
       customerName: '',
       phone: '',
       email: '',
@@ -107,56 +84,162 @@ const Sites = () => {
     setShowAddModal(true);
   };
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
-    const newSite = {
-      ...formData,
-      id: formData.id || nextSiteId,
-      progress: formData.status === 'Completed' ? 100 : 10,
-      assignedTeam: []
-    };
-    setSites([newSite, ...sites]);
-    setShowAddModal(false);
+    try {
+      const cleanDigits = String(formData.siteCode || '').replace(/[^0-9]/g, '');
+      const payload = {
+        ...formData,
+        siteCode: cleanDigits
+      };
+      const res = await fetch('http://localhost:5000/api/sites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSites(prev => [data.site, ...prev]);
+        setShowAddModal(false);
+      } else {
+        alert(data.message || 'Failed to save site');
+      }
+    } catch (err) {
+      console.error('Error adding site:', err);
+      alert('Unable to connect to backend server');
+    }
+  };
+
+  // Quick fetch GPS coordinates from address via OpenStreetMap Nominatim
+  const handleQuickFetchFromAddress = async (target = 'add') => {
+    const isAdd = target === 'add';
+    const query = isAdd 
+      ? (formData.fullAddress || formData.location) 
+      : (editingSite?.fullAddress || editingSite?.location);
+
+    if (!query || !query.trim()) {
+      alert('Please enter a Site Area / Location or Full Address first so we can fetch its map coordinates.');
+      return;
+    }
+
+    try {
+      setQuickGeocoding(true);
+      setGeoNotice('');
+      const res = await fetch(`http://localhost:5000/api/geocode/search?q=${encodeURIComponent(query.trim())}`);
+      const data = await res.json();
+      if (data.success && data.results && data.results.length > 0) {
+        const top = data.results[0];
+        const formatted = `${top.lat.toFixed(5)}, ${top.lon.toFixed(5)}`;
+        if (isAdd) {
+          setFormData(prev => ({ ...prev, latLng: formatted }));
+        } else {
+          setEditingSite(prev => ({ ...prev, latLng: formatted }));
+        }
+        setGeoNotice(`📍 GPS coordinates fetched: ${formatted} (${top.displayName.split(',')[0]})`);
+        setTimeout(() => setGeoNotice(''), 5000);
+      } else {
+        alert(`No map coordinates found for "${query}". You can click "Pick on Map" to select the location directly.`);
+      }
+    } catch (err) {
+      console.error('Error fetching coordinates from address:', err);
+      alert('Unable to connect to location geocoding service');
+    } finally {
+      setQuickGeocoding(false);
+    }
   };
 
   const openEditModal = (site) => {
-    setEditingSite({ ...site });
+    setGeoNotice('');
+    const rawCode = site.siteCode || String(site.id || '').replace(/^SITE-/i, '');
+    const cleanCode = String(rawCode).replace(/[^0-9]/g, '');
+    setEditingSite({ 
+      ...site,
+      siteCode: cleanCode,
+      latLng: site.latLng || ''
+    });
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
-    setSites(sites.map(s => s.id === editingSite.id ? editingSite : s));
-    if (selectedSite && selectedSite.id === editingSite.id) {
-      setSelectedSite(editingSite);
+    try {
+      const cleanDigits = String(editingSite.siteCode || '').replace(/[^0-9]/g, '');
+      const targetId = editingSite.dbId || editingSite.id;
+      const payload = {
+        ...editingSite,
+        siteCode: cleanDigits
+      };
+      const res = await fetch(`http://localhost:5000/api/sites/${targetId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSites(sites.map(s => (s.dbId === data.site.dbId || s.id === data.site.id ? data.site : s)));
+        if (selectedSite && (selectedSite.dbId === data.site.dbId || selectedSite.id === data.site.id)) {
+          setSelectedSite(data.site);
+        }
+        setEditingSite(null);
+      } else {
+        alert(data.message || 'Failed to update site');
+      }
+    } catch (err) {
+      console.error('Error updating site:', err);
+      alert('Unable to connect to backend server');
     }
-    setEditingSite(null);
   };
 
-  const handleDeleteSite = (siteId) => {
-    if (window.confirm('Are you sure you want to remove this site?')) {
-      setSites(sites.filter(s => s.id !== siteId));
-      if (selectedSite && selectedSite.id === siteId) {
-        setSelectedSite(null);
+  const handleDeleteSite = async (siteId) => {
+    const siteToDelete = sites.find(s => s.id === siteId || s.dbId === siteId);
+    const targetId = siteToDelete?.dbId || siteId;
+    if (window.confirm('Are you sure you want to permanently delete this site from the database?')) {
+      try {
+        const res = await fetch(`http://localhost:5000/api/sites/${targetId}`, {
+          method: 'DELETE',
+        });
+        const data = await res.json();
+        if (data.success) {
+          setSites(sites.filter(s => s.id !== siteId && s.dbId !== targetId));
+          if (selectedSite && (selectedSite.id === siteId || selectedSite.dbId === targetId)) {
+            setSelectedSite(null);
+          }
+        } else {
+          alert(data.message || 'Failed to delete site');
+        }
+      } catch (err) {
+        console.error('Error deleting site:', err);
+        alert('Unable to connect to backend server');
       }
     }
   };
 
-  const filteredSites = sites.filter(site => {
+  const filteredSites = (sites || []).filter(site => {
+    if (!site) return false;
+    const sTerm = (searchTerm || '').toLowerCase();
     const matchesSearch = 
-      site.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      site.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      site.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      site.phone.includes(searchTerm);
+      (site.customerName || '').toLowerCase().includes(sTerm) ||
+      (site.id || '').toLowerCase().includes(sTerm) ||
+      (site.location || '').toLowerCase().includes(sTerm) ||
+      (site.phone || '').includes(searchTerm || '');
     
-    const matchesStatus = statusFilter === 'All' || site.status === statusFilter;
+    let matchesStatus = true;
+    if (statusFilter === 'Running') {
+      matchesStatus = site.status === 'Running';
+    } else if (statusFilter === 'Complete' || statusFilter === 'Completed') {
+      matchesStatus = site.status === 'Completed';
+    } else if (statusFilter === 'Hold / Cancelled' || statusFilter === 'On Hold') {
+      matchesStatus = site.status === 'On Hold' || site.status === 'Cancelled';
+    } else if (statusFilter === 'All') {
+      matchesStatus = true;
+    }
     return matchesSearch && matchesStatus;
   });
 
   const counts = {
-    all: sites.length,
-    running: sites.filter(s => s.status === 'Running').length,
-    completed: sites.filter(s => s.status === 'Completed').length,
-    onHold: sites.filter(s => s.status === 'On Hold').length
+    all: (sites || []).length,
+    running: (sites || []).filter(s => s?.status === 'Running').length,
+    completed: (sites || []).filter(s => s?.status === 'Completed').length,
+    onHold: (sites || []).filter(s => s?.status === 'On Hold' || s?.status === 'Cancelled').length
   };
 
   const getStatusBadge = (status) => {
@@ -351,72 +434,134 @@ const Sites = () => {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* Filter, Search & Status Bar (Highlighted Row with Left-Middle-Right Layout) */}
+      {/* Filter and Search Bar (Styled exactly like user screenshot) */}
       <div style={{
-        background: '#fff',
-        borderRadius: '10px 10px 0 0',
-        padding: '14px 18px',
-        border: '1px solid #E5E7EB',
-        borderBottom: 'none',
+        background: '#FFFFFF',
+        borderRadius: '12px 12px 0 0',
+        padding: '14px 20px',
+        border: '1px solid #E2E8F0',
+        borderBottom: '1px solid #EDF2F7',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap',
-        gap: '12px'
+        gap: '14px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)'
       }}>
-        {/* Status Tabs */}
-        <div style={{display: 'flex', gap: '4px', background: '#F3F4F6', padding: '4px', borderRadius: '8px', flexWrap: 'wrap'}}>
-          {['All', 'Running', 'Completed', 'On Hold'].map(status => {
-            const isActive = statusFilter === status;
+        {/* Soft light-blue track container holding the 4 status buttons */}
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: '#E6F4FA',
+          padding: '5px 6px',
+          borderRadius: '8px',
+          flexWrap: 'wrap'
+        }}>
+          {[
+            { key: 'Running', label: 'Running', icon: '⚡', count: counts.running },
+            { key: 'Complete', label: 'Complete', icon: '📁', count: counts.completed },
+            { key: 'Hold / Cancelled', label: 'Hold / Cancelled', icon: '⏸️', count: counts.onHold },
+            { key: 'All', label: 'Show All', icon: '📋', count: counts.all }
+          ].map((item) => {
+            const isActive = 
+              statusFilter === item.key || 
+              (item.key === 'Complete' && statusFilter === 'Completed') || 
+              (item.key === 'Hold / Cancelled' && (statusFilter === 'On Hold' || statusFilter === 'Cancelled'));
+
             return (
               <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
+                key={item.key}
+                onClick={() => setStatusFilter(item.key)}
                 style={{
                   border: 'none',
-                  background: isActive ? '#fff' : 'transparent',
-                  color: isActive ? 'var(--gold, #B9782D)' : '#6B7280',
-                  fontWeight: isActive ? '600' : '500',
-                  padding: '6px 12px',
                   borderRadius: '6px',
+                  background: isActive ? 'var(--navy, #111827)' : 'transparent',
+                  color: isActive ? '#FFFFFF' : '#1E293B',
+                  fontWeight: isActive ? '700' : '600',
+                  padding: '8px 18px',
                   cursor: 'pointer',
-                  fontSize: '12px',
-                  boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  transition: 'all 0.15s ease'
+                  fontSize: '13px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: isActive ? '0 2px 8px rgba(17, 24, 39, 0.25)' : 'none',
+                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseOver={(e) => {
+                  if (!isActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.65)';
+                }}
+                onMouseOut={(e) => {
+                  if (!isActive) e.currentTarget.style.background = 'transparent';
                 }}
               >
-                {status} {status === 'All' ? `(${counts.all})` : status === 'Running' ? `(${counts.running})` : status === 'Completed' ? `(${counts.completed})` : `(${counts.onHold})`}
+                <span>{item.icon}</span>
+                <span>{item.label} ({item.count})</span>
               </button>
             );
           })}
         </div>
 
-        {/* Search */}
-        <div className="search-box" style={{position: 'relative', width: '260px'}}>
-          <input
-            type="text"
-            placeholder="Search customer, site, city..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 14px 8px 36px',
-              border: '1px solid #E5E7EB',
-              borderRadius: '6px',
-              outline: 'none',
+        {/* Right side: Search Box */}
+        <div className="search-box" style={{position: 'relative', width: '270px'}}>
+            <input
+              type="text"
+              placeholder="Search customer, site, city..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '9px 34px 9px 36px',
+                border: '1px solid #CBD5E1',
+                borderRadius: '8px',
+                outline: 'none',
+                fontSize: '13px',
+                background: '#FFFFFF',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.2s, box-shadow 0.2s'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'var(--navy, #111827)';
+                e.target.style.boxShadow = '0 0 0 3px rgba(17, 24, 39, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#CBD5E1';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+            <i className="fa-solid fa-search" style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#94A3B8',
               fontSize: '13px'
-            }}
-          />
-          <i className="fa-solid fa-search" style={{
-            position: 'absolute',
-            left: '12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: '#9CA3AF',
-            fontSize: '13px'
-          }}></i>
+            }}></i>
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94A3B8',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  padding: 0
+                }}
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Main Sites Table (Touch Responsive Container) */}
       <div className="panel table-responsive" style={{
@@ -652,20 +797,64 @@ const Sites = () => {
               
               <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
                 <div style={{flex: '1 1 200px'}}>
-                  <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                    Site Ref ID
+                  <label style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                    <span>Site Ref ID *</span>
+                    <span style={{fontSize: '11px', color: '#6B7280', fontWeight: '400'}}>Numbers only</span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.id}
-                    onChange={(e) => setFormData({...formData, id: e.target.value})}
-                    style={{
-                      width: '100%', padding: '9px 12px', borderRadius: '6px',
-                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontWeight: '600', color: 'var(--gold, #B9782D)', textTransform: 'uppercase'
-                    }}
-                    required
-                  />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    border: '1.5px solid #D1D5DB',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    background: '#F9FAFB',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                  }}>
+                    <span style={{
+                      padding: '9px 12px',
+                      background: '#F3F4F6',
+                      color: '#4B5563',
+                      fontWeight: '700',
+                      fontSize: '13px',
+                      letterSpacing: '0.5px',
+                      borderRight: '1.5px solid #E5E7EB',
+                      userSelect: 'none'
+                    }}>
+                      SITE-
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      placeholder="001"
+                      value={formData.siteCode || ''}
+                      onChange={(e) => {
+                        const numericOnly = e.target.value.replace(/[^0-9]/g, '');
+                        setFormData({ ...formData, siteCode: numericOnly });
+                      }}
+                      onBlur={() => {
+                        if (formData.siteCode && formData.siteCode.length < 3) {
+                          setFormData({ ...formData, siteCode: formData.siteCode.padStart(3, '0') });
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '9px 12px',
+                        border: 'none',
+                        outline: 'none',
+                        background: '#FFFFFF',
+                        fontWeight: '700',
+                        fontSize: '14px',
+                        color: 'var(--gold, #B9782D)',
+                        letterSpacing: '1px'
+                      }}
+                      required
+                    />
+                  </div>
+                  <div style={{fontSize: '11px', color: '#9CA3AF', marginTop: '4px'}}>
+                    e.g. 001, 002 (Creates: SITE-{formData.siteCode ? formData.siteCode.padStart(3, '0') : '___'})
+                  </div>
                 </div>
                 <div style={{flex: '1 1 200px'}}>
                   <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
@@ -755,22 +944,93 @@ const Sites = () => {
                     required
                   />
                 </div>
-                <div style={{flex: '1 1 200px'}}>
-                  <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                    GPS Coordinates (Lat, Lng)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 18.5204, 73.8567"
-                    value={formData.latLng}
-                    onChange={(e) => setFormData({...formData, latLng: e.target.value})}
-                    style={{
-                      width: '100%', padding: '9px 12px', borderRadius: '6px',
-                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
-                    }}
-                  />
+                <div style={{flex: '1 1 260px'}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+                    <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                      GPS Coordinates (Lat, Lng)
+                    </label>
+                    <span style={{color: '#6B7280', fontSize: '11px', fontWeight: '500'}}>
+                      (Optional)
+                    </span>
+                  </div>
+                  <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+                    <input
+                      type="text"
+                      placeholder="e.g. 18.5204, 73.8567"
+                      value={formData.latLng}
+                      onChange={(e) => setFormData({...formData, latLng: e.target.value})}
+                      style={{
+                        flex: 1, padding: '9px 12px', borderRadius: '6px',
+                        border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
+                        fontSize: '13px'
+                      }}
+                    />
+                    {formData.latLng && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, latLng: ''})}
+                        title="Clear coordinates"
+                        style={{
+                          padding: '9px 10px', background: '#F3F4F6', border: '1px solid #D1D5DB',
+                          borderRadius: '6px', color: '#6B7280', cursor: 'pointer', fontSize: '12px'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMapPickerTarget('add');
+                        setShowMapPicker(true);
+                      }}
+                      style={{
+                        padding: '9px 12px', background: 'rgba(185, 120, 45, 0.1)',
+                        border: '1px solid rgba(185, 120, 45, 0.35)', borderRadius: '6px',
+                        color: 'var(--gold, #B9782D)', cursor: 'pointer', fontSize: '12px',
+                        fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px',
+                        whiteSpace: 'nowrap'
+                      }}
+                      title="Open interactive map to pick location"
+                    >
+                      <i className="fa-solid fa-map-location-dot"></i> Pick on Map
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickFetchFromAddress('add')}
+                      disabled={quickGeocoding}
+                      style={{
+                        padding: '9px 10px', background: '#F8FAFC',
+                        border: '1px solid #CBD5E1', borderRadius: '6px',
+                        color: '#334155', cursor: 'pointer', fontSize: '12px',
+                        fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px',
+                        whiteSpace: 'nowrap'
+                      }}
+                      title="Auto-detect coordinates from entered address or area"
+                    >
+                      {quickGeocoding ? (
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                      ) : (
+                        <i className="fa-solid fa-wand-magic-sparkles" style={{color: 'var(--gold, #B9782D)'}}></i>
+                      )}
+                      Fetch
+                    </button>
+                  </div>
+                  <div style={{fontSize: '11px', color: '#6B7280', marginTop: '4px'}}>
+                    💡 Optional: Click <strong>Pick on Map</strong> to drag a pin, or <strong>Fetch</strong> from address.
+                  </div>
                 </div>
               </div>
+
+              {geoNotice && (
+                <div style={{
+                  marginBottom: '14px', padding: '8px 12px', background: '#ECFDF5',
+                  border: '1px solid #A7F3D0', borderRadius: '6px', color: '#065F46',
+                  fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px'
+                }}>
+                  <i className="fa-solid fa-circle-check"></i> {geoNotice}
+                </div>
+              )}
 
               <div style={{marginBottom: '14px'}}>
                 <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
@@ -965,8 +1225,21 @@ const Sites = () => {
                     <div>
                       <div>{selectedSite.fullAddress}</div>
                       {selectedSite.latLng && (
-                        <div style={{fontSize: '11px', color: '#6B7280', marginTop: '4px'}}>
-                          GPS: {selectedSite.latLng}
+                        <div style={{fontSize: '12px', color: '#6B7280', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>
+                          <span>GPS: <strong>{selectedSite.latLng}</strong></span>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedSite.latLng)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                              color: 'var(--gold, #B9782D)', textDecoration: 'none', fontWeight: '600',
+                              fontSize: '11px', background: 'rgba(185, 120, 45, 0.08)',
+                              padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(185, 120, 45, 0.2)'
+                            }}
+                          >
+                            <i className="fa-solid fa-arrow-up-right-from-square"></i> Open in Maps
+                          </a>
                         </div>
                       )}
                     </div>
@@ -1076,8 +1349,11 @@ const Sites = () => {
             }}>
               <div>
                 <h2 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827'}}>
-                  Edit Site / Customer: {editingSite.id}
+                  Edit Site: SITE-{editingSite.siteCode !== undefined && editingSite.siteCode !== '' ? editingSite.siteCode.padStart(3, '0') : (editingSite.id || '').replace(/^SITE-/i, '')}
                 </h2>
+                <span style={{fontSize: '12px', color: '#6B7280'}}>
+                  Update site reference code (numbers only), customer details, or status
+                </span>
               </div>
               <button
                 onClick={() => setEditingSite(null)}
@@ -1092,21 +1368,69 @@ const Sites = () => {
 
             <form onSubmit={handleEditSubmit} style={{padding: '20px'}}>
               <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
+                {/* Editable Site Ref Number */}
                 <div style={{flex: '1 1 200px'}}>
-                  <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                    Customer / Site Name
+                  <label style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                    <span>Site Ref ID *</span>
+                    <span style={{fontSize: '11px', color: '#6B7280', fontWeight: '400'}}>Numbers only</span>
                   </label>
-                  <input
-                    type="text"
-                    value={editingSite.customerName}
-                    onChange={(e) => setEditingSite({...editingSite, customerName: e.target.value})}
-                    style={{
-                      width: '100%', padding: '9px 12px', borderRadius: '6px',
-                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
-                    }}
-                    required
-                  />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    border: '1.5px solid #D1D5DB',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    background: '#F9FAFB',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                  }}>
+                    <span style={{
+                      padding: '9px 12px',
+                      background: '#F3F4F6',
+                      color: '#4B5563',
+                      fontWeight: '700',
+                      fontSize: '13px',
+                      letterSpacing: '0.5px',
+                      borderRight: '1.5px solid #E5E7EB',
+                      userSelect: 'none'
+                    }}>
+                      SITE-
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      placeholder="001"
+                      value={editingSite.siteCode !== undefined ? editingSite.siteCode : ''}
+                      onChange={(e) => {
+                        const numericOnly = e.target.value.replace(/[^0-9]/g, '');
+                        setEditingSite({ ...editingSite, siteCode: numericOnly });
+                      }}
+                      onBlur={() => {
+                        if (editingSite.siteCode && editingSite.siteCode.length < 3) {
+                          setEditingSite({ ...editingSite, siteCode: editingSite.siteCode.padStart(3, '0') });
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '9px 12px',
+                        border: 'none',
+                        outline: 'none',
+                        background: '#FFFFFF',
+                        fontWeight: '700',
+                        fontSize: '14px',
+                        color: 'var(--gold, #B9782D)',
+                        letterSpacing: '1px'
+                      }}
+                      required
+                    />
+                  </div>
+                  <div style={{fontSize: '11px', color: '#9CA3AF', marginTop: '4px'}}>
+                    e.g. 001, 002 (Saved as: SITE-{editingSite.siteCode ? editingSite.siteCode.padStart(3, '0') : '___'})
+                  </div>
                 </div>
+
+                {/* Status */}
                 <div style={{flex: '1 1 200px'}}>
                   <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Status
@@ -1115,9 +1439,9 @@ const Sites = () => {
                     value={editingSite.status}
                     onChange={(e) => setEditingSite({...editingSite, status: e.target.value})}
                     style={{
-                      width: '100%', padding: '9px 12px', borderRadius: '6px',
-                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      backgroundColor: '#fff'
+                      width: '100%', padding: '9px 12px', borderRadius: '8px',
+                      border: '1.5px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
+                      backgroundColor: '#fff', height: '42px', fontSize: '13px'
                     }}
                   >
                     <option value="Running">Running</option>
@@ -1125,6 +1449,24 @@ const Sites = () => {
                     <option value="On Hold">On Hold</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Customer / Site Name */}
+              <div style={{marginBottom: '14px'}}>
+                <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  Customer / Site Name *
+                </label>
+                <input
+                  type="text"
+                  value={editingSite.customerName}
+                  onChange={(e) => setEditingSite({...editingSite, customerName: e.target.value})}
+                  style={{
+                    width: '100%', padding: '9px 12px', borderRadius: '8px',
+                    border: '1.5px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
+                    fontSize: '14px'
+                  }}
+                  required
+                />
               </div>
 
               <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
@@ -1193,6 +1535,94 @@ const Sites = () => {
                 </div>
               </div>
 
+              {/* GPS Coordinates Field in Edit Modal */}
+              <div style={{marginBottom: '14px'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+                  <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                    GPS Coordinates (Lat, Lng)
+                  </label>
+                  <span style={{color: '#6B7280', fontSize: '11px', fontWeight: '500'}}>
+                    (Optional)
+                  </span>
+                </div>
+                <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+                  <input
+                    type="text"
+                    placeholder="e.g. 18.5204, 73.8567"
+                    value={editingSite.latLng || ''}
+                    onChange={(e) => setEditingSite({...editingSite, latLng: e.target.value})}
+                    style={{
+                      flex: 1, padding: '9px 12px', borderRadius: '6px',
+                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
+                      fontSize: '13px'
+                    }}
+                  />
+                  {editingSite.latLng && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingSite({...editingSite, latLng: ''})}
+                      title="Clear coordinates"
+                      style={{
+                        padding: '9px 10px', background: '#F3F4F6', border: '1px solid #D1D5DB',
+                        borderRadius: '6px', color: '#6B7280', cursor: 'pointer', fontSize: '12px'
+                      }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMapPickerTarget('edit');
+                      setShowMapPicker(true);
+                    }}
+                    style={{
+                      padding: '9px 12px', background: 'rgba(185, 120, 45, 0.1)',
+                      border: '1px solid rgba(185, 120, 45, 0.35)', borderRadius: '6px',
+                      color: 'var(--gold, #B9782D)', cursor: 'pointer', fontSize: '12px',
+                      fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px',
+                      whiteSpace: 'nowrap'
+                    }}
+                    title="Open interactive map to pick location"
+                  >
+                    <i className="fa-solid fa-map-location-dot"></i> Pick on Map
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickFetchFromAddress('edit')}
+                    disabled={quickGeocoding}
+                    style={{
+                      padding: '9px 10px', background: '#F8FAFC',
+                      border: '1px solid #CBD5E1', borderRadius: '6px',
+                      color: '#334155', cursor: 'pointer', fontSize: '12px',
+                      fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px',
+                      whiteSpace: 'nowrap'
+                    }}
+                    title="Auto-detect coordinates from entered address or area"
+                  >
+                    {quickGeocoding ? (
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                    ) : (
+                      <i className="fa-solid fa-wand-magic-sparkles" style={{color: 'var(--gold, #B9782D)'}}></i>
+                    )}
+                    Fetch
+                  </button>
+                </div>
+                <div style={{fontSize: '11px', color: '#6B7280', marginTop: '4px'}}>
+                  💡 Optional: Click <strong>Pick on Map</strong> to drag a pin, or <strong>Fetch</strong> from address.
+                </div>
+              </div>
+
+              {geoNotice && (
+                <div style={{
+                  marginBottom: '14px', padding: '8px 12px', background: '#ECFDF5',
+                  border: '1px solid #A7F3D0', borderRadius: '6px', color: '#065F46',
+                  fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px'
+                }}>
+                  <i className="fa-solid fa-circle-check"></i> {geoNotice}
+                </div>
+              )}
+
               <div style={{marginBottom: '14px'}}>
                 <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                   Full Site Address
@@ -1249,6 +1679,38 @@ const Sites = () => {
           </div>
         </div>
       )}
+
+      {/* =========================================
+          INTERACTIVE LEAFLET / OSM LOCATION MAP PICKER MODAL
+          ========================================= */}
+      <LocationMapPicker
+        isOpen={showMapPicker}
+        onClose={() => setShowMapPicker(false)}
+        initialLatLng={mapPickerTarget === 'add' ? formData.latLng : editingSite?.latLng}
+        initialAddress={mapPickerTarget === 'add' ? formData.fullAddress : editingSite?.fullAddress}
+        initialLocation={mapPickerTarget === 'add' ? formData.location : editingSite?.location}
+        onSelectLocation={({ latLng, address }) => {
+          if (mapPickerTarget === 'add') {
+            setFormData(prev => ({
+              ...prev,
+              latLng: latLng || '',
+              ...(address ? { fullAddress: address } : {})
+            }));
+          } else if (editingSite) {
+            setEditingSite(prev => ({
+              ...prev,
+              latLng: latLng || '',
+              ...(address ? { fullAddress: address } : {})
+            }));
+          }
+          if (latLng) {
+            setGeoNotice(`📍 Location saved: ${latLng}`);
+          } else {
+            setGeoNotice('Coordinates cleared.');
+          }
+          setTimeout(() => setGeoNotice(''), 4500);
+        }}
+      />
 
     </main>
   );

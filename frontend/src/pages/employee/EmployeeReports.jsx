@@ -88,7 +88,7 @@ const EmployeeReports = ({ user }) => {
         }}>
           <div>
             <div style={{fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600'}}>Employee Name</div>
-            <div style={{fontSize: '14px', fontWeight: '700', color: '#111827', marginTop: '2px'}}>{user?.fullName || 'Anurag Sharma'}</div>
+            <div style={{fontSize: '14px', fontWeight: '700', color: '#111827', marginTop: '2px'}}>{user?.fullName || 'Anurag Dhangond'}</div>
           </div>
           <div>
             <div style={{fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600'}}>Employee ID</div>
@@ -194,7 +194,7 @@ const EmployeeReports = ({ user }) => {
           </div>
           <div style={{textAlign: 'center', width: '200px'}}>
             <div style={{height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px'}}>
-              <span style={{fontFamily: 'cursive', fontSize: '18px', color: 'var(--gold, #B9782D)'}}>Bryan Maxim</span>
+              <span style={{fontFamily: 'cursive', fontSize: '18px', color: 'var(--gold, #B9782D)'}}>Mahendra Sharma</span>
             </div>
             <div style={{borderBottom: '1px solid #9CA3AF', marginBottom: '8px'}}></div>
             <div style={{fontSize: '12px', fontWeight: '600', color: '#4B5563'}}>Authorized Signatory</div>

@@ -20,22 +20,57 @@ import Login from './pages/Login';
 import './index.css';
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // Restore logged-in user from localStorage on refresh
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('mi_crm_user');
+      if (!savedUser) return null;
+      const parsed = JSON.parse(savedUser);
+      if (parsed && typeof parsed === 'object' && (parsed.role === 'admin' || parsed.role === 'employee')) {
+        return parsed;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Restore active tab from localStorage on refresh
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const savedTab = localStorage.getItem('mi_crm_tab');
+      if (savedTab) return savedTab;
+      const savedUser = localStorage.getItem('mi_crm_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return parsed?.role === 'employee' ? 'emp-dashboard' : 'dashboard';
+      }
+      return 'dashboard';
+    } catch {
+      return 'dashboard';
+    }
+  });
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem('mi_crm_tab', tab);
+  };
 
   const handleLogin = (user) => {
     setCurrentUser(user);
-    if (user.role === 'employee') {
-      setActiveTab('emp-dashboard');
-    } else {
-      setActiveTab('dashboard');
-    }
+    localStorage.setItem('mi_crm_user', JSON.stringify(user));
+    const defaultTab = user.role === 'employee' ? 'emp-dashboard' : 'dashboard';
+    setActiveTab(defaultTab);
+    localStorage.setItem('mi_crm_tab', defaultTab);
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     setActiveTab('dashboard');
+    localStorage.removeItem('mi_crm_user');
+    localStorage.removeItem('mi_crm_tab');
   };
 
   const renderContent = () => {
@@ -44,26 +79,26 @@ function App() {
     if (isEmployee) {
       switch (activeTab) {
         case 'emp-dashboard':
-          return <EmployeeDashboard user={currentUser} onNavigate={setActiveTab} />;
+          return <EmployeeDashboard user={currentUser} onNavigate={handleTabChange} />;
         case 'emp-attendance':
           return <EmployeeAttendance user={currentUser} />;
         case 'emp-salary':
-          return <EmployeeSalary user={currentUser} onNavigate={setActiveTab} />;
+          return <EmployeeSalary user={currentUser} onNavigate={handleTabChange} />;
         case 'emp-reports':
           return <EmployeeReports user={currentUser} />;
         default:
-          return <EmployeeDashboard user={currentUser} onNavigate={setActiveTab} />;
+          return <EmployeeDashboard user={currentUser} onNavigate={handleTabChange} />;
       }
     }
 
     // Admin Panel Routing
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard onNavigate={setActiveTab} />;
+        return <Dashboard onNavigate={handleTabChange} user={currentUser} />;
       case 'sites':
       case 'customers':
       case 'projects':
-        return <Sites onNavigate={setActiveTab} />;
+        return <Sites onNavigate={handleTabChange} />;
       case 'employees':
         return <Employees />;
       case 'attendance':
@@ -73,7 +108,7 @@ function App() {
       case 'reports':
         return <Reports />;
       default:
-        return <Dashboard onNavigate={setActiveTab} />;
+        return <Dashboard onNavigate={handleTabChange} user={currentUser} />;
     }
   };
 
@@ -85,7 +120,7 @@ function App() {
     <div className="layout">
       <Sidebar 
         activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
+        setActiveTab={handleTabChange} 
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         user={currentUser}

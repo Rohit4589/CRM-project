@@ -27,33 +27,40 @@ const Login = ({ onLogin }) => {
     setMousePos({ x: 0, y: 0 }); // reset smoothly
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const cleanUser = username.trim().toLowerCase();
-    const cleanPass = password.trim();
+  const [loading, setLoading] = useState(false);
 
-    if (cleanUser === 'admin' && cleanPass === 'admin123') {
-      onLogin({
-        role: 'admin',
-        name: 'Bryan Maxim',
-        fullName: 'Bryan Maxim',
-        roleTitle: 'Administrator',
-        id: 'ADMIN-01',
-        avatar: 'https://i.pravatar.cc/150?img=11'
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password.trim(),
+        }),
       });
-    } else if ((cleanUser === '9209036661' || cleanUser === 'anurag') && cleanPass === '9164') {
-      onLogin({
-        role: 'employee',
-        name: 'Anurag',
-        fullName: 'Anurag Sharma',
-        mobile: '9209036661',
-        roleTitle: 'Carpenter & Site Specialist',
-        id: 'EMP-101',
-        dailyRate: 1000,
-        avatar: 'https://i.pravatar.cc/150?img=12'
-      });
-    } else {
-      setError('Invalid credentials. Admin: admin / admin123 | Employee: 9209036661 / 9164');
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setError(data.message || 'Invalid username or password');
+        setLoading(false);
+        return;
+      }
+
+      // Success: pass backend user object with role to App.jsx
+      onLogin(data.user);
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Cannot connect to backend server. Make sure backend is running on port 5000.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -413,15 +420,15 @@ const Login = ({ onLogin }) => {
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', color: 'var(--brand-primary)', fontSize: '13px', fontWeight: '600' }}>
-                  Username / Mobile Number
+                  Employee ID / Mobile Number / Username
                 </label>
                 <div className="input-group" style={{ position: 'relative' }}>
-                  <i className="fa-regular fa-user input-icon"></i>
+                  <i className="fa-regular fa-id-card input-icon"></i>
                   <input 
                     type="text" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="admin or 9209036661"
+                    placeholder="e.g. 102, 112, admin or mobile number"
                     className="premium-input"
                     required 
                   />
@@ -438,7 +445,7 @@ const Login = ({ onLogin }) => {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="admin123 or 9164"
+                    placeholder="Enter password or 4-digit PIN"
                     className="premium-input"
                     required 
                   />
@@ -460,27 +467,50 @@ const Login = ({ onLogin }) => {
                 <span style={{ color: '#64748B', fontSize: '12px' }}>Role auto-detected</span>
               </div>
 
-              <button type="submit" style={{
-                width: '100%', 
-                height: '48px', 
-                background: 'var(--btn-blue)', 
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '8px', 
-                cursor: 'pointer',
-                fontSize: '15px', 
-                fontWeight: '600', 
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 12px rgba(29, 78, 216, 0.2)'
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.background = '#1e40af'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(29, 78, 216, 0.3)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'var(--btn-blue)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(29, 78, 216, 0.2)'; }}
+              <button 
+                type="submit" 
+                disabled={loading}
+                style={{
+                  width: '100%', 
+                  height: '48px', 
+                  background: loading ? '#93C5FD' : 'var(--btn-blue)', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '8px', 
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontSize: '15px', 
+                  fontWeight: '600', 
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(29, 78, 216, 0.2)'
+                }}
+                onMouseOver={(e) => { 
+                  if (!loading) {
+                    e.currentTarget.style.background = '#1e40af'; 
+                    e.currentTarget.style.transform = 'translateY(-2px)'; 
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(29, 78, 216, 0.3)'; 
+                  }
+                }}
+                onMouseOut={(e) => { 
+                  if (!loading) {
+                    e.currentTarget.style.background = 'var(--btn-blue)'; 
+                    e.currentTarget.style.transform = 'translateY(0)'; 
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(29, 78, 216, 0.2)'; 
+                  }
+                }}
               >
-                Sign In to Panel <i className="fa-solid fa-arrow-right" style={{fontSize: '12px'}}></i>
+                {loading ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i> Authenticating...
+                  </>
+                ) : (
+                  <>
+                    Sign In to Panel <i className="fa-solid fa-arrow-right" style={{fontSize: '12px'}}></i>
+                  </>
+                )}
               </button>
 
               {/* Quick Demo Login Switcher */}
@@ -493,7 +523,7 @@ const Login = ({ onLogin }) => {
                     type="button"
                     onClick={() => {
                       setUsername('admin');
-                      setPassword('admin123');
+                      setPassword('1234');
                     }}
                     style={{
                       flex: 1, padding: '9px 10px', borderRadius: '6px', border: '1px solid #CBD5E1',
@@ -501,12 +531,12 @@ const Login = ({ onLogin }) => {
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                     }}
                   >
-                    <i className="fa-solid fa-user-shield" style={{color: 'var(--btn-blue)'}}></i> Admin
+                    <i className="fa-solid fa-user-shield" style={{color: 'var(--btn-blue)'}}></i> Admin: Mahendra (1234)
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setUsername('9209036661');
+                      setUsername('102');
                       setPassword('9164');
                     }}
                     style={{
@@ -515,7 +545,7 @@ const Login = ({ onLogin }) => {
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                     }}
                   >
-                    <i className="fa-solid fa-helmet-safety"></i> Employee (Anurag)
+                    <i className="fa-solid fa-helmet-safety"></i> Worker ID: 102 (9164)
                   </button>
                 </div>
               </div>

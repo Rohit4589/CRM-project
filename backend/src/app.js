@@ -1,22 +1,27 @@
 const express = require('express');
-const { Pool } = require('pg');
+const cors = require('cors');
+const pool = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+const siteRoutes = require('./routes/siteRoutes');
+const geocodeRoutes = require('./routes/geocodeRoutes');
 
 const app = express();
 
-console.log('Using DB URL:', process.env.DATABASE_URL);
-console.log('PGHOST:', process.env.PGHOST);
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
+// Middlewares
+app.use(cors());
 app.use(express.json());
 
-// Health API Endpoint
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/sites', siteRoutes);
+app.use('/api/geocode', geocodeRoutes);
+
+// Health Check API Endpoint
 app.get('/api/health', async (req, res) => {
   try {
-    // Test the database connection by running a simple query
     await pool.query('SELECT 1');
-    
     res.status(200).json({ 
       status: 'success', 
       message: 'API is running and successfully connected to the Supabase PostgreSQL database!' 
