@@ -1,7 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/Dashboard.css';
 
-const Dashboard = ({ onNavigate }) => {
+const Dashboard = ({ onNavigate, user }) => {
+  const [employeeCount, setEmployeeCount] = useState(null);
+  const [siteStats, setSiteStats] = useState({ total: 0, active: 0 });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('http://localhost:5000/api/employees').then(res => res.json()).catch(() => ({ success: false })),
+      fetch('http://localhost:5000/api/sites').then(res => res.json()).catch(() => ({ success: false })),
+    ]).then(([empData, siteData]) => {
+      if (empData.success) {
+        setEmployeeCount(empData.count);
+      }
+      if (siteData.success) {
+        const activeCount = siteData.sites.filter(s => s.status === 'Running').length;
+        setSiteStats({ total: siteData.count, active: activeCount });
+      }
+    }).finally(() => setLoadingStats(false));
+  }, []);
 
   // Get greeting based on time of day
   const getGreeting = () => {
@@ -27,7 +45,7 @@ const Dashboard = ({ onNavigate }) => {
       {/* ===== Hero / Welcome ===== */}
       <div className="dash-hero">
         <div className="dash-hero-left">
-          <h1>{getGreeting()}, Bryan</h1>
+          <h1>{getGreeting()}, {user?.name || 'Mahendra'}</h1>
           <p>Here's what's happening across Modern Interior today.</p>
           <div className="dash-date">
             <i className="fa-regular fa-calendar"></i>
@@ -49,9 +67,9 @@ const Dashboard = ({ onNavigate }) => {
           </div>
           <div className="dash-kpi-body">
             <div className="dash-kpi-label">Active Sites</div>
-            <div className="dash-kpi-value">18</div>
+            <div className="dash-kpi-value">{loadingStats ? '...' : siteStats.active}</div>
             <div className="dash-kpi-meta up">
-              <i className="fa-solid fa-arrow-up" style={{fontSize: '9px'}}></i> +2 this month
+              <i className="fa-solid fa-database" style={{fontSize: '9px'}}></i> Live in Database
             </div>
           </div>
         </div>
@@ -62,9 +80,9 @@ const Dashboard = ({ onNavigate }) => {
           </div>
           <div className="dash-kpi-body">
             <div className="dash-kpi-label">Total Sites / Clients</div>
-            <div className="dash-kpi-value">45</div>
+            <div className="dash-kpi-value">{loadingStats ? '...' : siteStats.total}</div>
             <div className="dash-kpi-meta up">
-              <i className="fa-solid fa-arrow-up" style={{fontSize: '9px'}}></i> +5 this month
+              <i className="fa-solid fa-database" style={{fontSize: '9px'}}></i> Live in Database
             </div>
           </div>
         </div>
@@ -75,9 +93,9 @@ const Dashboard = ({ onNavigate }) => {
           </div>
           <div className="dash-kpi-body">
             <div className="dash-kpi-label">Total Employees</div>
-            <div className="dash-kpi-value">124</div>
+            <div className="dash-kpi-value">{loadingStats ? '...' : (employeeCount ?? 0)}</div>
             <div className="dash-kpi-meta up">
-              <i className="fa-solid fa-arrow-up" style={{fontSize: '9px'}}></i> +3 this month
+              <i className="fa-solid fa-database" style={{fontSize: '9px'}}></i> Live in Database
             </div>
           </div>
         </div>

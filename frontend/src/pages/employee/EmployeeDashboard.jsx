@@ -22,7 +22,70 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
   // GPS distance state
   const [gpsDistance, setGpsDistance] = useState(160);
 
+  // Change PIN modal state
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pinSuccess, setPinSuccess] = useState('');
+
   const currentSite = ACTIVE_SITES.find(s => s.id === selectedSiteId) || ACTIVE_SITES[0];
+
+  const handleChangePin = async (e) => {
+    e.preventDefault();
+    setPinError('');
+    setPinSuccess('');
+
+    if (!newPin.trim()) {
+      setPinError('Please enter a new password/PIN');
+      return;
+    }
+
+    if (newPin.trim() !== confirmPin.trim()) {
+      setPinError('New PINs do not match. Please verify.');
+      return;
+    }
+
+    setPinLoading(true);
+
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.dbId || user?.id,
+          mobile: user?.mobile,
+          username: user?.username,
+          currentPassword: currentPin.trim(),
+          newPassword: newPin.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setPinError(data.message || 'Failed to update PIN');
+        setPinLoading(false);
+        return;
+      }
+
+      setPinSuccess('PIN updated successfully! Remember this for your next login.');
+      setCurrentPin('');
+      setNewPin('');
+      setConfirmPin('');
+      setTimeout(() => {
+        setPinSuccess('');
+        setShowPinModal(false);
+      }, 3000);
+    } catch (err) {
+      console.error('Error changing PIN:', err);
+      setPinError('Server error while updating PIN.');
+    } finally {
+      setPinLoading(false);
+    }
+  };
 
   // Camera stream handler
   useEffect(() => {
@@ -117,17 +180,43 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
           </p>
         </div>
 
-        <div style={{
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '8px',
-          padding: '8px 16px',
-          textAlign: 'right'
-        }}>
-          <div style={{fontSize: '11px', color: '#9CA3AF', textTransform: 'uppercase', fontWeight: '600'}}>Daily Rate</div>
-          <div style={{fontSize: '20px', fontWeight: '800', color: 'var(--gold-light, #D4993F)'}}>₹{user?.dailyRate || '1,000'}</div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
+          <button
+            onClick={() => {
+              setPinError('');
+              setPinSuccess('');
+              setShowPinModal(true);
+            }}
+            style={{
+              background: 'rgba(212, 153, 63, 0.15)',
+              border: '1px solid rgba(212, 153, 63, 0.4)',
+              color: 'var(--gold-light, #D4993F)',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <i className="fa-solid fa-key"></i> Change PIN
+          </button>
+
+          <div style={{
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            textAlign: 'right'
+          }}>
+            <div style={{fontSize: '11px', color: '#9CA3AF', textTransform: 'uppercase', fontWeight: '600'}}>Daily Rate</div>
+            <div style={{fontSize: '20px', fontWeight: '800', color: 'var(--gold-light, #D4993F)'}}>₹{user?.dailyRate || '1,000'}</div>
+          </div>
         </div>
       </div>
+
 
       {/* Success Notification */}
       {punchMessage && (
@@ -523,8 +612,153 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
         </div>
       </div>
 
+      {/* ========================================================
+          WORKER CHANGE LOGIN PIN MODAL
+         ======================================================== */}
+      {showPinModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex',
+          justifyContent: 'center', alignItems: 'center', zIndex: 2000,
+          backdropFilter: 'blur(3px)', padding: '20px'
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '14px', width: '100%', maxWidth: '420px',
+            boxShadow: '0 20px 45px rgba(0,0,0,0.25)', padding: '26px', boxSizing: 'border-box'
+          }}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+              <div>
+                <h3 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <i className="fa-solid fa-key" style={{color: 'var(--gold, #B9782D)'}}></i>
+                  Change Your Login PIN
+                </h3>
+                <div style={{fontSize: '12px', color: '#6B7280', marginTop: '2px'}}>
+                  Logged in as {user?.name} ({user?.mobile || user?.username})
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowPinModal(false)}
+                style={{background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9CA3AF', padding: 0}}
+              >&times;</button>
+            </div>
+
+            {pinSuccess && (
+              <div style={{
+                background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46',
+                borderRadius: '8px', padding: '10px 14px', marginBottom: '16px',
+                fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px'
+              }}>
+                <i className="fa-solid fa-circle-check" style={{color: '#10B981'}}></i>
+                {pinSuccess}
+              </div>
+            )}
+
+            {pinError && (
+              <div style={{
+                background: '#FEF2F2', border: '1px solid #F87171', color: '#991B1B',
+                borderRadius: '8px', padding: '10px 14px', marginBottom: '16px',
+                fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'
+              }}>
+                <i className="fa-solid fa-circle-exclamation" style={{color: '#EF4444'}}></i>
+                {pinError}
+              </div>
+            )}
+
+            <form onSubmit={handleChangePin}>
+              <div style={{marginBottom: '14px'}}>
+                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  Current PIN / Password *
+                </label>
+                <input
+                  type="password"
+                  placeholder="Enter current PIN"
+                  value={currentPin}
+                  onChange={(e) => setCurrentPin(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: '6px',
+                    border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px',
+                    letterSpacing: '2px', fontWeight: '600'
+                  }}
+                  required
+                />
+              </div>
+
+              <div style={{marginBottom: '14px'}}>
+                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  New PIN / Password *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter new PIN"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: '6px',
+                    border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px',
+                    letterSpacing: '1px', fontWeight: '600'
+                  }}
+                  required
+                />
+              </div>
+
+              <div style={{marginBottom: '20px'}}>
+                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  Confirm New PIN *
+                </label>
+                <input
+                  type="password"
+                  placeholder="Re-enter new PIN"
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: '6px',
+                    border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px',
+                    letterSpacing: '2px', fontWeight: '600'
+                  }}
+                  required
+                />
+              </div>
+
+              <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px'}}>
+                <button
+                  type="button"
+                  onClick={() => setShowPinModal(false)}
+                  style={{
+                    padding: '9px 18px', borderRadius: '6px', border: '1px solid #D1D5DB',
+                    background: '#fff', color: '#374151', cursor: 'pointer', fontWeight: '600', fontSize: '13px'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={pinLoading}
+                  className="btn-primary"
+                  style={{
+                    padding: '9px 20px', borderRadius: '6px', fontSize: '13px',
+                    opacity: pinLoading ? 0.7 : 1, cursor: pinLoading ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '6px'
+                  }}
+                >
+                  {pinLoading ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin"></i> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-check"></i> Save New PIN
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 };
 
 export default EmployeeDashboard;
+
