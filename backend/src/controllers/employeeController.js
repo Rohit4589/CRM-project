@@ -43,7 +43,7 @@ const getEmployees = async (req, res) => {
         sitePolicy: row.sitePolicy || 'Flexible / Self-Pick',
         lastSite: row.lastSite || 'Not yet punched',
         status: row.status || 'Active',
-        avatar: row.avatar || `https://i.pravatar.cc/150?img=${(row.id % 50) + 1}`,
+        avatar: null,
       };
     });
 
@@ -110,7 +110,7 @@ const addEmployee = async (req, res) => {
     const cleanRole = (role && role.trim()) || 'Carpenter';
     const cleanSalary = Number(dailySalary) >= 0 ? Number(dailySalary) : 1000;
     const cleanStatus = status || 'Active';
-    const randomAvatar = `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 50) + 1}`;
+    const randomAvatar = null;
 
     const existingCheck = await pool.query('SELECT id FROM public.users WHERE username = $1', [username]);
     if (existingCheck.rows.length > 0) {

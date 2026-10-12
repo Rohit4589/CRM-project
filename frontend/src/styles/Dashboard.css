@@ -201,10 +201,11 @@
    ============================================ */
 
 .dash-grid-main {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
   margin-bottom: 24px;
+  width: 100%;
 }
 
 /* ============================================

@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ACTIVE_SITES } from '../../data/sitesData';
 
 const EmployeeDashboard = ({ user, onNavigate }) => {
-  const [selectedSiteId, setSelectedSiteId] = useState('SITE-002');
+  const [dbSites, setDbSites] = useState([]);
+  const [selectedSiteId, setSelectedSiteId] = useState('');
   
   // Punch state
   const [punchedIn, setPunchedIn] = useState(false);
@@ -31,7 +32,54 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
   const [pinError, setPinError] = useState('');
   const [pinSuccess, setPinSuccess] = useState('');
 
-  const currentSite = ACTIVE_SITES.find(s => s.id === selectedSiteId) || ACTIVE_SITES[0];
+  // Available sites list (real DB sites or fallback)
+  const availableSites = dbSites.length > 0 ? dbSites : ACTIVE_SITES;
+  const currentSite = availableSites.find(s => s.id === selectedSiteId || s.dbId === selectedSiteId) || availableSites[0];
+
+  // Fetch real sites & check today's punch on mount
+  useEffect(() => {
+    const initEmployeeData = async () => {
+      try {
+        // Fetch sites
+        const siteRes = await fetch('http://localhost:5000/api/sites').then(r => r.json()).catch(() => null);
+        if (siteRes && siteRes.success && siteRes.sites.length > 0) {
+          setDbSites(siteRes.sites);
+          setSelectedSiteId(siteRes.sites[0].id || siteRes.sites[0].dbId);
+        } else {
+          setSelectedSiteId('');
+        }
+
+        // Check if employee already punched today
+        const userId = user?.dbId || user?.id;
+        if (userId) {
+          const today = new Date().toISOString().split('T')[0];
+          const attRes = await fetch(`http://localhost:5000/api/attendance?date=${today}&employeeId=${userId}`)
+            .then(r => r.json())
+            .catch(() => null);
+
+          if (attRes && attRes.success && attRes.attendance.length > 0) {
+            const todayLog = attRes.attendance[0];
+            if (todayLog.inTime && todayLog.inTime !== '--:--') {
+              setPunchedIn(true);
+              setInTime(todayLog.inTime);
+              setPunchedSite({
+                customerName: todayLog.customerName,
+                location: todayLog.siteLocation
+              });
+            }
+            if (todayLog.outTime && todayLog.outTime !== '--:--') {
+              setPunchedOut(true);
+              setOutTime(todayLog.outTime);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error loading employee punch data:', err);
+      }
+    };
+
+    initEmployeeData();
+  }, [user]);
 
   const handleChangePin = async (e) => {
     e.preventDefault();
@@ -132,26 +180,67 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
     setCameraOpen(true);
   };
 
-  // Click Photo & Punch Done
-  const handleCapturePhotoAndPunch = () => {
-    const photoUrl = 'https://i.pravatar.cc/150?img=12';
-    setCapturedPhoto(photoUrl);
+  // Click Photo & Punch Done (Connected to backend API)
+  const handleCapturePhotoAndPunch = async () => {
     setCameraOpen(false);
 
     const now = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    if (cameraType === 'IN') {
-      setInTime(now);
-      setPunchedIn(true);
-      setPunchedSite(currentSite);
-      setPunchMessage(`Punched IN at ${currentSite.customerName} Site (${now})`);
-    } else {
-      setOutTime(now);
-      setPunchedOut(true);
-      setPunchMessage(`Punched OUT (${now}) · Day Complete`);
+    try {
+      const targetSiteId = currentSite?.dbId || currentSite?.id;
+      const res = await fetch('http://localhost:5000/api/attendance/punch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.dbId || user?.id,
+          siteId: targetSiteId,
+          punchType: cameraType,
+          selfie: null,
+          gps: `${gpsDistance}m away (Within 500m)`
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        if (cameraType === 'IN') {
+          setInTime(data.inTime || now);
+          setPunchedIn(true);
+          setPunchedSite(currentSite);
+          setPunchMessage(`Punched IN at ${currentSite?.customerName || 'Selected'} Site (${data.inTime || now})`);
+        } else {
+          setOutTime(data.outTime || now);
+          setPunchedOut(true);
+          setPunchMessage(`Punched OUT (${data.outTime || now}) · Day Complete`);
+        }
+      } else {
+        // Fallback local update if offline
+        if (cameraType === 'IN') {
+          setInTime(now);
+          setPunchedIn(true);
+          setPunchedSite(currentSite);
+          setPunchMessage(`Punched IN at ${currentSite?.customerName} Site (${now})`);
+        } else {
+          setOutTime(now);
+          setPunchedOut(true);
+          setPunchMessage(`Punched OUT (${now}) · Day Complete`);
+        }
+      }
+    } catch (err) {
+      console.error('Error during punch request:', err);
+      if (cameraType === 'IN') {
+        setInTime(now);
+        setPunchedIn(true);
+        setPunchedSite(currentSite);
+        setPunchMessage(`Punched IN (${now})`);
+      } else {
+        setOutTime(now);
+        setPunchedOut(true);
+        setPunchMessage(`Punched OUT (${now})`);
+      }
     }
 
-    setTimeout(() => setPunchMessage(''), 5000);
+    setTimeout(() => setPunchMessage(''), 6000);
   };
 
   return (
@@ -255,8 +344,14 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
             <h2 style={{margin: 0, fontSize: '17px', fontWeight: '700', color: '#111827'}}>
               Daily Attendance Punch
             </h2>
-            <span style={{fontSize: '12px', color: '#6B7280', fontWeight: '600'}}>
-              {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            <span style={{fontSize: '12px', color: '#6B7280', fontWeight: '700', fontFamily: 'monospace'}}>
+              {(() => {
+                const now = new Date();
+                const d = String(now.getDate()).padStart(2, '0');
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const y = now.getFullYear();
+                return `${d}-${m}-${y}`;
+              })()}
             </span>
           </div>
 
@@ -285,11 +380,15 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
                 cursor: punchedIn && !punchedOut ? 'not-allowed' : 'pointer'
               }}
             >
-              {ACTIVE_SITES.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.id}: {site.customerName} ({site.location})
-                </option>
-              ))}
+              {availableSites.map((site) => {
+                const sId = site.id || site.dbId;
+                const sRef = site.siteRef || site.id;
+                return (
+                  <option key={sId} value={sId}>
+                    {sRef}: {site.customerName} ({site.location || 'Location'})
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -308,7 +407,7 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
             marginBottom: '20px'
           }}>
             <span style={{width: '8px', height: '8px', borderRadius: '50%', background: '#16A34A'}}></span>
-            Within 500m of {currentSite.customerName} Site ({gpsDistance}m away)
+            Within 500m of {currentSite?.customerName || 'Selected'} Site ({gpsDistance}m away)
           </div>
 
           {/* 3. In / Out Time Status display */}
@@ -323,13 +422,21 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
               marginBottom: '20px',
               alignItems: 'center'
             }}>
-              {capturedPhoto && (
-                <img 
-                  src={capturedPhoto} 
-                  alt="Selfie" 
-                  style={{width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #D1D5DB'}}
-                />
-              )}
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '8px',
+                background: 'rgba(185, 120, 45, 0.1)',
+                border: '1px solid rgba(185, 120, 45, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--gold, #B9782D)',
+                fontSize: '18px',
+                flexShrink: 0
+              }}>
+                <i className="fa-solid fa-clipboard-check"></i>
+              </div>
               <div style={{flex: 1}}>
                 <div style={{fontSize: '13px', fontWeight: '700', color: '#111827'}}>
                   Site: {punchedSite?.customerName || currentSite.customerName} ({punchedSite?.location || currentSite.location})
@@ -470,12 +577,22 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
                 />
               ) : (
                 <div style={{textAlign: 'center', padding: '20px'}}>
-                  <img 
-                    src="https://i.pravatar.cc/150?img=12" 
-                    alt="Selfie Preview" 
-                    style={{width: '140px', height: '140px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--gold, #B9782D)', marginBottom: '12px'}}
-                  />
-                  <div style={{fontSize: '12px', color: '#9CA3AF'}}>Camera Mode Active</div>
+                  <div style={{
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    background: 'rgba(185, 120, 45, 0.15)',
+                    border: '3px solid var(--gold, #B9782D)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 12px auto',
+                    color: 'var(--gold, #B9782D)',
+                    fontSize: '42px'
+                  }}>
+                    <i className="fa-solid fa-camera"></i>
+                  </div>
+                  <div style={{fontSize: '12px', color: '#9CA3AF'}}>Ready to Capture Punch</div>
                 </div>
               )}
 
