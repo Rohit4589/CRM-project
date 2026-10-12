@@ -142,11 +142,6 @@ const Header = ({ onLogout, onToggleSidebar, user }) => {
               <div className="header-user-name">{user?.name || (isEmployee ? 'Anurag' : 'Mahendra Sharma')}</div>
               <div className="header-user-role">{user?.roleTitle || (isEmployee ? 'Carpenter' : 'Administrator')}</div>
             </div>
-            <img 
-              src={user?.avatar || (isEmployee ? 'https://i.pravatar.cc/150?img=12' : 'https://i.pravatar.cc/150?img=11')} 
-              alt={user?.name || 'User'} 
-              className="header-avatar" 
-            />
           </div>
 
           {showDropdown && (

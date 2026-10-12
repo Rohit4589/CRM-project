@@ -572,7 +572,7 @@ const Sites = () => {
         overflowX: 'auto',
         WebkitOverflowScrolling: 'touch'
       }}>
-        <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '680px'}}>
+        <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '680px', tableLayout: 'fixed'}}>
           <thead>
             <tr style={{
               background: '#F9FAFB',
@@ -583,13 +583,13 @@ const Sites = () => {
               textTransform: 'uppercase',
               letterSpacing: '0.5px'
             }}>
-              <th style={{padding: '12px 16px'}}>Site Ref</th>
-              <th style={{padding: '12px 16px'}}>Customer / Site Name</th>
-              <th style={{padding: '12px 16px'}}>Contact Info</th>
-              <th style={{padding: '12px 16px'}}>Site Location & Address</th>
-              <th style={{padding: '12px 16px'}}>Start Date</th>
-              <th style={{padding: '12px 16px'}}>Status</th>
-              <th style={{padding: '12px 16px', textAlign: 'right'}}>Actions</th>
+              <th style={{padding: '12px 16px', width: '11%'}}>Site Ref</th>
+              <th style={{padding: '12px 16px', width: '20%'}}>Customer / Site Name</th>
+              <th style={{padding: '12px 16px', width: '15%'}}>Contact Info</th>
+              <th style={{padding: '12px 16px', width: '24%'}}>Site Location & Address</th>
+              <th style={{padding: '12px 16px', width: '10%'}}>Start Date</th>
+              <th style={{padding: '12px 16px', width: '10%'}}>Status</th>
+              <th style={{padding: '12px 16px', width: '10%', textAlign: 'right'}}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -684,10 +684,26 @@ const Sites = () => {
                   </td>
 
                   {/* Start Date */}
-                  <td style={{padding: '13px 16px', verticalAlign: 'middle', fontSize: '12px', color: '#4B5563'}}>
-                    <div>{site.startDate}</div>
+                  <td style={{padding: '13px 16px', verticalAlign: 'middle', fontSize: '12px', color: '#4B5563', fontFamily: 'monospace'}}>
+                    <div>{(() => {
+                      const d = site.startDate;
+                      if (!d) return '--';
+                      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+                        const [y, m, day] = d.split('-');
+                        return `${day}-${m}-${y}`;
+                      }
+                      return d;
+                    })()}</div>
                     {site.targetDate && (
-                      <div style={{fontSize: '11px', color: '#9CA3AF'}}>Due: {site.targetDate}</div>
+                      <div style={{fontSize: '11px', color: '#9CA3AF'}}>Due: {(() => {
+                        const d = site.targetDate;
+                        if (!d) return '--';
+                        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+                          const [y, m, day] = d.split('-');
+                          return `${day}-${m}-${y}`;
+                        }
+                        return d;
+                      })()}</div>
                     )}
                   </td>
 

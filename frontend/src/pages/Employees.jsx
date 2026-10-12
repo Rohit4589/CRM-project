@@ -298,7 +298,7 @@ const Employees = () => {
             <div style={{fontSize: '14px', fontWeight: '600'}}>Loading employees from Supabase database...</div>
           </div>
         ) : (
-          <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '650px'}}>
+          <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '650px', tableLayout: 'fixed'}}>
             <thead>
               <tr style={{
                 background: '#F9FAFB',
@@ -309,13 +309,13 @@ const Employees = () => {
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px'
               }}>
-                <th style={{padding: '12px 16px'}}>Employee</th>
-                <th style={{padding: '12px 16px'}}>ID</th>
-                <th style={{padding: '12px 16px'}}>Trade / Role</th>
-                <th style={{padding: '12px 16px'}}>Daily Wage</th>
-                <th style={{padding: '12px 16px'}}>Login PIN / Password</th>
-                <th style={{padding: '12px 16px'}}>Status</th>
-                <th style={{padding: '12px 16px', textAlign: 'center'}}>Actions</th>
+                <th style={{padding: '12px 16px', width: '22%'}}>Employee</th>
+                <th style={{padding: '12px 16px', width: '12%'}}>ID</th>
+                <th style={{padding: '12px 16px', width: '16%'}}>Trade / Role</th>
+                <th style={{padding: '12px 16px', width: '14%'}}>Daily Wage</th>
+                <th style={{padding: '12px 16px', width: '16%'}}>Login PIN / Password</th>
+                <th style={{padding: '12px 16px', width: '10%'}}>Status</th>
+                <th style={{padding: '12px 16px', width: '10%', textAlign: 'center'}}>Actions</th>
               </tr>
             </thead>
             <tbody>
