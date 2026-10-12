@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/Header.css';
+import { API_BASE } from '../config/api';
 
 const Header = ({ onLogout, onToggleSidebar, user }) => {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -46,7 +47,7 @@ const Header = ({ onLogout, onToggleSidebar, user }) => {
     setPwdLoading(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/change-password', {
+      const res = await fetch(`${API_BASE}/auth/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

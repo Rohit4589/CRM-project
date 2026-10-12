@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../config/api';
 
 const Employees = () => {
   const [employees, setEmployees] = useState([]);
@@ -40,7 +41,7 @@ const Employees = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:5000/api/employees');
+      const res = await fetch(`${API_BASE}/employees`);
       const data = await res.json();
       if (data.success) {
         setEmployees(data.employees);
@@ -72,7 +73,7 @@ const Employees = () => {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/employees', {
+      const res = await fetch(`${API_BASE}/employees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -141,7 +142,7 @@ const Employees = () => {
 
     try {
       const targetId = editFormData.dbId || editFormData.id;
-      const res = await fetch(`http://localhost:5000/api/employees/${targetId}`, {
+      const res = await fetch(`${API_BASE}/employees/${targetId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editFormData),
@@ -180,7 +181,7 @@ const Employees = () => {
 
     try {
       const targetId = editFormData.dbId || editFormData.id;
-      const res = await fetch(`http://localhost:5000/api/employees/${targetId}`, {
+      const res = await fetch(`${API_BASE}/employees/${targetId}`, {
         method: 'DELETE',
       });
 
