@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { API_BASE } from '../config/api';
 
 const LocationMapPicker = ({
   isOpen,
@@ -71,7 +72,7 @@ const LocationMapPicker = ({
     try {
       setReverseGeocoding(true);
       setErrorMessage('');
-      const res = await fetch(`http://localhost:5000/api/geocode/reverse?lat=${lat}&lon=${lng}`);
+      const res = await fetch(`${API_BASE}/geocode/reverse?lat=${lat}&lon=${lng}`);
       const data = await res.json();
       if (data.success && data.displayName) {
         setAddressPreview(data.displayName);
@@ -95,7 +96,7 @@ const LocationMapPicker = ({
       setSearching(true);
       setErrorMessage('');
       setSearchResults([]);
-      const res = await fetch(`http://localhost:5000/api/geocode/search?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`${API_BASE}/geocode/search?q=${encodeURIComponent(q)}`);
       const data = await res.json();
 
       if (data.success && data.results && data.results.length > 0) {

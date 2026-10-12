@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LocationMapPicker from '../components/LocationMapPicker';
+import { API_BASE } from '../config/api';
 
 const Sites = () => {
   const [sites, setSites] = useState([]);
@@ -37,7 +38,7 @@ const Sites = () => {
   const fetchSites = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:5000/api/sites');
+      const res = await fetch(`${API_BASE}/sites`);
       const data = await res.json();
       if (data.success) {
         setSites(data.sites);
@@ -92,7 +93,7 @@ const Sites = () => {
         ...formData,
         siteCode: cleanDigits
       };
-      const res = await fetch('http://localhost:5000/api/sites', {
+      const res = await fetch(`${API_BASE}/sites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -125,7 +126,7 @@ const Sites = () => {
     try {
       setQuickGeocoding(true);
       setGeoNotice('');
-      const res = await fetch(`http://localhost:5000/api/geocode/search?q=${encodeURIComponent(query.trim())}`);
+      const res = await fetch(`${API_BASE}/geocode/search?q=${encodeURIComponent(query.trim())}`);
       const data = await res.json();
       if (data.success && data.results && data.results.length > 0) {
         const top = data.results[0];
@@ -168,7 +169,7 @@ const Sites = () => {
         ...editingSite,
         siteCode: cleanDigits
       };
-      const res = await fetch(`http://localhost:5000/api/sites/${targetId}`, {
+      const res = await fetch(`${API_BASE}/sites/${targetId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -194,7 +195,7 @@ const Sites = () => {
     const targetId = siteToDelete?.dbId || siteId;
     if (window.confirm('Are you sure you want to permanently delete this site from the database?')) {
       try {
-        const res = await fetch(`http://localhost:5000/api/sites/${targetId}`, {
+        const res = await fetch(`${API_BASE}/sites/${targetId}`, {
           method: 'DELETE',
         });
         const data = await res.json();

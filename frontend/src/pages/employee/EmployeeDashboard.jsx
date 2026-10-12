@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ACTIVE_SITES } from '../../data/sitesData';
+import { API_BASE } from '../../config/api';
 
 const EmployeeDashboard = ({ user, onNavigate }) => {
   const [dbSites, setDbSites] = useState([]);
@@ -41,7 +42,7 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
     const initEmployeeData = async () => {
       try {
         // Fetch sites
-        const siteRes = await fetch('http://localhost:5000/api/sites').then(r => r.json()).catch(() => null);
+        const siteRes = await fetch(`${API_BASE}/sites`).then(r => r.json()).catch(() => null);
         if (siteRes && siteRes.success && siteRes.sites.length > 0) {
           setDbSites(siteRes.sites);
           setSelectedSiteId(siteRes.sites[0].id || siteRes.sites[0].dbId);
@@ -53,7 +54,7 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
         const userId = user?.dbId || user?.id;
         if (userId) {
           const today = new Date().toISOString().split('T')[0];
-          const attRes = await fetch(`http://localhost:5000/api/attendance?date=${today}&employeeId=${userId}`)
+          const attRes = await fetch(`${API_BASE}/attendance?date=${today}&employeeId=${userId}`)
             .then(r => r.json())
             .catch(() => null);
 
@@ -99,7 +100,7 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
     setPinLoading(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/change-password', {
+      const res = await fetch(`${API_BASE}/auth/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -188,7 +189,7 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
 
     try {
       const targetSiteId = currentSite?.dbId || currentSite?.id;
-      const res = await fetch('http://localhost:5000/api/attendance/punch', {
+      const res = await fetch(`${API_BASE}/attendance/punch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
