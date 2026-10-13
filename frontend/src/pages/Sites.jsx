@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import LocationMapPicker from '../components/LocationMapPicker';
 import { API_BASE } from '../config/api';
 
-const Sites = () => {
+const Sites = ({ onNavigate }) => {
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1317,6 +1317,30 @@ const Sites = () => {
               )}
 
               <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px', paddingTop: '14px', borderTop: '1px solid #E5E7EB', flexWrap: 'wrap'}}>
+                {onNavigate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedSite(null);
+                      onNavigate('salary');
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      border: '1px solid #A7F3D0',
+                      background: '#ECFDF5',
+                      color: '#065F46',
+                      cursor: 'pointer',
+                      fontWeight: '700',
+                      fontSize: '13px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <i className="fa-solid fa-calculator"></i> View Labor Expenses
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     const siteToEdit = selectedSite;
