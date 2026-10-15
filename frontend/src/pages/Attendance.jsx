@@ -427,10 +427,10 @@ const Attendance = () => {
       }}>
         <div>
           <h1 className="page-title" style={{ margin: 0, fontSize: '26px', fontWeight: '800', color: 'var(--navy, #111827)' }}>
-            Attendance Monitoring & Entry
+            Attendance
           </h1>
-          <p style={{ margin: '5px 0 0 0', fontSize: '13px', color: '#6B7280' }}>
-            Record, verify, and manage daily worker site attendance with multi-site tracking.
+          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#7D6C5E' }}>
+            Daily check-ins & shifts
           </p>
         </div>
 
@@ -443,10 +443,10 @@ const Attendance = () => {
             }}
             style={{
               padding: '9px 14px',
-              border: showAllDates ? '2px solid var(--gold, #B9782D)' : '1px solid #D1D5DB',
+              border: showAllDates ? '2px solid var(--gold, #A56A30)' : '1px solid #D1D5DB',
               borderRadius: '7px',
-              background: showAllDates ? 'var(--gold-bg, rgba(185, 120, 45, 0.12))' : '#fff',
-              color: showAllDates ? 'var(--gold, #B9782D)' : '#374151',
+              background: showAllDates ? 'var(--gold-bg, rgba(165, 106, 48, 0.12))' : '#fff',
+              color: showAllDates ? 'var(--gold, #A56A30)' : '#374151',
               fontWeight: '700',
               fontSize: '13px',
               cursor: 'pointer',
@@ -467,10 +467,10 @@ const Attendance = () => {
             }}
             style={{
               padding: '9px 14px',
-              border: (!showAllDates && dateFilter === getTodayStr()) ? '2px solid #2563EB' : '1px solid #D1D5DB',
+              border: (!showAllDates && dateFilter === getTodayStr()) ? '2px solid #5C3D24' : '1px solid #D1C2AF',
               borderRadius: '7px',
-              background: (!showAllDates && dateFilter === getTodayStr()) ? '#EFF6FF' : '#fff',
-              color: (!showAllDates && dateFilter === getTodayStr()) ? '#2563EB' : '#374151',
+              background: (!showAllDates && dateFilter === getTodayStr()) ? '#F3EDE6' : '#fff',
+              color: (!showAllDates && dateFilter === getTodayStr()) ? '#5C3D24' : '#5C4E43',
               fontWeight: '700',
               fontSize: '13px',
               cursor: 'pointer',
@@ -492,7 +492,7 @@ const Attendance = () => {
             }}
             style={{
               padding: '8px 12px',
-              border: (!showAllDates && dateFilter !== getTodayStr()) ? '2px solid var(--gold, #B9782D)' : '1px solid #D1D5DB',
+              border: (!showAllDates && dateFilter !== getTodayStr()) ? '2px solid var(--gold, #A56A30)' : '1px solid #D1D5DB',
               borderRadius: '7px',
               outline: 'none',
               fontSize: '13px',
@@ -520,7 +520,7 @@ const Attendance = () => {
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
             }}
           >
-            <i className="fa-solid fa-user-plus" style={{ color: 'var(--gold, #B9782D)' }}></i>
+            <i className="fa-solid fa-user-plus" style={{ color: 'var(--gold, #A56A30)' }}></i>
             Mark Attendance
           </button>
         </div>
@@ -537,8 +537,8 @@ const Attendance = () => {
           background: '#fff',
           padding: '16px 20px',
           borderRadius: '10px',
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+          border: '1px solid #D1C2AF',
+          boxShadow: '0 1px 3px rgba(100, 70, 40, 0.04)',
           display: 'flex',
           alignItems: 'center',
           gap: '14px'
@@ -547,18 +547,18 @@ const Attendance = () => {
             width: '44px',
             height: '44px',
             borderRadius: '10px',
-            background: 'rgba(37, 99, 235, 0.1)',
+            background: 'rgba(165, 106, 48, 0.12)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#2563EB',
+            color: '#8C5521',
             fontSize: '18px'
           }}>
             <i className="fa-solid fa-clipboard-user"></i>
           </div>
           <div>
             <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Punches Logged
+              Logged
             </div>
             <div style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginTop: '2px' }}>
               {filteredLogs.length}
@@ -570,8 +570,8 @@ const Attendance = () => {
           background: '#fff',
           padding: '16px 20px',
           borderRadius: '10px',
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+          border: '1px solid #D1C2AF',
+          boxShadow: '0 1px 3px rgba(100, 70, 40, 0.04)',
           display: 'flex',
           alignItems: 'center',
           gap: '14px'
@@ -591,7 +591,7 @@ const Attendance = () => {
           </div>
           <div>
             <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Total Day Units
+              Total Days
             </div>
             <div style={{ fontSize: '22px', fontWeight: '800', color: '#059669', marginTop: '2px' }}>
               {totalDaysLogged.toFixed(1)} Days
@@ -604,8 +604,8 @@ const Attendance = () => {
           background: '#fff',
           padding: '16px 20px',
           borderRadius: '10px',
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+          border: '1px solid #D1C2AF',
+          boxShadow: '0 1px 3px rgba(100, 70, 40, 0.04)',
           display: 'flex',
           alignItems: 'center',
           gap: '14px'
@@ -614,20 +614,20 @@ const Attendance = () => {
             width: '44px',
             height: '44px',
             borderRadius: '10px',
-            background: 'var(--gold-bg, rgba(185, 120, 45, 0.1))',
+            background: 'var(--gold-bg, rgba(165, 106, 48, 0.1))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'var(--gold, #B9782D)',
+            color: 'var(--gold, #A56A30)',
             fontSize: '18px'
           }}>
             <i className="fa-solid fa-location-dot"></i>
           </div>
           <div>
             <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Active Sites Covered
+              Sites
             </div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #B9782D)', marginTop: '2px' }}>
+            <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #A56A30)', marginTop: '2px' }}>
               {uniqueSitesCount} Sites
             </div>
           </div>
@@ -639,7 +639,7 @@ const Attendance = () => {
         background: '#fff',
         borderRadius: '10px',
         padding: '14px 18px',
-        border: '1px solid #E5E7EB',
+        border: '1px solid #D1C2AF',
         marginBottom: '20px',
         display: 'flex',
         justifyContent: 'space-between',
@@ -652,7 +652,7 @@ const Attendance = () => {
           <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
             <input
               type="text"
-              placeholder="Search by worker, ID, site, or notes..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
@@ -712,18 +712,18 @@ const Attendance = () => {
       <div className="panel table-responsive" style={{
         background: '#fff',
         borderRadius: '10px',
-        border: '1px solid #E5E7EB',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        border: '1.5px solid #D1C2AF',
+        boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)',
         overflowX: 'auto',
         WebkitOverflowScrolling: 'touch'
       }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '950px', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{
-              background: '#F9FAFB',
-              borderBottom: '1px solid #E5E7EB',
+              background: '#F3EDE6',
+              borderBottom: '1.5px solid #D1C2AF',
               textAlign: 'left',
-              color: '#6B7280',
+              color: '#5C4E43',
               fontSize: '11px',
               textTransform: 'uppercase',
               letterSpacing: '0.6px'
@@ -742,7 +742,7 @@ const Attendance = () => {
             {loading ? (
               <tr>
                 <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: '#6B7280' }}>
-                  <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '24px', color: 'var(--gold, #B9782D)', marginBottom: '10px' }}></i>
+                  <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '24px', color: 'var(--gold, #A56A30)', marginBottom: '10px' }}></i>
                   <div>Loading attendance records from database...</div>
                 </td>
               </tr>
@@ -799,7 +799,7 @@ const Attendance = () => {
                     <div>
                       <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>{log.name}</div>
                       <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>
-                        <span style={{ fontWeight: '600', color: 'var(--gold, #B9782D)' }}>{log.empId}</span> · {log.role}
+                        <span style={{ fontWeight: '600', color: 'var(--gold, #A56A30)' }}>{log.empId}</span> · {log.role}
                       </div>
                     </div>
                   </td>
@@ -819,7 +819,7 @@ const Attendance = () => {
                   {/* Site / Customer */}
                   <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #B9782D)', fontSize: '12px' }}></i>
+                      <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', fontSize: '12px' }}></i>
                       <span>{log.siteRef}: {log.customerName}</span>
                     </div>
                     <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px', paddingLeft: '18px' }}>
@@ -911,7 +911,7 @@ const Attendance = () => {
                           transition: 'all 0.15s ease'
                         }}
                       >
-                        <i className="fa-solid fa-pen-to-square" style={{ color: '#2563EB' }}></i> Edit
+                        <i className="fa-solid fa-pen-to-square" style={{ color: 'var(--gold, #A56A30)' }}></i> Edit
                       </button>
 
                       <button
@@ -1076,7 +1076,7 @@ const Attendance = () => {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <div style={{ fontSize: '13px', fontWeight: '700', color: '#111827' }}>
-                    <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #B9782D)', marginRight: '6px' }}></i>
+                    <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', marginRight: '6px' }}></i>
                     Site Shifts & Timings
                   </div>
                   <div style={{ fontSize: '11px', color: '#6B7280' }}>
@@ -1183,7 +1183,7 @@ const Attendance = () => {
                           onClick={handleAddSiteSession}
                           title="Add Another Site for this Day"
                           style={{
-                            background: 'var(--gold, #B9782D)',
+                            background: 'var(--gold, #A56A30)',
                             color: '#fff',
                             border: 'none',
                             borderRadius: '6px',

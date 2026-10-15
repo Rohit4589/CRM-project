@@ -6,6 +6,8 @@ const employeeRoutes = require('./routes/employeeRoutes');
 const siteRoutes = require('./routes/siteRoutes');
 const geocodeRoutes = require('./routes/geocodeRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
+const estimateRoutes = require('./routes/estimateRoutes');
+const catalogRoutes = require('./routes/catalogRoutes');
 
 const app = express();
 
@@ -19,6 +21,8 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/sites', siteRoutes);
 app.use('/api/geocode', geocodeRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/estimates', estimateRoutes);
+app.use('/api/catalog', catalogRoutes);
 
 // Health Check API Endpoint
 app.get('/api/health', async (req, res) => {

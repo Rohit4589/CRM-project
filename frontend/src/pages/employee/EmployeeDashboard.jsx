@@ -1,11 +1,68 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ACTIVE_SITES } from '../../data/sitesData';
 import { API_BASE } from '../../config/api';
+import { getTranslation } from '../../utils/translations';
 
-const EmployeeDashboard = ({ user, onNavigate }) => {
+const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
   const [dbSites, setDbSites] = useState([]);
   const [selectedSiteId, setSelectedSiteId] = useState('');
   
+  const t = {
+    welcome: getTranslation(lang, 'welcome'),
+    dailyRate: getTranslation(lang, 'dailyRate'),
+    perDay: getTranslation(lang, 'perDay'),
+    changePin: getTranslation(lang, 'changePin'),
+    attendancePunch: getTranslation(lang, 'attendancePunch'),
+    selectSite: getTranslation(lang, 'selectSite'),
+    selectSitePlaceholder: getTranslation(lang, 'selectSitePlaceholder'),
+    pleaseSelectSite: getTranslation(lang, 'pleaseSelectSite'),
+    within500m: getTranslation(lang, 'within500m'),
+    punchInNow: getTranslation(lang, 'punchInNow'),
+    punchOut: getTranslation(lang, 'punchOut'),
+    dayCompleted: getTranslation(lang, 'dayCompleted'),
+    inTime: getTranslation(lang, 'inTime'),
+    outTime: getTranslation(lang, 'outTime'),
+    punchInSelfie: getTranslation(lang, 'punchInSelfie'),
+    punchOutSelfie: getTranslation(lang, 'punchOutSelfie'),
+    siteLabel: getTranslation(lang, 'siteLabel'),
+    readyToCapture: getTranslation(lang, 'readyToCapture'),
+    clickPhotoAndPunch: getTranslation(lang, 'clickPhotoAndPunch'),
+    monthlySummary: getTranslation(lang, 'monthlySummary'),
+    salaryDetails: getTranslation(lang, 'salaryDetails'),
+    daysWorked: getTranslation(lang, 'daysWorked'),
+    days: getTranslation(lang, 'days'),
+    grossEarned: getTranslation(lang, 'grossEarned'),
+    advanceTaken: getTranslation(lang, 'advanceTaken'),
+    netPayable: getTranslation(lang, 'netPayable'),
+    myAttendanceLog: getTranslation(lang, 'myAttendanceLog'),
+    attendanceLogDesc: getTranslation(lang, 'attendanceLogDesc'),
+    downloadPayslip: getTranslation(lang, 'downloadPayslip'),
+    payslipDesc: getTranslation(lang, 'payslipDesc'),
+    role: getTranslation(lang, 'role'),
+    id: getTranslation(lang, 'id'),
+    changePinTitle: getTranslation(lang, 'changePinTitle'),
+    currentPin: getTranslation(lang, 'currentPin'),
+    enterCurrentPin: getTranslation(lang, 'enterCurrentPin'),
+    newPin: getTranslation(lang, 'newPin'),
+    enterNewPin: getTranslation(lang, 'enterNewPin'),
+    confirmPin: getTranslation(lang, 'confirmPin'),
+    savePin: getTranslation(lang, 'savePin'),
+    saving: getTranslation(lang, 'saving'),
+    cancel: getTranslation(lang, 'cancel'),
+  };
+
+  // Real DB employee profile and monthly metrics
+  const [employeeProfile, setEmployeeProfile] = useState(user || null);
+  const [monthlyStats, setMonthlyStats] = useState({
+    monthName: new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
+    totalDays: 0,
+    dailyRate: Number(user?.dailyRate || user?.dailySalary || 0),
+    grossEarned: 0,
+    advanceTaken: 0,
+    netPayable: 0,
+    loading: true
+  });
+
   // Punch state
   const [punchedIn, setPunchedIn] = useState(false);
   const [punchedOut, setPunchedOut] = useState(false);
@@ -24,48 +81,93 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
   // GPS distance state
   const [gpsDistance, setGpsDistance] = useState(160);
 
-  // Change PIN modal state
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [currentPin, setCurrentPin] = useState('');
-  const [newPin, setNewPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [pinLoading, setPinLoading] = useState(false);
-  const [pinError, setPinError] = useState('');
-  const [pinSuccess, setPinSuccess] = useState('');
-
   // Available sites list (real DB sites or fallback)
   const availableSites = dbSites.length > 0 ? dbSites : ACTIVE_SITES;
-  const currentSite = availableSites.find(s => s.id === selectedSiteId || s.dbId === selectedSiteId) || availableSites[0];
+  const currentSite = availableSites.find(s => String(s.id) === String(selectedSiteId) || String(s.dbId) === String(selectedSiteId)) || null;
 
-  // Fetch real sites & check today's punch on mount
-  useEffect(() => {
-    const initEmployeeData = async () => {
-      try {
-        // Fetch sites
-        const siteRes = await fetch(`${API_BASE}/sites`).then(r => r.json()).catch(() => null);
-        if (siteRes && siteRes.success && siteRes.sites.length > 0) {
-          setDbSites(siteRes.sites);
-          setSelectedSiteId(siteRes.sites[0].id || siteRes.sites[0].dbId);
-        } else {
-          setSelectedSiteId('');
+  // Fetch real sites, employee profile & monthly attendance calculation from DB
+  const loadDashboardData = async () => {
+    try {
+      const userId = user?.dbId || user?.id;
+
+      // 1. Fetch fresh employee profile from DB (for latest daily rate, role, full name)
+      let freshDailyRate = Number(user?.dailyRate || user?.dailySalary || 0);
+      if (userId) {
+        try {
+          const empRes = await fetch(`${API_BASE}/employees`).then(r => r.json()).catch(() => null);
+          if (empRes && empRes.success && empRes.employees) {
+            const matched = empRes.employees.find(e => 
+              String(e.dbId) === String(userId) || 
+              String(e.id) === String(user?.id) || 
+              (user?.mobile && e.phone === user?.mobile)
+            );
+            if (matched) {
+              setEmployeeProfile(prev => ({ ...prev, ...matched }));
+              freshDailyRate = Number(matched.dailySalary || matched.dailyRate || freshDailyRate);
+            }
+          }
+        } catch (e) {
+          console.warn('Could not refresh employee profile:', e);
         }
+      }
 
-        // Check if employee already punched today
-        const userId = user?.dbId || user?.id;
-        if (userId) {
-          const today = new Date().toISOString().split('T')[0];
-          const attRes = await fetch(`${API_BASE}/attendance?date=${today}&employeeId=${userId}`)
-            .then(r => r.json())
-            .catch(() => null);
+      // 2. Fetch sites (Do NOT auto-select so workers must choose their actual site)
+      const siteRes = await fetch(`${API_BASE}/sites`).then(r => r.json()).catch(() => null);
+      if (siteRes && siteRes.success && siteRes.sites.length > 0) {
+        setDbSites(siteRes.sites);
+      }
 
-          if (attRes && attRes.success && attRes.attendance.length > 0) {
-            const todayLog = attRes.attendance[0];
+      // 3. Fetch employee attendance history from DB for dynamic monthly calculation
+      if (userId) {
+        const now = new Date();
+        const currentMonthName = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+        const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        const attRes = await fetch(`${API_BASE}/attendance/employee/${userId}`)
+          .then(r => r.json())
+          .catch(() => null);
+
+        if (attRes && attRes.success && attRes.records) {
+          const records = attRes.records;
+
+          // Filter for current month records
+          const thisMonthRecords = records.filter(r => {
+            if (r.monthYear && r.monthYear.toLowerCase().includes(now.toLocaleDateString('en-IN', { month: 'long' }).toLowerCase())) return true;
+            if (r.rawDate && r.rawDate.startsWith(currentMonthStr)) return true;
+            return false;
+          });
+
+          const targetRecords = thisMonthRecords.length > 0 ? thisMonthRecords : records;
+          const targetMonthName = thisMonthRecords.length > 0 
+            ? currentMonthName 
+            : (records[0]?.monthYear || currentMonthName);
+
+          const totalDays = targetRecords.reduce((sum, r) => sum + (parseFloat(r.dayValue) || 1.0), 0);
+          const rate = freshDailyRate || Number(user?.dailyRate || 1000);
+          const grossEarned = Math.round(totalDays * rate);
+          const advanceTaken = 0;
+          const netPayable = grossEarned - advanceTaken;
+
+          setMonthlyStats({
+            monthName: targetMonthName,
+            totalDays,
+            dailyRate: rate,
+            grossEarned,
+            advanceTaken,
+            netPayable,
+            loading: false
+          });
+
+          // Check if punched today from attendance records
+          const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+          const todayLog = records.find(r => r.rawDate === todayStr);
+          if (todayLog) {
             if (todayLog.inTime && todayLog.inTime !== '--:--') {
               setPunchedIn(true);
               setInTime(todayLog.inTime);
               setPunchedSite({
-                customerName: todayLog.customerName,
-                location: todayLog.siteLocation
+                customerName: todayLog.customerName || todayLog.siteName,
+                location: todayLog.siteLocation || ''
               });
             }
             if (todayLog.outTime && todayLog.outTime !== '--:--') {
@@ -73,68 +175,20 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
               setOutTime(todayLog.outTime);
             }
           }
+        } else {
+          setMonthlyStats(prev => ({ ...prev, loading: false }));
         }
-      } catch (err) {
-        console.error('Error loading employee punch data:', err);
       }
-    };
-
-    initEmployeeData();
-  }, [user]);
-
-  const handleChangePin = async (e) => {
-    e.preventDefault();
-    setPinError('');
-    setPinSuccess('');
-
-    if (!newPin.trim()) {
-      setPinError('Please enter a new password/PIN');
-      return;
-    }
-
-    if (newPin.trim() !== confirmPin.trim()) {
-      setPinError('New PINs do not match. Please verify.');
-      return;
-    }
-
-    setPinLoading(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/auth/change-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user?.dbId || user?.id,
-          mobile: user?.mobile,
-          username: user?.username,
-          currentPassword: currentPin.trim(),
-          newPassword: newPin.trim(),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        setPinError(data.message || 'Failed to update PIN');
-        setPinLoading(false);
-        return;
-      }
-
-      setPinSuccess('PIN updated successfully! Remember this for your next login.');
-      setCurrentPin('');
-      setNewPin('');
-      setConfirmPin('');
-      setTimeout(() => {
-        setPinSuccess('');
-        setShowPinModal(false);
-      }, 3000);
     } catch (err) {
-      console.error('Error changing PIN:', err);
-      setPinError('Server error while updating PIN.');
-    } finally {
-      setPinLoading(false);
+      console.error('Error loading employee dashboard data from DB:', err);
+      setMonthlyStats(prev => ({ ...prev, loading: false }));
     }
   };
+
+  useEffect(() => {
+    setSelectedSiteId('');
+    loadDashboardData();
+  }, [user]);
 
   // Camera stream handler
   useEffect(() => {
@@ -171,6 +225,10 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
 
   // Open Selfie Mode for Punch IN
   const handleOpenPunchIn = () => {
+    if (!selectedSiteId) {
+      setPunchMessage(t.pleaseSelectSite || 'Please select a site first');
+      return;
+    }
     setCameraType('IN');
     setCameraOpen(true);
   };
@@ -188,7 +246,11 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
     const now = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     try {
-      const targetSiteId = currentSite?.dbId || currentSite?.id;
+      const targetSiteId = currentSite?.dbId || currentSite?.id || selectedSiteId;
+      if (!targetSiteId) {
+        setPunchMessage(t.pleaseSelectSite || 'Please select a site first');
+        return;
+      }
       const res = await fetch(`${API_BASE}/attendance/punch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -214,6 +276,8 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
           setPunchedOut(true);
           setPunchMessage(`Punched OUT (${data.outTime || now}) · Day Complete`);
         }
+        // Refresh dynamic metrics and attendance from DB
+        loadDashboardData();
       } else {
         // Fallback local update if offline
         if (cameraType === 'IN') {
@@ -245,68 +309,25 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
   };
 
   return (
-    <main className="dashboard-content" style={{padding: '24px 28px', width: '100%'}}>
+    <main className="dashboard-content" style={{ padding: 'clamp(12px, 2.5vw, 24px)', width: '100%', boxSizing: 'border-box' }}>
       
-      {/* Top Banner (Super clean) */}
+      {/* Top Banner (Centered, Clean, Minimal) */}
       <div style={{
-        background: 'linear-gradient(135deg, #111827 0%, #1F2937 100%)',
+        background: '#FFFFFF',
         borderRadius: '12px',
-        padding: '20px 24px',
-        color: '#fff',
-        marginBottom: '20px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '12px',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
+        padding: '18px 20px',
+        marginBottom: '16px',
+        textAlign: 'center',
+        border: '1.5px solid var(--coffee-border, #D1C2AF)',
+        boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)'
       }}>
-        <div>
-          <h1 style={{margin: 0, fontSize: '22px', fontWeight: '700', color: '#F9FAFB'}}>
-            Welcome, {user?.name || 'Anurag'}
-          </h1>
-          <p style={{margin: '4px 0 0 0', color: '#9CA3AF', fontSize: '13px'}}>
-            Role: <strong style={{color: '#E5E7EB'}}>{user?.roleTitle || 'Carpenter'}</strong> · ID: <strong style={{color: 'var(--gold, #B9782D)'}}>{user?.id || 'EMP-101'}</strong>
-          </p>
-        </div>
-
-        <div style={{display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'}}>
-          <button
-            onClick={() => {
-              setPinError('');
-              setPinSuccess('');
-              setShowPinModal(true);
-            }}
-            style={{
-              background: 'rgba(212, 153, 63, 0.15)',
-              border: '1px solid rgba(212, 153, 63, 0.4)',
-              color: 'var(--gold-light, #D4993F)',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <i className="fa-solid fa-key"></i> Change PIN
-          </button>
-
-          <div style={{
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            textAlign: 'right'
-          }}>
-            <div style={{fontSize: '11px', color: '#9CA3AF', textTransform: 'uppercase', fontWeight: '600'}}>Daily Rate</div>
-            <div style={{fontSize: '20px', fontWeight: '800', color: 'var(--gold-light, #D4993F)'}}>₹{user?.dailyRate || '1,000'}</div>
-          </div>
-        </div>
+        <h1 style={{ margin: 0, fontSize: 'clamp(18px, 4.5vw, 22px)', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', letterSpacing: '-0.02em' }}>
+          {t.welcome}, {employeeProfile?.name || employeeProfile?.fullName || user?.name || user?.fullName || 'Worker'}
+        </h1>
+        <p style={{ margin: '5px 0 0 0', color: 'var(--text-muted, #7D6C5E)', fontSize: '13px' }}>
+          {t.role}: <strong style={{ color: 'var(--text-primary, #1F1A17)' }}>{employeeProfile?.role || employeeProfile?.roleTitle || user?.roleTitle || user?.role || 'Carpenter'}</strong> &nbsp;·&nbsp; {t.id}: <strong style={{ color: 'var(--gold, #4A2C17)', fontFamily: 'monospace' }}>{employeeProfile?.id || user?.id || (user?.empCode ? `EMP-${user.empCode}` : 'EMP-101')}</strong>
+        </p>
       </div>
-
 
       {/* Success Notification */}
       {punchMessage && (
@@ -314,13 +335,13 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
           background: '#ECFDF5',
           border: '1px solid #A7F3D0',
           color: '#065F46',
-          padding: '12px 18px',
+          padding: '12px 16px',
           borderRadius: '8px',
-          marginBottom: '20px',
+          marginBottom: '16px',
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
-          fontSize: '14px',
+          fontSize: '13.5px',
           fontWeight: '700'
         }}>
           <i className="fa-solid fa-circle-check" style={{fontSize: '18px', color: '#10B981'}}></i>
@@ -328,24 +349,26 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
         </div>
       )}
 
-      {/* Simple Attendance Punch Card (No clutter, 100% width) */}
+      {/* Attendance Punch Card (100% width on mobile, minimal text) */}
       <div style={{
-        background: '#fff',
+        background: '#FFFFFF',
         borderRadius: '12px',
-        padding: '24px',
-        border: '1px solid #E5E7EB',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        marginBottom: '24px',
-        width: '100%'
+        padding: '18px 20px',
+        border: '1.5px solid var(--coffee-border, #D1C2AF)',
+        boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)',
+        marginBottom: '20px',
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
         <div style={{maxWidth: '650px', margin: '0 auto'}}>
           
           {/* Section Heading */}
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-            <h2 style={{margin: 0, fontSize: '17px', fontWeight: '700', color: '#111827'}}>
-              Daily Attendance Punch
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '6px'}}>
+            <h2 style={{margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <i className="fa-solid fa-clipboard-check" style={{color: 'var(--coffee-medium, #8C5521)'}}></i>
+              {t.attendancePunch}
             </h2>
-            <span style={{fontSize: '12px', color: '#6B7280', fontWeight: '700', fontFamily: 'monospace'}}>
+            <span style={{fontSize: '12px', color: '#6B7280', fontWeight: '700', fontFamily: 'monospace', background: '#FAF8F5', padding: '3px 8px', borderRadius: '6px', border: '1px solid #D1C2AF'}}>
               {(() => {
                 const now = new Date();
                 const d = String(now.getDate()).padStart(2, '0');
@@ -356,36 +379,39 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
             </span>
           </div>
 
-          {/* 1. Pick Site Dropdown */}
-          <div style={{marginBottom: '16px'}}>
-            <label style={{display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px'}}>
-              Pick Work Site:
+          {/* 1. Pick Site Dropdown (No auto-selection, clean manual select) */}
+          <div style={{marginBottom: '18px'}}>
+            <label style={{display: 'block', fontSize: '13px', fontWeight: '700', color: '#374151', marginBottom: '6px'}}>
+              {t.selectSite}
             </label>
             <select
-              value={selectedSiteId}
-              onChange={(e) => {
-                setSelectedSiteId(e.target.value);
-                setGpsDistance(Math.floor(Math.random() * 200) + 120);
-              }}
+              id="employee-site-select"
+              key={`site-select-${lang}-${availableSites.length}`}
+              value={selectedSiteId || ''}
+              onChange={(e) => setSelectedSiteId(e.target.value)}
               disabled={punchedIn && !punchedOut}
               style={{
                 width: '100%',
-                padding: '12px 14px',
+                padding: '11px 12px',
                 borderRadius: '8px',
-                border: '1px solid #D1D5DB',
-                fontSize: '14px',
+                border: '1.5px solid #D1C2AF',
+                fontSize: '13.5px',
                 fontWeight: '600',
-                color: '#111827',
-                background: punchedIn && !punchedOut ? '#F3F4F6' : '#fff',
+                color: selectedSiteId ? 'var(--text-primary, #1F1A17)' : '#7D6C5E',
+                background: punchedIn && !punchedOut ? '#FAF8F5' : '#FFFFFF',
                 outline: 'none',
-                cursor: punchedIn && !punchedOut ? 'not-allowed' : 'pointer'
+                cursor: punchedIn && !punchedOut ? 'not-allowed' : 'pointer',
+                boxSizing: 'border-box'
               }}
             >
+              <option value="" style={{ color: '#7D6C5E' }}>
+                {t.selectSitePlaceholder || 'Select Site'}
+              </option>
               {availableSites.map((site) => {
-                const sId = site.id || site.dbId;
+                const sId = String(site.id || site.dbId);
                 const sRef = site.siteRef || site.id;
                 return (
-                  <option key={sId} value={sId}>
+                  <option key={sId} value={sId} style={{ color: '#1F1A17' }}>
                     {sRef}: {site.customerName} ({site.location || 'Location'})
                   </option>
                 );
@@ -393,84 +419,78 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
             </select>
           </div>
 
-          {/* 2. GPS Proximity Tag */}
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: '#F0FDF4',
-            border: '1px solid #BBF7D0',
-            color: '#15803D',
-            padding: '6px 12px',
-            borderRadius: '20px',
-            fontSize: '12px',
-            fontWeight: '600',
-            marginBottom: '20px'
-          }}>
-            <span style={{width: '8px', height: '8px', borderRadius: '50%', background: '#16A34A'}}></span>
-            Within 500m of {currentSite?.customerName || 'Selected'} Site ({gpsDistance}m away)
-          </div>
-
           {/* 3. In / Out Time Status display */}
           {(punchedIn || punchedOut) && (
             <div style={{
               display: 'flex',
               gap: '12px',
-              padding: '14px',
-              background: '#F9FAFB',
+              padding: '12px 14px',
+              background: '#FAF8F5',
               borderRadius: '8px',
-              border: '1px solid #E5E7EB',
-              marginBottom: '20px',
+              border: '1.5px solid var(--coffee-border, #D1C2AF)',
+              marginBottom: '16px',
               alignItems: 'center'
             }}>
               <div style={{
-                width: '42px',
-                height: '42px',
+                width: '38px',
+                height: '38px',
                 borderRadius: '8px',
-                background: 'rgba(185, 120, 45, 0.1)',
-                border: '1px solid rgba(185, 120, 45, 0.3)',
+                background: 'rgba(140, 85, 33, 0.1)',
+                border: '1px solid rgba(140, 85, 33, 0.25)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'var(--gold, #B9782D)',
-                fontSize: '18px',
+                color: 'var(--coffee-medium, #8C5521)',
+                fontSize: '16px',
                 flexShrink: 0
               }}>
                 <i className="fa-solid fa-clipboard-check"></i>
               </div>
               <div style={{flex: 1}}>
-                <div style={{fontSize: '13px', fontWeight: '700', color: '#111827'}}>
-                  Site: {punchedSite?.customerName || currentSite.customerName} ({punchedSite?.location || currentSite.location})
+                <div style={{fontSize: '12.5px', fontWeight: '700', color: '#111827'}}>
+                  {punchedSite?.customerName || currentSite.customerName} ({punchedSite?.location || currentSite.location})
                 </div>
-                <div style={{fontSize: '12px', color: '#4B5563', marginTop: '2px'}}>
-                  {punchedIn && <span>IN: <strong style={{color: '#16A34A'}}>{inTime}</strong></span>}
-                  {punchedOut && <span style={{marginLeft: '12px'}}>OUT: <strong style={{color: '#DC2626'}}>{outTime}</strong></span>}
+                <div style={{fontSize: '12px', color: '#4B5563', marginTop: '2px', display: 'flex', gap: '14px', flexWrap: 'wrap'}}>
+                  {punchedIn && <span>{t.inTime}: <strong style={{color: '#16A34A'}}>{inTime}</strong></span>}
+                  {punchedOut && <span>{t.outTime}: <strong style={{color: '#DC2626'}}>{outTime}</strong></span>}
                 </div>
               </div>
             </div>
           )}
 
-          {/* 4. Action Button (Punch IN / Punch OUT) */}
+          {/* 4. Action Button (Punch IN / Punch OUT) - Big, Bold & Clear for Workers */}
           <div>
             {!punchedIn ? (
               <button
                 onClick={handleOpenPunchIn}
-                className="btn-primary"
                 style={{
                   width: '100%',
                   height: '52px',
+                  background: 'linear-gradient(135deg, #8C5521 0%, #6E3D19 100%)',
+                  color: '#FFFFFF',
+                  border: 'none',
                   borderRadius: '10px',
                   fontSize: '16px',
-                  fontWeight: '700',
+                  fontWeight: '800',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '10px',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(185, 120, 45, 0.3)'
+                  boxShadow: '0 4px 14px rgba(140, 85, 33, 0.28)',
+                  transition: 'all 0.2s ease',
+                  letterSpacing: '0.2px'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(140, 85, 33, 0.38)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(140, 85, 33, 0.28)';
                 }}
               >
-                <i className="fa-solid fa-camera"></i> Punch IN Now
+                {t.punchInNow}
               </button>
             ) : !punchedOut ? (
               <button
@@ -481,29 +501,33 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
                   height: '52px',
                   borderRadius: '10px',
                   fontSize: '16px',
-                  fontWeight: '700',
+                  fontWeight: '800',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '10px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  background: '#DC2626',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  boxShadow: '0 4px 14px rgba(220, 38, 38, 0.28)'
                 }}
               >
-                <i className="fa-solid fa-right-from-bracket"></i> Punch OUT
+                {t.punchOut}
               </button>
             ) : (
               <div style={{
                 width: '100%',
                 padding: '14px',
                 background: '#ECFDF5',
-                border: '1px solid #A7F3D0',
+                border: '1.5px solid #A7F3D0',
                 borderRadius: '10px',
                 textAlign: 'center',
                 color: '#065F46',
-                fontWeight: '700',
-                fontSize: '15px'
+                fontWeight: '800',
+                fontSize: '14.5px'
               }}>
-                ✓ Day Completed (1.0 Attendance Logged)
+                {t.dayCompleted}
               </div>
             )}
           </div>
@@ -511,7 +535,7 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
         </div>
       </div>
 
-      {/* Selfie Camera Modal (Opens immediately when Punch IN is clicked) */}
+      {/* Selfie Camera Modal */}
       {cameraOpen && (
         <div style={{
           position: 'fixed',
@@ -524,49 +548,49 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 2000,
-          padding: '20px'
+          padding: '16px'
         }}>
           <div style={{
-            background: '#111827',
+            background: '#FFFFFF',
             borderRadius: '16px',
             width: '100%',
             maxWidth: '380px',
             overflow: 'hidden',
-            border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            border: '1.5px solid var(--coffee-border, #D1C2AF)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
             textAlign: 'center',
-            color: '#fff',
-            padding: '20px'
+            color: 'var(--text-primary, #1F1A17)',
+            padding: '18px'
           }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px'}}>
-              <h3 style={{margin: 0, fontSize: '16px', fontWeight: '700', color: '#F9FAFB'}}>
-                {cameraType === 'IN' ? 'Punch IN Selfie' : 'Punch OUT Selfie'}
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
+              <h3 style={{margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)'}}>
+                {cameraType === 'IN' ? t.punchInSelfie : t.punchOutSelfie}
               </h3>
               <button 
                 onClick={() => setCameraOpen(false)}
-                style={{background: 'none', border: 'none', color: '#9CA3AF', fontSize: '20px', cursor: 'pointer'}}
+                style={{background: 'none', border: 'none', color: '#8C7B6D', fontSize: '24px', cursor: 'pointer', padding: 0}}
               >
                 &times;
               </button>
             </div>
 
-            <div style={{fontSize: '12px', color: '#D1D5DB', marginBottom: '16px'}}>
-              Site: <strong>{currentSite.customerName} ({currentSite.location})</strong>
+            <div style={{fontSize: '12px', color: '#7D6C5E', marginBottom: '14px'}}>
+              {t.siteLabel} <strong>{currentSite?.customerName || 'Work Site'} ({currentSite?.location || ''})</strong>
             </div>
 
             {/* Camera Viewfinder Box */}
             <div style={{
               width: '100%',
-              height: '280px',
+              height: '270px',
               borderRadius: '12px',
-              background: '#1F2937',
-              border: '2px solid rgba(185, 120, 45, 0.6)',
+              background: '#FAF8F5',
+              border: '2px solid var(--coffee-border, #D1C2AF)',
               overflow: 'hidden',
               position: 'relative',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: '20px'
+              marginBottom: '16px'
             }}>
               {streamActive ? (
                 <video 
@@ -579,21 +603,21 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
               ) : (
                 <div style={{textAlign: 'center', padding: '20px'}}>
                   <div style={{
-                    width: '120px',
-                    height: '120px',
+                    width: '110px',
+                    height: '110px',
                     borderRadius: '50%',
-                    background: 'rgba(185, 120, 45, 0.15)',
-                    border: '3px solid var(--gold, #B9782D)',
+                    background: 'rgba(140, 85, 33, 0.12)',
+                    border: '3px solid var(--coffee-medium, #8C5521)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     margin: '0 auto 12px auto',
-                    color: 'var(--gold, #B9782D)',
-                    fontSize: '42px'
+                    color: 'var(--coffee-medium, #8C5521)',
+                    fontSize: '38px'
                   }}>
                     <i className="fa-solid fa-camera"></i>
                   </div>
-                  <div style={{fontSize: '12px', color: '#9CA3AF'}}>Ready to Capture Punch</div>
+                  <div style={{fontSize: '12px', color: '#7D6C5E', fontWeight: '600'}}>{t.readyToCapture}</div>
                 </div>
               )}
 
@@ -602,8 +626,8 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
                 position: 'absolute',
                 top: '20px',
                 bottom: '20px',
-                left: '40px',
-                right: '40px',
+                left: '35px',
+                right: '35px',
                 border: '2px dashed rgba(255,255,255,0.4)',
                 borderRadius: '50%',
                 pointerEvents: 'none'
@@ -616,263 +640,162 @@ const EmployeeDashboard = ({ user, onNavigate }) => {
               style={{
                 width: '100%',
                 height: '48px',
-                background: 'var(--gold, #B9782D)',
+                background: 'linear-gradient(135deg, #8C5521 0%, #6E3D19 100%)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '10px',
                 fontSize: '15px',
-                fontWeight: '700',
+                fontWeight: '800',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(140, 85, 33, 0.28)'
               }}
             >
-              <i className="fa-solid fa-camera"></i> Click Photo & Punch Done
+              <i className="fa-solid fa-camera"></i> {t.clickPhotoAndPunch}
             </button>
           </div>
         </div>
       )}
 
-      {/* Monthly Summary (Clean, compact, full-width) */}
+      {/* Monthly Summary (2x2 Grid for Maximum Mobile Legibility) */}
       <div style={{
-        background: '#fff',
+        background: '#FFFFFF',
         borderRadius: '12px',
-        padding: '20px 24px',
-        border: '1px solid #E5E7EB',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        marginBottom: '24px',
-        width: '100%'
+        padding: '18px 20px',
+        border: '1.5px solid var(--coffee-border, #D1C2AF)',
+        boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)',
+        marginBottom: '20px',
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px'}}>
-          <h3 style={{margin: 0, fontSize: '15px', fontWeight: '700', color: '#111827'}}>
-            September 2026 Summary
+          <h3 style={{margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', display: 'flex', alignItems: 'center', gap: '6px'}}>
+            <i className="fa-solid fa-calendar-days" style={{color: 'var(--coffee-medium, #8C5521)'}}></i>
+            {monthlyStats.monthName} - {t.monthlySummary}
           </h3>
-          <button
-            onClick={() => onNavigate && onNavigate('emp-salary')}
-            style={{background: 'none', border: 'none', color: 'var(--gold, #B9782D)', fontWeight: '600', fontSize: '12px', cursor: 'pointer'}}
-          >
-            Salary Details →
-          </button>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>
+            <span style={{
+              background: '#FAF8F5',
+              border: '1px solid var(--coffee-border, #D1C2AF)',
+              borderRadius: '6px',
+              padding: '3px 8px',
+              fontSize: '11.5px',
+              fontWeight: '700',
+              color: 'var(--coffee-medium, #8C5521)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              <span>{t.dailyRate}:</span>
+              <strong>₹{Number(employeeProfile?.dailySalary || employeeProfile?.dailyRate || user?.dailyRate || 0).toLocaleString('en-IN')}</strong>
+            </span>
+            <button
+              onClick={() => onNavigate && onNavigate('emp-salary')}
+              style={{background: 'none', border: 'none', color: 'var(--coffee-medium, #8C5521)', fontWeight: '700', fontSize: '12px', cursor: 'pointer'}}
+            >
+              {t.salaryDetails}
+            </button>
+          </div>
         </div>
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '14px'
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '10px'
         }}>
-          <div style={{padding: '12px 14px', background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB'}}>
-            <div style={{fontSize: '11px', color: '#6B7280', fontWeight: '600', textTransform: 'uppercase'}}>Attendance</div>
-            <div style={{fontSize: '20px', fontWeight: '800', color: '#111827', marginTop: '2px'}}>26.5 Days</div>
+          <div style={{padding: '12px 14px', background: '#FAF8F5', borderRadius: '10px', border: '1px solid var(--coffee-border, #D1C2AF)'}}>
+            <div style={{fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px'}}>
+              {t.daysWorked}
+            </div>
+            <div style={{fontSize: '20px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', marginTop: '2px'}}>
+              {monthlyStats.loading ? '...' : `${monthlyStats.totalDays.toFixed(1)} ${t.days}`}
+            </div>
           </div>
 
-          <div style={{padding: '12px 14px', background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB'}}>
-            <div style={{fontSize: '11px', color: '#6B7280', fontWeight: '600', textTransform: 'uppercase'}}>Gross Earned</div>
-            <div style={{fontSize: '20px', fontWeight: '800', color: '#111827', marginTop: '2px'}}>₹26,500</div>
+          <div style={{padding: '12px 14px', background: '#FAF8F5', borderRadius: '10px', border: '1px solid var(--coffee-border, #D1C2AF)'}}>
+            <div style={{fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px'}}>
+              {t.grossEarned}
+            </div>
+            <div style={{fontSize: '20px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', marginTop: '2px'}}>
+              {monthlyStats.loading ? '...' : `₹${monthlyStats.grossEarned.toLocaleString('en-IN')}`}
+            </div>
           </div>
 
-          <div style={{padding: '12px 14px', background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB'}}>
-            <div style={{fontSize: '11px', color: '#6B7280', fontWeight: '600', textTransform: 'uppercase'}}>Advance Taken</div>
-            <div style={{fontSize: '20px', fontWeight: '800', color: '#DC2626', marginTop: '2px'}}>- ₹1,500</div>
+          <div style={{padding: '12px 14px', background: '#FAF8F5', borderRadius: '10px', border: '1px solid var(--coffee-border, #D1C2AF)'}}>
+            <div style={{fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px'}}>
+              {t.advanceTaken}
+            </div>
+            <div style={{fontSize: '20px', fontWeight: '800', color: monthlyStats.advanceTaken > 0 ? '#DC2626' : '#8C7B6D', marginTop: '2px'}}>
+              {monthlyStats.loading ? '...' : (monthlyStats.advanceTaken > 0 ? `- ₹${monthlyStats.advanceTaken.toLocaleString('en-IN')}` : '₹0')}
+            </div>
           </div>
 
-          <div style={{padding: '12px 14px', background: 'rgba(185, 120, 45, 0.08)', borderRadius: '8px', border: '1px solid rgba(185, 120, 45, 0.25)'}}>
-            <div style={{fontSize: '11px', color: 'var(--gold, #B9782D)', fontWeight: '700', textTransform: 'uppercase'}}>Net Payable</div>
-            <div style={{fontSize: '20px', fontWeight: '800', color: 'var(--gold, #B9782D)', marginTop: '2px'}}>₹25,000</div>
+          <div style={{padding: '12px 14px', background: 'rgba(140, 85, 33, 0.08)', borderRadius: '10px', border: '1.5px solid rgba(140, 85, 33, 0.3)'}}>
+            <div style={{fontSize: '10.5px', color: '#8C5521', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px'}}>
+              {t.netPayable}
+            </div>
+            <div style={{fontSize: '20px', fontWeight: '800', color: '#8C5521', marginTop: '2px'}}>
+              {monthlyStats.loading ? '...' : `₹${monthlyStats.netPayable.toLocaleString('en-IN')}`}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Nav (Full Width) */}
+      {/* Quick Nav (Full Width, 2 Easy Buttons) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '14px',
-        width: '100%'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: '12px',
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
         <div 
           onClick={() => onNavigate && onNavigate('emp-attendance')}
           style={{
-            background: '#fff', borderRadius: '10px', padding: '14px 18px',
-            border: '1px solid #E5E7EB', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px'
+            background: '#FFFFFF', borderRadius: '12px', padding: '14px 18px',
+            border: '1.5px solid var(--coffee-border, #D1C2AF)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px',
+            boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)', transition: 'all 0.2s ease'
           }}
+          onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#8C5521'; }}
+          onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = '#D1C2AF'; }}
         >
           <div style={{
-            width: '38px', height: '38px', borderRadius: '8px',
-            background: '#EEF2FF', color: '#4F46E5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px'
+            width: '40px', height: '40px', borderRadius: '8px',
+            background: 'rgba(140, 85, 33, 0.1)', color: '#8C5521', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px'
           }}>
             <i className="fa-solid fa-clipboard-user"></i>
           </div>
           <div>
-            <div style={{fontWeight: '700', color: '#111827', fontSize: '13px'}}>My Attendance Log</div>
-            <div style={{fontSize: '11px', color: '#6B7280'}}>Check days worked & timestamps</div>
+            <div style={{fontWeight: '700', color: 'var(--text-primary, #1F1A17)', fontSize: '13.5px'}}>{t.myAttendanceLog}</div>
+            <div style={{fontSize: '11px', color: '#7D6C5E'}}>{t.attendanceLogDesc}</div>
           </div>
         </div>
 
         <div 
           onClick={() => onNavigate && onNavigate('emp-reports')}
           style={{
-            background: '#fff', borderRadius: '10px', padding: '14px 18px',
-            border: '1px solid #E5E7EB', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px'
+            background: '#FFFFFF', borderRadius: '12px', padding: '14px 18px',
+            border: '1.5px solid var(--coffee-border, #D1C2AF)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px',
+            boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)', transition: 'all 0.2s ease'
           }}
+          onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#8C5521'; }}
+          onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = '#D1C2AF'; }}
         >
           <div style={{
-            width: '38px', height: '38px', borderRadius: '8px',
-            background: '#ECFDF5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px'
+            width: '40px', height: '40px', borderRadius: '8px',
+            background: '#ECFDF5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px'
           }}>
             <i className="fa-solid fa-file-invoice"></i>
           </div>
           <div>
-            <div style={{fontWeight: '700', color: '#111827', fontSize: '13px'}}>Download Payslip</div>
-            <div style={{fontSize: '11px', color: '#6B7280'}}>Print monthly salary slip</div>
+            <div style={{fontWeight: '700', color: 'var(--text-primary, #1F1A17)', fontSize: '13.5px'}}>{t.downloadPayslip}</div>
+            <div style={{fontSize: '11px', color: '#7D6C5E'}}>{t.payslipDesc}</div>
           </div>
         </div>
       </div>
-
-      {/* ========================================================
-          WORKER CHANGE LOGIN PIN MODAL
-         ======================================================== */}
-      {showPinModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex',
-          justifyContent: 'center', alignItems: 'center', zIndex: 2000,
-          backdropFilter: 'blur(3px)', padding: '20px'
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: '14px', width: '100%', maxWidth: '420px',
-            boxShadow: '0 20px 45px rgba(0,0,0,0.25)', padding: '26px', boxSizing: 'border-box'
-          }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-              <div>
-                <h3 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                  <i className="fa-solid fa-key" style={{color: 'var(--gold, #B9782D)'}}></i>
-                  Change Your Login PIN
-                </h3>
-                <div style={{fontSize: '12px', color: '#6B7280', marginTop: '2px'}}>
-                  Logged in as {user?.name} ({user?.mobile || user?.username})
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowPinModal(false)}
-                style={{background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#9CA3AF', padding: 0}}
-              >&times;</button>
-            </div>
-
-            {pinSuccess && (
-              <div style={{
-                background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46',
-                borderRadius: '8px', padding: '10px 14px', marginBottom: '16px',
-                fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px'
-              }}>
-                <i className="fa-solid fa-circle-check" style={{color: '#10B981'}}></i>
-                {pinSuccess}
-              </div>
-            )}
-
-            {pinError && (
-              <div style={{
-                background: '#FEF2F2', border: '1px solid #F87171', color: '#991B1B',
-                borderRadius: '8px', padding: '10px 14px', marginBottom: '16px',
-                fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'
-              }}>
-                <i className="fa-solid fa-circle-exclamation" style={{color: '#EF4444'}}></i>
-                {pinError}
-              </div>
-            )}
-
-            <form onSubmit={handleChangePin}>
-              <div style={{marginBottom: '14px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                  Current PIN / Password *
-                </label>
-                <input
-                  type="password"
-                  placeholder="Enter current PIN"
-                  value={currentPin}
-                  onChange={(e) => setCurrentPin(e.target.value)}
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: '6px',
-                    border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px',
-                    letterSpacing: '2px', fontWeight: '600'
-                  }}
-                  required
-                />
-              </div>
-
-              <div style={{marginBottom: '14px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                  New PIN / Password *
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter new PIN"
-                  value={newPin}
-                  onChange={(e) => setNewPin(e.target.value)}
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: '6px',
-                    border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px',
-                    letterSpacing: '1px', fontWeight: '600'
-                  }}
-                  required
-                />
-              </div>
-
-              <div style={{marginBottom: '20px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                  Confirm New PIN *
-                </label>
-                <input
-                  type="password"
-                  placeholder="Re-enter new PIN"
-                  value={confirmPin}
-                  onChange={(e) => setConfirmPin(e.target.value)}
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: '6px',
-                    border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px',
-                    letterSpacing: '2px', fontWeight: '600'
-                  }}
-                  required
-                />
-              </div>
-
-              <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px'}}>
-                <button
-                  type="button"
-                  onClick={() => setShowPinModal(false)}
-                  style={{
-                    padding: '9px 18px', borderRadius: '6px', border: '1px solid #D1D5DB',
-                    background: '#fff', color: '#374151', cursor: 'pointer', fontWeight: '600', fontSize: '13px'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={pinLoading}
-                  className="btn-primary"
-                  style={{
-                    padding: '9px 20px', borderRadius: '6px', fontSize: '13px',
-                    opacity: pinLoading ? 0.7 : 1, cursor: pinLoading ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '6px'
-                  }}
-                >
-                  {pinLoading ? (
-                    <>
-                      <i className="fa-solid fa-spinner fa-spin"></i> Saving...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-check"></i> Save New PIN
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
     </main>
   );

@@ -1,12 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../../config/api';
+import { getTranslation } from '../../utils/translations';
 
-const EmployeeAttendance = ({ user }) => {
+const EmployeeAttendance = ({ user, lang = 'hi' }) => {
   const [selectedMonth, setSelectedMonth] = useState('All');
   const [selectedSelfie, setSelectedSelfie] = useState(null);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [employeeProfile, setEmployeeProfile] = useState(user || null);
+
+  const t = {
+    myAttendance: getTranslation(lang, 'myAttendance'),
+    attendanceSubtitle: getTranslation(lang, 'attendanceSubtitle'),
+    allMonths: getTranslation(lang, 'allMonths'),
+    totalDays: getTranslation(lang, 'totalDays'),
+    fullDays: getTranslation(lang, 'fullDays'),
+    halfDays: getTranslation(lang, 'halfDays'),
+    dailyRate: getTranslation(lang, 'dailyRate'),
+    totalEarned: getTranslation(lang, 'totalEarned'),
+    dateCol: getTranslation(lang, 'dateCol'),
+    siteCol: getTranslation(lang, 'siteCol'),
+    inTimeCol: getTranslation(lang, 'inTimeCol'),
+    outTimeCol: getTranslation(lang, 'outTimeCol'),
+    statusCol: getTranslation(lang, 'statusCol'),
+    salaryCol: getTranslation(lang, 'salaryCol'),
+    notesCol: getTranslation(lang, 'notesCol'),
+    noRecordsFound: getTranslation(lang, 'noRecordsFound'),
+    loadingRecords: getTranslation(lang, 'loadingRecords'),
+    days: getTranslation(lang, 'days')
+  };
 
   const userId = user?.dbId || user?.id || 2;
 
@@ -14,15 +37,27 @@ const EmployeeAttendance = ({ user }) => {
     try {
       setLoading(true);
       setError('');
-      const res = await fetch(`${API_BASE}/attendance/employee/${userId}`);
-      const data = await res.json();
-      if (data.success) {
-        setRecords(data.records || []);
+      const [attRes, empRes] = await Promise.all([
+        fetch(`${API_BASE}/attendance/employee/${userId}`).then(r => r.json()).catch(() => ({ success: false })),
+        fetch(`${API_BASE}/employees`).then(r => r.json()).catch(() => ({ success: false }))
+      ]);
+
+      if (attRes.success) {
+        setRecords(attRes.records || []);
       } else {
-        setError(data.message || 'Failed to load records');
+        setError(attRes.message || 'Failed to load records');
+      }
+
+      if (empRes.success && empRes.employees) {
+        const matched = empRes.employees.find(e => 
+          String(e.dbId) === String(userId) || 
+          String(e.id) === String(user?.id) || 
+          (user?.mobile && e.phone === user?.mobile)
+        );
+        if (matched) setEmployeeProfile(prev => ({ ...prev, ...matched }));
       }
     } catch (err) {
-      console.error('Error fetching employee attendance:', err);
+      console.error('Error fetching employee attendance from DB:', err);
       setError('Unable to connect to backend server');
     } finally {
       setLoading(false);
@@ -45,11 +80,11 @@ const EmployeeAttendance = ({ user }) => {
   const totalDays = filteredRecords.reduce((acc, r) => acc + (parseFloat(r.dayValue) || 1.0), 0);
   const fullDays = filteredRecords.filter(r => (parseFloat(r.dayValue) || 0) >= 1.0).length;
   const halfDays = filteredRecords.filter(r => (parseFloat(r.dayValue) || 0) === 0.5).length;
-  const dailyRate = Number(user?.dailySalary || user?.dailyRate || 1000);
+  const dailyRate = Number(employeeProfile?.dailySalary || employeeProfile?.dailyRate || user?.dailySalary || user?.dailyRate || 1000);
   const estimatedEarned = Math.round(totalDays * dailyRate);
 
   return (
-    <main className="dashboard-content" style={{ padding: '24px 28px', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+    <main className="dashboard-content" style={{ padding: 'clamp(12px, 2.5vw, 24px)', width: '100%', maxWidth: '1400px', margin: '0 auto', boxSizing: 'border-box' }}>
       
       {/* Header */}
       <div className="page-header" style={{
@@ -57,15 +92,15 @@ const EmployeeAttendance = ({ user }) => {
         justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap',
-        gap: '15px',
-        marginBottom: '20px'
+        gap: '12px',
+        marginBottom: '18px'
       }}>
         <div>
-          <h1 className="page-title" style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: 'var(--navy, #111827)' }}>
-            My Attendance Record
+          <h1 className="page-title" style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: '#1F1A17' }}>
+            {t.myAttendance}
           </h1>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#6B7280' }}>
-            Employee: <strong>{user?.name || 'Worker'}</strong> ({user?.id || 'EMP-101'}) · Daily GPS Punch Log
+          <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#7D6C5E' }}>
+            {t.attendanceSubtitle}
           </p>
         </div>
 
@@ -74,16 +109,17 @@ const EmployeeAttendance = ({ user }) => {
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
             style={{
-              padding: '8px 14px',
-              borderRadius: '6px',
-              border: '1px solid #D1D5DB',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1.5px solid #D1C2AF',
               outline: 'none',
               background: '#fff',
               fontSize: '13px',
-              fontWeight: '500'
+              fontWeight: '600',
+              color: '#1F1A17'
             }}
           >
-            <option value="All">All Months</option>
+            <option value="All">{t.allMonths}</option>
             {availableMonths.map(m => (
               <option key={m} value={m}>{m}</option>
             ))}
@@ -91,63 +127,44 @@ const EmployeeAttendance = ({ user }) => {
         </div>
       </div>
 
-      {/* Info notice */}
-      <div style={{
-        background: '#F0FDF4',
-        border: '1px solid #BBF7D0',
-        borderRadius: '10px',
-        padding: '12px 16px',
-        marginBottom: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        fontSize: '13px',
-        color: '#166534'
-      }}>
-        <i className="fa-solid fa-location-crosshairs" style={{ fontSize: '18px', color: '#16A34A', flexShrink: 0 }}></i>
-        <div>
-          <strong>Self-Selected Site History:</strong> Each record below indicates the specific site picked by you or verified by admin, tracked against modern GPS site geofences.
-        </div>
-      </div>
-
-      {/* Summary KPI Cards */}
+      {/* Summary KPI Cards (Admin Dashboard Palette) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-        gap: '14px',
-        marginBottom: '22px'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: '10px',
+        marginBottom: '20px'
       }}>
-        <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Logged</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginTop: '2px' }}>
-            {totalDays.toFixed(1)} Days
+        <div style={{ background: '#FFFFFF', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid var(--coffee-border, #D1C2AF)', boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)' }}>
+          <div style={{ fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{t.totalDays}</div>
+          <div style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', marginTop: '2px' }}>
+            {totalDays.toFixed(1)} {t.days}
           </div>
         </div>
 
-        <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Full Days (1.0)</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#16A34A', marginTop: '2px' }}>
+        <div style={{ background: '#FFFFFF', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid var(--coffee-border, #D1C2AF)', boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)' }}>
+          <div style={{ fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{t.fullDays}</div>
+          <div style={{ fontSize: '20px', fontWeight: '800', color: '#059669', marginTop: '2px' }}>
             {fullDays}
           </div>
         </div>
 
-        <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Half Days (0.5)</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#D97706', marginTop: '2px' }}>
+        <div style={{ background: '#FFFFFF', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid var(--coffee-border, #D1C2AF)', boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)' }}>
+          <div style={{ fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{t.halfDays}</div>
+          <div style={{ fontSize: '20px', fontWeight: '800', color: '#D97706', marginTop: '2px' }}>
             {halfDays}
           </div>
         </div>
 
-        <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Daily Rate</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #B9782D)', marginTop: '2px' }}>
+        <div style={{ background: '#FFFFFF', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid var(--coffee-border, #D1C2AF)', boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)' }}>
+          <div style={{ fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{t.dailyRate}</div>
+          <div style={{ fontSize: '20px', fontWeight: '800', color: 'var(--coffee-medium, #8C5521)', marginTop: '2px' }}>
             ₹{dailyRate.toLocaleString('en-IN')}
           </div>
         </div>
 
-        <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Est. Total Earned</div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#059669', marginTop: '2px' }}>
+        <div style={{ background: '#FFFFFF', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid var(--coffee-border, #D1C2AF)', boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)' }}>
+          <div style={{ fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{t.totalEarned}</div>
+          <div style={{ fontSize: '20px', fontWeight: '800', color: '#059669', marginTop: '2px' }}>
             ₹{estimatedEarned.toLocaleString('en-IN')}
           </div>
         </div>
@@ -155,49 +172,46 @@ const EmployeeAttendance = ({ user }) => {
 
       {/* Attendance Table */}
       <div className="panel table-responsive" style={{
-        background: '#fff',
-        borderRadius: '10px',
-        border: '1px solid #E5E7EB',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1.5px solid var(--coffee-border, #D1C2AF)',
+        boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)',
         overflowX: 'auto',
         WebkitOverflowScrolling: 'touch'
       }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '780px', tableLayout: 'fixed' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{
-              background: '#F9FAFB',
-              borderBottom: '1px solid #E5E7EB',
+              background: '#FAF8F5',
+              borderBottom: '1px solid var(--coffee-border, #D1C2AF)',
               textAlign: 'left',
-              color: '#6B7280',
+              color: '#5C3D24',
               fontSize: '11px',
               textTransform: 'uppercase',
               letterSpacing: '0.5px'
             }}>
-              <th style={{ padding: '14px 18px', width: '14%' }}>Date</th>
-              <th style={{ padding: '14px 18px', width: '24%' }}>Picked Work Site</th>
-              <th style={{ padding: '14px 18px', width: '12%' }}>IN Time</th>
-              <th style={{ padding: '14px 18px', width: '12%' }}>OUT Time</th>
-              <th style={{ padding: '14px 18px', width: '12%' }}>Attendance</th>
-              <th style={{ padding: '14px 18px', width: '12%' }}>Day Salary</th>
-              <th style={{ padding: '14px 18px', width: '14%' }}>Notes</th>
+              <th style={{ padding: '12px 16px', width: '14%' }}>{t.dateCol}</th>
+              <th style={{ padding: '12px 16px', width: '26%' }}>{t.siteCol}</th>
+              <th style={{ padding: '12px 16px', width: '12%' }}>{t.inTimeCol}</th>
+              <th style={{ padding: '12px 16px', width: '12%' }}>{t.outTimeCol}</th>
+              <th style={{ padding: '12px 16px', width: '12%' }}>{t.statusCol}</th>
+              <th style={{ padding: '12px 16px', width: '12%' }}>{t.salaryCol}</th>
+              <th style={{ padding: '12px 16px', width: '12%' }}>{t.notesCol}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
                 <td colSpan="7" style={{ padding: '36px', textAlign: 'center', color: '#6B7280' }}>
-                  <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '20px', color: 'var(--gold, #B9782D)', marginBottom: '8px' }}></i>
-                  <div>Loading your attendance logs...</div>
+                  <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '20px', color: 'var(--coffee-medium, #8C5521)', marginBottom: '8px' }}></i>
+                  <div>{t.loadingRecords}</div>
                 </td>
               </tr>
             ) : filteredRecords.length === 0 ? (
               <tr>
                 <td colSpan="7" style={{ padding: '40px 20px', textAlign: 'center', color: '#9CA3AF' }}>
                   <i className="fa-regular fa-calendar-xmark" style={{ fontSize: '32px', color: '#D1D5DB', marginBottom: '10px' }}></i>
-                  <div style={{ fontSize: '15px', fontWeight: '600', color: '#4B5563' }}>No attendance records recorded yet</div>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '13px' }}>
-                    Punch in from your Dashboard or have an Administrator mark your attendance.
-                  </p>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#4B5563' }}>{t.noRecordsFound}</div>
                 </td>
               </tr>
             ) : (
@@ -214,14 +228,14 @@ const EmployeeAttendance = ({ user }) => {
                 return (
                   <tr key={rec.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                     <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
-                      <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px', fontFamily: 'monospace' }}>
+                      <div style={{ fontWeight: '700', color: '#2B2520', fontSize: '13px', fontFamily: 'monospace' }}>
                         {formatDMY(rec.rawDate || rec.date)}
                       </div>
                     </td>
                     <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #B9782D)', fontSize: '13px' }}></i>
-                        <span style={{ fontSize: '13px', color: '#111827', fontWeight: '600' }}>
+                        <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', fontSize: '13px' }}></i>
+                        <span style={{ fontSize: '13px', color: '#2B2520', fontWeight: '600' }}>
                           {rec.siteId}: {rec.siteName}
                         </span>
                       </div>

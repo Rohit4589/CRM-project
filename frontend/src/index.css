@@ -6,34 +6,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Primary Palette */
-  --navy: #111827;
-  --navy-light: #1F2937;
-  --navy-muted: #374151;
+  /* 3-Color Luxury Combination */
+  --content-white: #FFFFFF;        /* Color 1: Crisp White for content area */
+  --cashmere-greige: #E6DFD5;      /* Color 2 (7th): Warm Cashmere Greige (Sidebar) */
+  --sandstone-alabaster: #F3EDE6;  /* Color 3 (8th): Alabaster Sandstone (Header) */
 
-  /* Accent */
-  --gold: #B9782D;
-  --gold-light: #D4993F;
-  --gold-bg: rgba(185, 120, 45, 0.08);
-  --gold-border: rgba(185, 120, 45, 0.2);
+  /* Primary Palette */
+  --navy: #1F242D;
+  --navy-light: #2A303C;
+  --navy-muted: #4B5563;
+
+  /* Accent - Rich Dark Espresso / Bold Fresh Coffee */
+  --gold: #4A2C17;
+  --gold-light: #61391E;
+  --gold-dark: #361E0E;
+  --gold-bg: rgba(74, 44, 23, 0.08);
+  --gold-border: rgba(74, 44, 23, 0.22);
 
   /* Neutrals */
-  --bg-page: #F8F9FA;
-  --bg-card: #FFFFFF;
-  --bg-hover: #F3F4F6;
-  --bg-subtle: #F9FAFB;
+  --bg-page: #FAF8F5;              /* Soft warm luxury canvas */
+  --bg-card: #FFFFFF;              /* Crisp White for content cards */
+  --bg-hover: #F3EDE6;
+  --bg-subtle: #F9F6F1;
 
-  /* Borders */
-  --border: #E5E7EB;
-  --border-light: #F3F4F6;
+  /* Borders — Luxury Coffee Border System */
+  --border: #D1C2AF;
+  --border-light: #E4D9CC;
+  --coffee-border: #D1C2AF;
+  --coffee-border-dark: #9A7B56;
+  --coffee-dark: #5C3D24;
+  --coffee-medium: #8C5521;
 
   /* Text */
-  --text-primary: #111827;
-  --text-secondary: #4B5563;
-  --text-muted: #9CA3AF;
+  --text-primary: #1F1A17;
+  --text-secondary: #5C4E43;
+  --text-muted: #8C7B6D;
   --text-inverse: #FFFFFF;
 
-  /* Status */
+  /* Status (No Blue) */
   --success: #059669;
   --success-bg: #ECFDF5;
   --success-border: #A7F3D0;
@@ -43,14 +53,14 @@
   --danger: #DC2626;
   --danger-bg: #FEF2F2;
   --danger-border: #FECACA;
-  --info: #2563EB;
-  --info-bg: #EFF6FF;
+  --info: #8C5521;
+  --info-bg: #F5EFEB;
 
-  /* Shadows */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  /* Shadows — Warm Coffee Luxury Elevation */
+  --shadow-xs: 0 1px 2px rgba(100, 70, 40, 0.04);
+  --shadow-sm: 0 2px 5px rgba(100, 70, 40, 0.05), 0 1px 2px rgba(100, 70, 40, 0.03);
+  --shadow-md: 0 4px 14px -1px rgba(100, 70, 40, 0.07), 0 2px 4px -1px rgba(100, 70, 40, 0.04);
+  --shadow-lg: 0 10px 24px -3px rgba(100, 70, 40, 0.09), 0 4px 6px -2px rgba(100, 70, 40, 0.03);
 
   /* Layout */
   --sidebar-width: 260px;
@@ -90,6 +100,7 @@ body {
 .layout {
   display: flex;
   min-height: 100vh;
+  width: 100%;
 }
 
 .main-wrapper {
@@ -98,6 +109,25 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
+  max-width: calc(100% - var(--sidebar-width));
+  width: calc(100% - var(--sidebar-width));
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF8F5;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1C2AF;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9A7B56;
 }
 
 /* ============================================
@@ -124,7 +154,7 @@ body {
 .btn-primary:hover {
   background: var(--gold-light);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(185, 120, 45, 0.25);
+  box-shadow: 0 4px 12px rgba(74, 44, 23, 0.28);
 }
 
 .btn-primary:active {

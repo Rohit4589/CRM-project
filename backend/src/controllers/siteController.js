@@ -26,12 +26,17 @@ const getSites = async (req, res) => {
     const result = await pool.query(query);
 
     const formattedSites = result.rows.map((row) => {
-      const sRef = row.siteRef || `SITE-${String(row.id).padStart(3, '0')}`;
+      const match = String(row.siteRef || '').match(/\d+/);
+      const rawNum = match ? parseInt(match[0], 10) : row.id;
+      const sRef = !isNaN(rawNum)
+        ? (rawNum < 1000 ? String(rawNum).padStart(3, '0') : String(rawNum))
+        : String(row.siteRef || row.id).replace(/^SITE-/i, '');
+
       return {
         id: sRef,
         siteRef: sRef,
         dbId: row.id,
-        siteCode: sRef.replace(/^SITE-/i, ''),
+        siteCode: sRef,
         customerName: row.customerName,
         phone: row.phone || '',
         email: row.email || '',
@@ -84,25 +89,28 @@ const addSite = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Customer/Site Name is required' });
     }
 
-    // Determine siteRef from user-provided numeric code or auto-increment
+    // Determine siteRef from user-provided numeric code or auto-increment (min 3 digits padded: 001, 002, 183, 1000+)
     let finalSiteRef = '';
     const rawCode = String(siteCode !== undefined ? siteCode : (siteRef || '')).trim();
     const cleanDigits = rawCode.replace(/[^0-9]/g, '');
 
     if (cleanDigits) {
-      // User entered numeric digits e.g. "001", "2", "105"
-      const paddedNum = cleanDigits.padStart(3, '0');
-      finalSiteRef = `SITE-${paddedNum}`;
+      // User entered numeric digits e.g. "1", "001", "2", "183", "1000"
+      const rawInt = parseInt(cleanDigits, 10);
+      const formattedNum = !isNaN(rawInt)
+        ? (rawInt < 1000 ? String(rawInt).padStart(3, '0') : String(rawInt))
+        : cleanDigits;
+      finalSiteRef = formattedNum;
 
       // Check for duplicate site_ref
       const existCheck = await pool.query(
-        'SELECT id, customer_name FROM public.sites WHERE UPPER(site_ref) = UPPER($1)',
-        [finalSiteRef]
+        'SELECT id, customer_name FROM public.sites WHERE UPPER(site_ref) = UPPER($1) OR UPPER(site_ref) = UPPER($2)',
+        [finalSiteRef, `SITE-${finalSiteRef}`]
       );
       if (existCheck.rows.length > 0) {
         return res.status(400).json({
           success: false,
-          message: `Site ID "${finalSiteRef}" already exists for customer "${existCheck.rows[0].customer_name}". Please choose a different number.`
+          message: `Order / Site Number "${finalSiteRef}" already exists for customer "${existCheck.rows[0].customer_name}". Please choose a different number.`
         });
       }
     } else {
@@ -118,7 +126,7 @@ const addSite = async (req, res) => {
           nextNum = Math.max(...nums) + 1;
         }
       }
-      finalSiteRef = `SITE-${String(nextNum).padStart(3, '0')}`;
+      finalSiteRef = nextNum < 1000 ? String(nextNum).padStart(3, '0') : String(nextNum);
     }
 
     const insertQuery = `
@@ -158,12 +166,17 @@ const addSite = async (req, res) => {
     ]);
 
     const row = result.rows[0];
-    const sRef = row.siteRef || finalSiteRef;
+    const match = String(row.siteRef || finalSiteRef).match(/\d+/);
+    const rawNum = match ? parseInt(match[0], 10) : row.id;
+    const sRef = !isNaN(rawNum)
+      ? (rawNum < 1000 ? String(rawNum).padStart(3, '0') : String(rawNum))
+      : String(row.siteRef || finalSiteRef).replace(/^SITE-/i, '');
+
     const newSite = {
       id: sRef,
       siteRef: sRef,
       dbId: row.id,
-      siteCode: sRef.replace(/^SITE-/i, ''),
+      siteCode: sRef,
       customerName: row.customerName,
       phone: row.phone,
       email: row.email,
@@ -216,8 +229,8 @@ const updateSite = async (req, res) => {
       const strippedDigits = String(id).replace(/[^0-9]/g, '');
       if (strippedDigits) {
         const checkByDigits = await pool.query(
-          'SELECT id, site_ref FROM public.sites WHERE site_ref = $1 OR id = $2',
-          [`SITE-${strippedDigits.padStart(3, '0')}`, parseInt(strippedDigits, 10)]
+          'SELECT id, site_ref FROM public.sites WHERE site_ref = $1 OR site_ref = $2 OR site_ref = $3 OR id = $4',
+          [strippedDigits.padStart(3, '0'), strippedDigits, `SITE-${strippedDigits.padStart(3, '0')}`, parseInt(strippedDigits, 10)]
         );
         if (checkByDigits.rows.length > 0) {
           targetDbId = checkByDigits.rows[0].id;
@@ -245,23 +258,26 @@ const updateSite = async (req, res) => {
       notes,
     } = req.body;
 
-    // Check if new siteCode / siteRef is provided
+    // Check if new siteCode / siteRef is provided (min 3 digits padded: 001, 002, 183, 1000+)
     let newSiteRef = null;
     const rawCode = (siteCode !== undefined ? siteCode : siteRef);
     if (rawCode !== undefined && rawCode !== null && String(rawCode).trim() !== '') {
       const cleanDigits = String(rawCode).replace(/[^0-9]/g, '');
       if (cleanDigits) {
-        newSiteRef = `SITE-${cleanDigits.padStart(3, '0')}`;
+        const rawInt = parseInt(cleanDigits, 10);
+        newSiteRef = !isNaN(rawInt)
+          ? (rawInt < 1000 ? String(rawInt).padStart(3, '0') : String(rawInt))
+          : cleanDigits;
         
         // Uniqueness check: ensure no other site has this site_ref
         const dupCheck = await pool.query(
-          'SELECT id, customer_name FROM public.sites WHERE UPPER(site_ref) = UPPER($1) AND id <> $2',
-          [newSiteRef, targetDbId]
+          'SELECT id, customer_name FROM public.sites WHERE (UPPER(site_ref) = UPPER($1) OR UPPER(site_ref) = UPPER($2)) AND id <> $3',
+          [newSiteRef, `SITE-${newSiteRef}`, targetDbId]
         );
         if (dupCheck.rows.length > 0) {
           return res.status(400).json({
             success: false,
-            message: `Site ID "${newSiteRef}" is already used by "${dupCheck.rows[0].customer_name}". Please enter a different number.`
+            message: `Order / Site Number "${newSiteRef}" is already used by "${dupCheck.rows[0].customer_name}". Please enter a different number.`
           });
         }
       }
@@ -320,12 +336,17 @@ const updateSite = async (req, res) => {
     }
 
     const row = result.rows[0];
-    const sRef = row.siteRef || (newSiteRef || `SITE-${String(row.id).padStart(3, '0')}`);
+    const match = String(row.siteRef || newSiteRef || '').match(/\d+/);
+    const rawNum = match ? parseInt(match[0], 10) : row.id;
+    const sRef = !isNaN(rawNum)
+      ? (rawNum < 1000 ? String(rawNum).padStart(3, '0') : String(rawNum))
+      : String(row.siteRef || row.id).replace(/^SITE-/i, '');
+
     const updatedSite = {
       id: sRef,
       siteRef: sRef,
       dbId: row.id,
-      siteCode: sRef.replace(/^SITE-/i, ''),
+      siteCode: sRef,
       customerName: row.customerName,
       phone: row.phone,
       email: row.email,
@@ -371,6 +392,18 @@ const deleteSite = async (req, res) => {
       const checkByRef = await pool.query('SELECT id FROM public.sites WHERE UPPER(site_ref) = UPPER($1)', [id]);
       if (checkByRef.rows.length > 0) {
         targetDbId = checkByRef.rows[0].id;
+      }
+    }
+    if (!targetDbId) {
+      const strippedDigits = String(id).replace(/[^0-9]/g, '');
+      if (strippedDigits) {
+        const checkByDigits = await pool.query(
+          'SELECT id FROM public.sites WHERE site_ref = $1 OR site_ref = $2 OR site_ref = $3 OR id = $4',
+          [strippedDigits.padStart(3, '0'), strippedDigits, `SITE-${strippedDigits.padStart(3, '0')}`, parseInt(strippedDigits, 10)]
+        );
+        if (checkByDigits.rows.length > 0) {
+          targetDbId = checkByDigits.rows[0].id;
+        }
       }
     }
 

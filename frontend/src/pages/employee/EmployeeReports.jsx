@@ -1,25 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../../config/api';
+import modernLogo from '../../assets/logo.png';
+import { getTranslation } from '../../utils/translations';
 
-const EmployeeReports = ({ user }) => {
+const EmployeeReports = ({ user, lang = 'hi' }) => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState('All');
+  const [employeeProfile, setEmployeeProfile] = useState(user || null);
+
+  const t = (key) => getTranslation(lang, key);
 
   const userId = user?.dbId || user?.id || 2;
-  const dailyRate = Number(user?.dailySalary || user?.dailyRate || 1000);
 
   useEffect(() => {
     const fetchAttendanceData = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${API_BASE}/attendance/employee/${userId}`);
-        const data = await res.json();
-        if (data.success) {
-          setRecords(data.records || []);
+        const [attRes, empRes] = await Promise.all([
+          fetch(`${API_BASE}/attendance/employee/${userId}`).then(r => r.json()).catch(() => ({ success: false })),
+          fetch(`${API_BASE}/employees`).then(r => r.json()).catch(() => ({ success: false }))
+        ]);
+
+        if (attRes.success) {
+          setRecords(attRes.records || []);
+        }
+
+        if (empRes.success && empRes.employees) {
+          const matched = empRes.employees.find(e => 
+            String(e.dbId) === String(userId) || 
+            String(e.id) === String(user?.id) || 
+            (user?.mobile && e.phone === user?.mobile)
+          );
+          if (matched) setEmployeeProfile(prev => ({ ...prev, ...matched }));
         }
       } catch (err) {
-        console.error('Error fetching payslip attendance:', err);
+        console.error('Error fetching payslip attendance from DB:', err);
       } finally {
         setLoading(false);
       }
@@ -27,6 +43,8 @@ const EmployeeReports = ({ user }) => {
 
     fetchAttendanceData();
   }, [userId]);
+
+  const dailyRate = Number(employeeProfile?.dailySalary || employeeProfile?.dailyRate || user?.dailySalary || user?.dailyRate || 1000);
 
   const availableMonths = Array.from(new Set(records.map(r => r.monthYear).filter(Boolean)));
 
@@ -47,26 +65,48 @@ const EmployeeReports = ({ user }) => {
   };
 
   return (
-    <main className="dashboard-content" style={{ padding: '24px 28px', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+    <main className="dashboard-content" style={{ 
+      padding: 'clamp(12px, 2.5vw, 24px)', 
+      width: '100%', 
+      maxWidth: '1200px', 
+      margin: '0 auto',
+      boxSizing: 'border-box'
+    }}>
       
       {/* Action Header */}
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
+      <div className="page-header" style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        flexWrap: 'wrap', 
+        gap: '12px', 
+        marginBottom: '18px' 
+      }}>
         <div>
-          <h1 className="page-title" style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: 'var(--navy, #111827)' }}>
-            My Monthly Payslip & Report
+          <h1 className="page-title" style={{ margin: 0, fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: '800', color: '#2B2520' }}>
+            {t('myPayslip')}
           </h1>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#6B7280' }}>
-            Official salary certificate issued by Modern Interior Management.
+          <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#7D6C5E' }}>
+            {t('payslipSubtitle')}
           </p>
         </div>
 
-        <div className="header-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <select 
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #D1D5DB', outline: 'none', background: '#fff', fontSize: '13px', fontWeight: '500' }}
+            style={{ 
+              padding: '9px 12px', 
+              borderRadius: '8px', 
+              border: '1.5px solid #D1D5DB', 
+              outline: 'none', 
+              background: '#fff', 
+              fontSize: '13px', 
+              fontWeight: '600',
+              color: '#2B2520'
+            }}
           >
-            <option value="All">All Time Punches</option>
+            <option value="All">{t('allMonths') || 'All Months'}</option>
             {availableMonths.map(m => (
               <option key={m} value={m}>{m}</option>
             ))}
@@ -74,9 +114,17 @@ const EmployeeReports = ({ user }) => {
           <button 
             onClick={handlePrint}
             className="btn-primary" 
-            style={{ padding: '8px 18px', fontSize: '13px' }}
+            style={{ 
+              padding: '9px 16px', 
+              fontSize: '13px',
+              borderRadius: '8px',
+              fontWeight: '700',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
           >
-            <i className="fa-solid fa-print"></i> Print / Download PDF
+            <i className="fa-solid fa-print"></i> {t('printPayslip')}
           </button>
         </div>
       </div>
@@ -85,35 +133,41 @@ const EmployeeReports = ({ user }) => {
       <div id="printable-payslip" style={{
         background: '#fff',
         borderRadius: '12px',
-        padding: '36px 40px',
-        border: '1px solid #D1D5DB',
+        padding: 'clamp(16px, 3vw, 36px)',
+        border: '1px solid #EAE4DD',
         boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-        position: 'relative'
+        position: 'relative',
+        boxSizing: 'border-box'
       }}>
         
         {/* Company Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid var(--gold, #B9782D)', paddingBottom: '20px', marginBottom: '24px' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'flex-start', 
+          flexWrap: 'wrap',
+          gap: '12px',
+          borderBottom: '2px solid var(--gold, #A56A30)', 
+          paddingBottom: '16px', 
+          marginBottom: '20px' 
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '44px', height: '44px', background: 'var(--gold, #B9782D)',
-              borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '20px'
-            }}>
-              <i className="fa-solid fa-house"></i>
-            </div>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--navy, #111827)' }}>Modern Interior</h2>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#6B7280', fontWeight: '600' }}>Management System</div>
-            </div>
+            <img 
+              src={modernLogo} 
+              alt="Modern Interior" 
+              style={{ height: '40px', width: 'auto', objectFit: 'contain', display: 'block' }}
+              onError={(e) => { e.currentTarget.src = '/logo.png'; }}
+            />
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--gold, #B9782D)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              SALARY PAYSLIP
+            <div style={{ fontSize: '15px', fontWeight: '800', color: 'var(--gold, #A56A30)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {t('salaryPayslipTitle')}
             </div>
-            <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', marginTop: '2px' }}>
-              Period: {selectedMonth}
+            <div style={{ fontSize: '13px', fontWeight: '600', color: '#2B2520', marginTop: '2px' }}>
+              {t('period')} <span style={{ fontFamily: 'monospace' }}>{selectedMonth}</span>
             </div>
             <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px', fontFamily: 'monospace' }}>
-              Generated on: {(() => {
+              {t('generatedOn')} {(() => {
                 const d = new Date();
                 return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
               })()}
@@ -123,79 +177,110 @@ const EmployeeReports = ({ user }) => {
 
         {/* Employee Particulars Grid */}
         <div style={{
-          background: '#F9FAFB',
-          border: '1px solid #E5E7EB',
-          borderRadius: '8px',
-          padding: '16px 20px',
+          background: '#FAF8F5',
+          border: '1px solid #EAE4DD',
+          borderRadius: '10px',
+          padding: '14px 16px',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '14px',
-          marginBottom: '26px'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+          gap: '12px',
+          marginBottom: '20px'
         }}>
           <div>
-            <div style={{ fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600' }}>Employee Name</div>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827', marginTop: '2px' }}>{user?.name || user?.fullName || 'Worker'}</div>
+            <div style={{ fontSize: '11px', color: '#7D6C5E', textTransform: 'uppercase', fontWeight: '700' }}>
+              {t('employeeName')}
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#2B2520', marginTop: '2px' }}>
+              {employeeProfile?.name || employeeProfile?.fullName || user?.name || user?.fullName || 'Worker'}
+            </div>
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600' }}>Employee ID</div>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--gold, #B9782D)', marginTop: '2px' }}>{user?.id || 'EMP-101'}</div>
+            <div style={{ fontSize: '11px', color: '#7D6C5E', textTransform: 'uppercase', fontWeight: '700' }}>
+              {t('employeeId')}
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--gold, #A56A30)', marginTop: '2px' }}>
+              {employeeProfile?.id || user?.id || (user?.empCode ? `EMP-${user.empCode}` : 'EMP-101')}
+            </div>
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600' }}>Designation</div>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827', marginTop: '2px' }}>{user?.roleTitle || user?.role || 'Carpenter & Woodwork'}</div>
+            <div style={{ fontSize: '11px', color: '#7D6C5E', textTransform: 'uppercase', fontWeight: '700' }}>
+              {t('designation')}
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '700', color: '#2B2520', marginTop: '2px' }}>
+              {employeeProfile?.role || employeeProfile?.roleTitle || user?.roleTitle || user?.role || 'Carpenter'}
+            </div>
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600' }}>Registered Mobile</div>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827', marginTop: '2px' }}>{user?.mobile || user?.phone || 'N/A'}</div>
+            <div style={{ fontSize: '11px', color: '#7D6C5E', textTransform: 'uppercase', fontWeight: '700' }}>
+              {t('registeredMobile')}
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '700', color: '#2B2520', marginTop: '2px' }}>
+              {employeeProfile?.phone || user?.mobile || user?.phone || 'N/A'}
+            </div>
           </div>
         </div>
 
         {/* Attendance & Rate Details */}
         <div style={{
-          display: 'flex', justifyContent: 'space-between', padding: '12px 18px',
-          background: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px', marginBottom: '24px'
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '10px',
+          padding: '12px 16px',
+          background: '#fff', 
+          border: '1px solid #EAE4DD', 
+          borderRadius: '10px', 
+          marginBottom: '20px'
         }}>
           <div>
-            <span style={{ color: '#6B7280', fontSize: '13px' }}>Total Days Present: </span>
-            <strong style={{ color: '#111827', fontSize: '14px' }}>{totalDays.toFixed(1)} Days</strong> ({fullDays} Full + {halfDays} Half)
+            <span style={{ color: '#7D6C5E', fontSize: '13px' }}>{t('totalDaysPresent')}: </span>
+            <strong style={{ color: '#2B2520', fontSize: '14px' }}>{totalDays.toFixed(1)} Days</strong> 
+            <span style={{ fontSize: '12px', color: '#7D6C5E', marginLeft: '4px' }}>({fullDays}F + {halfDays}H)</span>
           </div>
           <div>
-            <span style={{ color: '#6B7280', fontSize: '13px' }}>Daily Wage Rate: </span>
-            <strong style={{ color: '#111827', fontSize: '14px' }}>₹{dailyRate.toLocaleString('en-IN')} / Day</strong>
+            <span style={{ color: '#7D6C5E', fontSize: '13px' }}>{t('dailyWageRate')}: </span>
+            <strong style={{ color: '#2B2520', fontSize: '14px' }}>₹{dailyRate.toLocaleString('en-IN')} / Day</strong>
           </div>
         </div>
 
-        {/* Earnings & Deductions Table */}
-        <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden', marginBottom: '24px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        {/* Earnings & Deductions Table - Mobile horizontally scrollable */}
+        <div style={{ 
+          border: '1px solid #EAE4DD', 
+          borderRadius: '10px', 
+          overflowX: 'auto', 
+          marginBottom: '20px',
+          WebkitOverflowScrolling: 'touch'
+        }}>
+          <table style={{ width: '100%', minWidth: '460px', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ background: '#111827', color: '#fff', textAlign: 'left', fontSize: '12px', textTransform: 'uppercase' }}>
-                <th style={{ padding: '12px 16px' }}>Earnings Description</th>
-                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Amount</th>
-                <th style={{ padding: '12px 16px', borderLeft: '1px solid #374151' }}>Deductions Description</th>
-                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Amount</th>
+              <tr style={{ background: '#4A2C17', color: '#fff', textAlign: 'left', fontSize: '12px', textTransform: 'uppercase' }}>
+                <th style={{ padding: '12px 14px' }}>{t('earningsDesc')}</th>
+                <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('amount')}</th>
+                <th style={{ padding: '12px 14px', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>{t('deductionsDesc')}</th>
+                <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('amount')}</th>
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
-                <td style={{ padding: '14px 16px', fontSize: '13px', fontWeight: '500' }}>
-                  Base Daily Wages ({totalDays.toFixed(1)} Days × ₹{dailyRate.toLocaleString('en-IN')})
+              <tr style={{ borderBottom: '1px solid #EAE4DD' }}>
+                <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '500' }}>
+                  {t('baseDailyWages')} ({totalDays.toFixed(1)} Days × ₹{dailyRate.toLocaleString('en-IN')})
                 </td>
-                <td style={{ padding: '14px 16px', fontSize: '13px', fontWeight: '700', textAlign: 'right' }}>
+                <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '700', textAlign: 'right', color: '#2B2520' }}>
                   ₹{grossEarnings.toLocaleString('en-IN')}
                 </td>
-                <td style={{ padding: '14px 16px', fontSize: '13px', color: '#6B7280', borderLeft: '1px solid #E5E7EB' }}>
-                  Salary Advances
+                <td style={{ padding: '12px 14px', fontSize: '13px', color: '#7D6C5E', borderLeft: '1px solid #EAE4DD' }}>
+                  {t('salaryAdvances')}
                 </td>
-                <td style={{ padding: '14px 16px', fontSize: '13px', fontWeight: '700', color: '#6B7280', textAlign: 'right' }}>
+                <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '700', color: '#7D6C5E', textAlign: 'right' }}>
                   ₹{totalDeductions.toLocaleString('en-IN')}
                 </td>
               </tr>
-              <tr style={{ background: '#F9FAFB', fontWeight: '700' }}>
-                <td style={{ padding: '12px 16px', fontSize: '13px' }}>Total Gross Earnings</td>
-                <td style={{ padding: '12px 16px', fontSize: '13px', textAlign: 'right', color: '#111827' }}>₹{grossEarnings.toLocaleString('en-IN')}</td>
-                <td style={{ padding: '12px 16px', fontSize: '13px', borderLeft: '1px solid #E5E7EB' }}>Total Deductions</td>
-                <td style={{ padding: '12px 16px', fontSize: '13px', textAlign: 'right', color: '#6B7280' }}>₹{totalDeductions.toLocaleString('en-IN')}</td>
+              <tr style={{ background: '#FAF8F5', fontWeight: '700' }}>
+                <td style={{ padding: '12px 14px', fontSize: '13px', color: '#2B2520' }}>{t('totalGrossEarnings')}</td>
+                <td style={{ padding: '12px 14px', fontSize: '13px', textAlign: 'right', color: '#2B2520' }}>₹{grossEarnings.toLocaleString('en-IN')}</td>
+                <td style={{ padding: '12px 14px', fontSize: '13px', borderLeft: '1px solid #EAE4DD', color: '#7D6C5E' }}>{t('totalDeductions')}</td>
+                <td style={{ padding: '12px 14px', fontSize: '13px', textAlign: 'right', color: '#7D6C5E' }}>₹{totalDeductions.toLocaleString('en-IN')}</td>
               </tr>
             </tbody>
           </table>
@@ -203,38 +288,48 @@ const EmployeeReports = ({ user }) => {
 
         {/* Net Amount Box */}
         <div style={{
-          background: 'rgba(185, 120, 45, 0.08)',
-          border: '2px solid rgba(185, 120, 45, 0.3)',
-          borderRadius: '8px',
-          padding: '16px 20px',
+          background: 'rgba(165, 106, 48, 0.08)',
+          border: '1.5px solid rgba(165, 106, 48, 0.35)',
+          borderRadius: '10px',
+          padding: '14px 18px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '36px'
+          flexWrap: 'wrap',
+          gap: '12px',
+          marginBottom: '26px'
         }}>
           <div>
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--gold, #B9782D)', fontWeight: '700' }}>
-              NET SALARY PAYABLE
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#7A4518', fontWeight: '800' }}>
+              {t('netSalaryPayable')}
             </div>
-            <div style={{ fontSize: '13px', color: '#4B5563', marginTop: '2px' }}>
-              Computed dynamically based on logged punch verified days.
+            <div style={{ fontSize: '12px', color: '#7D6C5E', marginTop: '2px' }}>
+              {t('netPayableNote')}
             </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--gold, #B9782D)' }}>
+          <div style={{ fontSize: 'clamp(24px, 5vw, 30px)', fontWeight: '800', color: '#7A4518' }}>
             ₹{netPayable.toLocaleString('en-IN')}
           </div>
         </div>
 
         {/* Footer Authorization */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '20px', borderTop: '1px dashed #D1D5DB' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'flex-end', 
+          flexWrap: 'wrap',
+          gap: '16px',
+          paddingTop: '16px', 
+          borderTop: '1px dashed #D1D5DB' 
+        }}>
           <div>
-            <div style={{ fontSize: '11px', color: '#6B7280' }}>System Generated Payslip</div>
-            <div style={{ fontSize: '11px', color: '#6B7280' }}>Modern Interior CRM Platform</div>
+            <div style={{ fontSize: '11px', color: '#6B7280' }}>{t('systemGenerated')}</div>
+            <div style={{ fontSize: '11px', color: '#6B7280' }}>Modern Interior CRM</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ width: '160px', borderBottom: '1px solid #111827', marginBottom: '6px' }}></div>
-            <div style={{ fontSize: '12px', fontWeight: '700', color: '#111827' }}>Authorized Signatory</div>
-            <div style={{ fontSize: '10px', color: '#6B7280' }}>Mahendra Sharma (Administrator)</div>
+            <div style={{ width: '140px', borderBottom: '1px solid #4A2C17', marginBottom: '6px' }}></div>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: '#2B2520' }}>{t('authorizedSignatory')}</div>
+            <div style={{ fontSize: '10px', color: '#7D6C5E' }}>Mahendra Sharma</div>
           </div>
         </div>
 

@@ -1,0 +1,378 @@
+/* ========================================================
+   PRODUCTS & RATES FEATURE STYLES - MODERN INTERIOR CRM
+   ======================================================== */
+
+.products-rates-container {
+  padding: clamp(16px, 2.5vw, 28px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.products-rates-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.products-rates-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2B2520;
+  margin: 0 0 4px 0;
+}
+
+.products-rates-header p {
+  font-size: 13.5px;
+  color: #7A6F66;
+  margin: 0;
+}
+
+.products-rates-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-secondary-custom {
+  background: #FAF8F5;
+  color: #4A2C17;
+  border: 1px solid #DCD4CA;
+  border-radius: 8px;
+  padding: 9px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary-custom:hover {
+  background: #F0EBE4;
+  border-color: #B8ADA1;
+}
+
+/* KPI Chips */
+.catalog-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.catalog-kpi-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE4DD;
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(43, 37, 32, 0.04);
+  width: auto;
+  min-width: 170px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.catalog-kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(43, 37, 32, 0.08);
+}
+
+.catalog-kpi-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.catalog-kpi-icon.primary { background: #F6EFE9; color: #4A2C17; }
+.catalog-kpi-icon.success { background: #E8F5E9; color: #2E7D32; }
+.catalog-kpi-icon.info { background: #E0F2FE; color: #0369A1; }
+.catalog-kpi-icon.warning { background: #FEF3C7; color: #92400E; }
+
+.catalog-kpi-info h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2B2520;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.catalog-kpi-info p {
+  font-size: 11px;
+  color: #8C827A;
+  margin: 2px 0 0 0;
+  line-height: 1.2;
+}
+
+/* Room Category Pills Bar */
+.category-pills-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE4DD;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 4px rgba(43, 37, 32, 0.03);
+}
+
+.category-pills-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.category-pills-header span {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #8C827A;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.category-pills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.category-pill {
+  background: #FAF8F5;
+  border: 1px solid #DCD4CA;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  color: #4A3E36;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+}
+
+.category-pill:hover {
+  background: #F0EBE4;
+  border-color: #B8ADA1;
+}
+
+.category-pill.active {
+  background: #4A2C17;
+  color: #FFFFFF;
+  border-color: #4A2C17;
+  box-shadow: 0 2px 6px rgba(74, 44, 23, 0.25);
+}
+
+.category-pill-count {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.06);
+  font-weight: 700;
+}
+
+.category-pill.active .category-pill-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+
+.category-pill-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+}
+
+.category-pill-btn {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.category-pill-btn:hover {
+  opacity: 1;
+}
+
+.btn-add-room-pill {
+  background: #FDF9F5;
+  border: 1px dashed #A56A30;
+  color: #A56A30;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.btn-add-room-pill:hover {
+  background: #F6EFE9;
+  border-color: #4A2C17;
+  color: #4A2C17;
+}
+
+/* Toolbar & Filters */
+.catalog-toolbar {
+  background: #FFFFFF;
+  border: 1px solid #EAE4DD;
+  border-radius: 12px;
+  padding: 12px 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 4px rgba(43, 37, 32, 0.03);
+}
+
+.catalog-toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.catalog-search-input {
+  position: relative;
+  min-width: 240px;
+  flex: 1;
+  max-width: 360px;
+}
+
+.catalog-search-input i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #A89F91;
+  font-size: 13.5px;
+}
+
+.catalog-search-input input {
+  width: 100%;
+  padding: 9px 12px 9px 34px;
+  border: 1px solid #DCD4CA;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #FAF8F5;
+  color: #2B2520;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s;
+}
+
+.catalog-search-input input:focus {
+  border-color: #4A2C17;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(74, 44, 23, 0.1);
+}
+
+.catalog-select {
+  padding: 9px 12px;
+  border: 1px solid #DCD4CA;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #FAF8F5;
+  color: #2B2520;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Table */
+.catalog-table-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE4DD;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(43, 37, 32, 0.04);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.catalog-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.catalog-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+  table-layout: fixed;
+}
+
+.catalog-table th {
+  background: #F8F5F1;
+  color: #5C5248;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-bottom: 1px solid #EAE4DD;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.catalog-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #F0EBE4;
+  color: #2B2520;
+  vertical-align: middle;
+}
+
+.catalog-table tr:hover td {
+  background: #FDFBF8;
+}
+
+.badge-unit {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 600;
+  background: #F1F5F9;
+  color: #475569;
+  display: inline-block;
+}
+
+.badge-unit.SqFt { background: #E0F2FE; color: #0369A1; }
+.badge-unit.SET { background: #FEF3C7; color: #92400E; }
+.badge-unit.RFT { background: #F3E8FF; color: #6B21A8; }
+.badge-unit.APPROX { background: #E2E8F0; color: #334155; }
+
+.rate-badge {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.rate-badge.modern { color: #0284C7; }
+.rate-badge.luxury-modern { color: #D97706; }
+.rate-badge.luxury { color: #7C3AED; }
+
+.catalog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}

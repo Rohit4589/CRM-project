@@ -44,11 +44,11 @@ const LocationMapPicker = ({
           position: relative;
           width: 36px;
           height: 36px;
-          background: #B9782D;
+          background: #A56A30;
           border: 3px solid #FFFFFF;
           border-radius: 50% 50% 50% 0;
           transform: rotate(-45deg);
-          box-shadow: 0 4px 12px rgba(185, 120, 45, 0.45);
+          box-shadow: 0 4px 12px rgba(165, 106, 48, 0.45);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -292,7 +292,7 @@ const LocationMapPicker = ({
             <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
               <div style={{
                 width: '32px', height: '32px', borderRadius: '8px',
-                background: 'rgba(185, 120, 45, 0.12)', color: 'var(--gold, #B9782D)',
+                background: 'rgba(165, 106, 48, 0.12)', color: 'var(--gold, #A56A30)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px'
               }}>
                 <i className="fa-solid fa-map-location-dot"></i>
@@ -366,8 +366,8 @@ const LocationMapPicker = ({
               onClick={handleUseCurrentLocation}
               disabled={searching}
               style={{
-                padding: '9px 14px', background: 'rgba(185, 120, 45, 0.1)', color: 'var(--gold, #B9782D)',
-                border: '1px solid rgba(185, 120, 45, 0.3)', borderRadius: '6px', fontSize: '13px', fontWeight: '600',
+                padding: '9px 14px', background: 'rgba(165, 106, 48, 0.1)', color: 'var(--gold, #A56A30)',
+                border: '1px solid rgba(165, 106, 48, 0.3)', borderRadius: '6px', fontSize: '13px', fontWeight: '600',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
               }}
               title="Use current device GPS location"
@@ -395,11 +395,11 @@ const LocationMapPicker = ({
                       background: '#FFFFFF', border: '1px solid #E2E8F0',
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--gold, #B9782D)'}
+                    onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--gold, #A56A30)'}
                     onMouseOut={(e) => e.currentTarget.style.borderColor = '#E2E8F0'}
                   >
                     <span style={{color: '#1E293B', fontWeight: '500'}}>
-                      <i className="fa-solid fa-location-dot" style={{color: 'var(--gold, #B9782D)', marginRight: '6px'}}></i>
+                      <i className="fa-solid fa-location-dot" style={{color: 'var(--gold, #A56A30)', marginRight: '6px'}}></i>
                       {res.displayName}
                     </span>
                     <span style={{color: '#64748B', fontSize: '11px', whiteSpace: 'nowrap'}}>
@@ -434,7 +434,7 @@ const LocationMapPicker = ({
             padding: '6px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: '500',
             display: 'flex', alignItems: 'center', gap: '6px', pointerEvents: 'none'
           }}>
-            <i className="fa-solid fa-hand-pointer" style={{color: 'var(--gold, #B9782D)'}}></i>
+            <i className="fa-solid fa-hand-pointer" style={{color: 'var(--gold, #A56A30)'}}></i>
             Click on map or drag pin to adjust coordinates
           </div>
         </div>
@@ -452,8 +452,8 @@ const LocationMapPicker = ({
               {coords ? (
                 <span style={{
                   fontFamily: 'monospace', fontSize: '13px', fontWeight: '700',
-                  color: 'var(--gold, #B9782D)', background: 'rgba(185, 120, 45, 0.1)',
-                  padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(185, 120, 45, 0.25)'
+                  color: 'var(--gold, #A56A30)', background: 'rgba(165, 106, 48, 0.1)',
+                  padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(165, 106, 48, 0.25)'
                 }}>
                   {coords.lat}, {coords.lng}
                 </span>
@@ -466,7 +466,7 @@ const LocationMapPicker = ({
 
             {addressPreview && (
               <div style={{fontSize: '12px', color: '#475569', marginTop: '4px', display: 'flex', alignItems: 'flex-start', gap: '6px'}}>
-                <i className="fa-solid fa-map-pin" style={{color: 'var(--gold, #B9782D)', marginTop: '2px'}}></i>
+                <i className="fa-solid fa-map-pin" style={{color: 'var(--gold, #A56A30)', marginTop: '2px'}}></i>
                 <span style={{lineHeight: '1.4'}}>
                   {reverseGeocoding ? 'Detecting address...' : addressPreview}
                 </span>
@@ -517,10 +517,10 @@ const LocationMapPicker = ({
               type="button"
               onClick={handleConfirm}
               style={{
-                padding: '8px 18px', background: 'var(--gold, #B9782D)', color: '#FFFFFF',
+                padding: '8px 18px', background: 'var(--gold, #A56A30)', color: '#FFFFFF',
                 border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '700',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
-                boxShadow: '0 2px 6px rgba(185, 120, 45, 0.3)'
+                boxShadow: '0 2px 6px rgba(165, 106, 48, 0.3)'
               }}
             >
               <i className="fa-solid fa-check"></i> Apply Location

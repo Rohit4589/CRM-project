@@ -222,17 +222,17 @@ const Employees = () => {
         <div>
           <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
             <h1 className="page-title" style={{margin: 0, fontSize: '24px', fontWeight: '700', color: 'var(--navy, #111827)'}}>
-              Employee Management
+              Employees
             </h1>
             <span style={{
-              background: 'rgba(185, 120, 45, 0.1)', color: 'var(--gold, #B9782D)', 
+              background: 'rgba(165, 106, 48, 0.1)', color: 'var(--gold, #A56A30)', 
               fontSize: '12px', fontWeight: '700', padding: '3px 10px', borderRadius: '12px'
             }}>
-              {employees.length} {employees.length === 1 ? 'Employee' : 'Employees'}
+              {employees.length}
             </span>
           </div>
-          <p style={{margin: '4px 0 0 0', fontSize: '13px', color: '#6B7280'}}>
-            Manage workforce, daily wage rates, and employee details
+          <p style={{margin: '4px 0 0 0', fontSize: '13px', color: '#7D6C5E'}}>
+            Staff profiles & daily wages
           </p>
         </div>
 
@@ -240,7 +240,7 @@ const Employees = () => {
           <div className="search-box" style={{position: 'relative'}}>
             <input 
               type="text" 
-              placeholder="Search employees..." 
+              placeholder="Search..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{padding: '9px 14px 9px 36px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', outline: 'none'}}
@@ -288,33 +288,33 @@ const Employees = () => {
       <div className="panel table-responsive" style={{
         background: '#fff',
         borderRadius: '10px',
-        border: '1px solid #E5E7EB',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        border: '1px solid #D1C2AF',
+        boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)',
         overflowX: 'auto',
         WebkitOverflowScrolling: 'touch'
       }}>
         {loading ? (
           <div style={{padding: '50px 20px', textAlign: 'center', color: '#6B7280'}}>
-            <i className="fa-solid fa-spinner fa-spin" style={{fontSize: '28px', color: 'var(--gold, #B9782D)', marginBottom: '12px'}}></i>
-            <div style={{fontSize: '14px', fontWeight: '600'}}>Loading employees from Supabase database...</div>
+            <i className="fa-solid fa-spinner fa-spin" style={{fontSize: '28px', color: 'var(--gold, #A56A30)', marginBottom: '12px'}}></i>
+            <div style={{fontSize: '14px', fontWeight: '600'}}>Loading employees...</div>
           </div>
         ) : (
           <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '650px', tableLayout: 'fixed'}}>
             <thead>
               <tr style={{
-                background: '#F9FAFB',
-                borderBottom: '1px solid #E5E7EB',
+                background: '#F3EDE6',
+                borderBottom: '1.5px solid #D1C2AF',
                 textAlign: 'left',
-                color: '#6B7280',
+                color: '#5C4E43',
                 fontSize: '11px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px'
               }}>
                 <th style={{padding: '12px 16px', width: '22%'}}>Employee</th>
                 <th style={{padding: '12px 16px', width: '12%'}}>ID</th>
-                <th style={{padding: '12px 16px', width: '16%'}}>Trade / Role</th>
+                <th style={{padding: '12px 16px', width: '16%'}}>Role</th>
                 <th style={{padding: '12px 16px', width: '14%'}}>Daily Wage</th>
-                <th style={{padding: '12px 16px', width: '16%'}}>Login PIN / Password</th>
+                <th style={{padding: '12px 16px', width: '16%'}}>Login PIN</th>
                 <th style={{padding: '12px 16px', width: '10%'}}>Status</th>
                 <th style={{padding: '12px 16px', width: '10%', textAlign: 'center'}}>Actions</th>
               </tr>
@@ -324,7 +324,7 @@ const Employees = () => {
                 <tr>
                   <td colSpan="7" style={{padding: '40px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: '14px'}}>
                     <i className="fa-regular fa-folder-open" style={{fontSize: '24px', display: 'block', marginBottom: '8px'}}></i>
-                    No employees found matching "{searchTerm}"
+                    No employees found.
                   </td>
                 </tr>
               ) : (
@@ -337,9 +337,9 @@ const Employees = () => {
                     </td>
                     <td style={{padding: '14px 16px', verticalAlign: 'middle'}}>
                       <span style={{
-                        background: 'rgba(185, 120, 45, 0.1)',
-                        color: 'var(--gold, #B9782D)',
-                        border: '1px solid rgba(185, 120, 45, 0.25)',
+                        background: 'rgba(165, 106, 48, 0.1)',
+                        color: 'var(--gold, #A56A30)',
+                        border: '1px solid rgba(165, 106, 48, 0.25)',
                         padding: '4px 10px',
                         borderRadius: '6px',
                         fontWeight: '800',
@@ -392,21 +392,21 @@ const Employees = () => {
                       <button
                         onClick={() => openEditModal(emp)}
                         style={{
-                          background: '#F8FAFC',
-                          border: '1px solid #CBD5E1',
+                          background: '#FAF8F5',
+                          border: '1px solid #D1C2AF',
                           borderRadius: '6px',
                           padding: '6px 14px',
                           fontSize: '12px',
                           fontWeight: '600',
-                          color: '#1E40AF',
+                          color: '#7A4518',
                           cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
                           transition: 'all 0.2s'
                         }}
-                        onMouseOver={(e) => { e.currentTarget.style.background = '#EFF6FF'; e.currentTarget.style.borderColor = '#93C5FD'; }}
-                        onMouseOut={(e) => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
+                        onMouseOver={(e) => { e.currentTarget.style.background = '#F3EDE6'; e.currentTarget.style.borderColor = '#9A7B56'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.background = '#FAF8F5'; e.currentTarget.style.borderColor = '#D1C2AF'; }}
                       >
                         <i className="fa-solid fa-pen-to-square"></i> Edit
                       </button>
@@ -436,7 +436,7 @@ const Employees = () => {
           }}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
               <h2 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827'}}>
-                <i className="fa-solid fa-user-plus" style={{color: 'var(--gold, #B9782D)', marginRight: '8px'}}></i>
+                <i className="fa-solid fa-user-plus" style={{color: 'var(--gold, #A56A30)', marginRight: '8px'}}></i>
                 Add New Employee
               </h2>
               <button onClick={() => setShowAddModal(false)} style={{
@@ -522,7 +522,7 @@ const Employees = () => {
                   <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Login Password / PIN *
                   </label>
-                  <span style={{color: 'var(--gold, #B9782D)', fontWeight: '600', fontSize: '11px'}}>
+                  <span style={{color: 'var(--gold, #A56A30)', fontWeight: '600', fontSize: '11px'}}>
                     Admin creates password
                   </span>
                 </div>
@@ -649,7 +649,7 @@ const Employees = () => {
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
               <div>
                 <h2 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827'}}>
-                  <i className="fa-solid fa-user-pen" style={{color: 'var(--gold, #B9782D)', marginRight: '8px'}}></i>
+                  <i className="fa-solid fa-user-pen" style={{color: 'var(--gold, #A56A30)', marginRight: '8px'}}></i>
                   Edit Employee ({editFormData.id})
                 </h2>
                 <div style={{fontSize: '12px', color: '#6B7280', marginTop: '2px'}}>Update details or delete employee from database</div>
@@ -667,7 +667,7 @@ const Employees = () => {
                   <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Employee ID (3 or 4 digits) *
                   </label>
-                  <span style={{color: 'var(--gold, #B9782D)', fontWeight: '700', fontSize: '11px'}}>
+                  <span style={{color: 'var(--gold, #A56A30)', fontWeight: '700', fontSize: '11px'}}>
                     Editable Worker Login ID
                   </span>
                 </div>

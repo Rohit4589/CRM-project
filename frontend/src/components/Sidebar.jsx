@@ -1,8 +1,22 @@
 import React from 'react';
 import '../styles/Sidebar.css';
+import modernLogo from '../assets/logo.png';
+import { getTranslation } from '../utils/translations';
 
-const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout }) => {
+const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lang = 'hi', onOpenChangePin }) => {
   const isEmployee = user?.role === 'employee';
+
+  const t = {
+    dashboard: getTranslation(lang, 'dashboard'),
+    attendance: getTranslation(lang, 'attendance'),
+    salary: getTranslation(lang, 'salary'),
+    payslip: getTranslation(lang, 'payslip'),
+    main: getTranslation(lang, 'main'),
+    workAndPay: getTranslation(lang, 'workAndPay'),
+    logout: getTranslation(lang, 'logout'),
+    worker: getTranslation(lang, 'worker'),
+    changePin: getTranslation(lang, 'changePin'),
+  };
 
   const handleItemClick = (e, tab) => {
     e.preventDefault();
@@ -15,20 +29,21 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout }) =
       {/* Mobile Backdrop */}
       <div 
         className={`sidebar-backdrop ${isOpen ? 'show' : ''}`} 
-        onClick={onClose}
+        onClick={onClose} 
         aria-hidden="true"
       />
 
       <aside className={`sidebar ${isOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-brand">
-          <div className="sidebar-brand-icon" style={{ background: isEmployee ? 'var(--gold)' : 'var(--gold)' }}>
-            <i className={`fa-solid ${isEmployee ? 'fa-helmet-safety' : 'fa-house'}`}></i>
-          </div>
-          <div className="sidebar-brand-text">
-            <span className="sidebar-brand-name">Modern Interior</span>
-            <span className="sidebar-brand-sub">
-              {isEmployee ? 'Worker Portal' : 'Admin Management'}
-            </span>
+          <div className="sidebar-brand-inner">
+            <div className="sidebar-logo-wrap">
+              <img 
+                src={modernLogo} 
+                alt="Modern Interior" 
+                className="sidebar-logo-img" 
+                onError={(e) => { e.currentTarget.src = '/logo.png'; }}
+              />
+            </div>
           </div>
           {/* Close button on mobile */}
           <button 
@@ -45,42 +60,53 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout }) =
           {isEmployee ? (
             /* =========================================
                EMPLOYEE RESTRICTED NAVIGATION
-               (Only Attendance, Salary, Reports)
+               (Only Attendance, Salary, Reports, Change PIN)
                ========================================= */
             <>
               <div className="menu-group">
-                <div className="menu-title">Main</div>
+                <div className="menu-title">{t.main}</div>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'emp-dashboard' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'emp-dashboard')}
                 >
-                  <i className="fa-solid fa-gauge"></i> My Dashboard
+                  <i className="fa-solid fa-gauge"></i> {t.dashboard}
                 </a>
               </div>
 
               <div className="menu-group">
-                <div className="menu-title">Work & Pay</div>
+                <div className="menu-title">{t.workAndPay}</div>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'emp-attendance' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'emp-attendance')}
                 >
-                  <i className="fa-solid fa-clipboard-user"></i> My Attendance
+                  <i className="fa-solid fa-clipboard-user"></i> {t.attendance}
                 </a>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'emp-salary' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'emp-salary')}
                 >
-                  <i className="fa-solid fa-money-bill-wave"></i> My Salary
+                  <i className="fa-solid fa-money-bill-wave"></i> {t.salary}
                 </a>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'emp-reports' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'emp-reports')}
                 >
-                  <i className="fa-solid fa-file-invoice"></i> My Payslip
+                  <i className="fa-solid fa-file-invoice"></i> {t.payslip}
+                </a>
+                <a 
+                  href="#" 
+                  className="menu-item" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onOpenChangePin) onOpenChangePin();
+                    if (onClose) onClose();
+                  }}
+                >
+                  <i className="fa-solid fa-key" style={{ color: 'var(--gold, #A56A30)' }}></i> {t.changePin}
                 </a>
               </div>
             </>
@@ -107,7 +133,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout }) =
                   className={`menu-item ${activeTab === 'sites' || activeTab === 'customers' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'sites')}
                 >
-                  <i className="fa-solid fa-location-dot"></i> Sites / Customers
+                  <i className="fa-solid fa-location-dot"></i> Sites
                 </a>
                 <a 
                   href="#" 
@@ -132,7 +158,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout }) =
                   className={`menu-item ${activeTab === 'salary' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'salary')}
                 >
-                  <i className="fa-solid fa-money-bill-wave"></i> Salary Processing
+                  <i className="fa-solid fa-money-bill-wave"></i> Salary
                 </a>
                 <a 
                   href="#" 
@@ -140,6 +166,20 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout }) =
                   onClick={(e) => handleItemClick(e, 'reports')}
                 >
                   <i className="fa-solid fa-file-lines"></i> Reports
+                </a>
+                <a 
+                  href="#" 
+                  className={`menu-item ${activeTab === 'estimates' ? 'active' : ''}`} 
+                  onClick={(e) => handleItemClick(e, 'estimates')}
+                >
+                  <i className="fa-solid fa-file-invoice-dollar"></i> Estimates
+                </a>
+                <a 
+                  href="#" 
+                  className={`menu-item ${activeTab === 'products-rates' ? 'active' : ''}`} 
+                  onClick={(e) => handleItemClick(e, 'products-rates')}
+                >
+                  <i className="fa-solid fa-tags"></i> Products & Rates
                 </a>
               </div>
             </>
@@ -151,9 +191,9 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout }) =
             onClick={onLogout}
             style={{
               width: '100%',
-              background: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.28)',
-              color: '#F87171',
+              background: '#FFFFFF',
+              border: '1.5px solid #D1C2AF',
+              color: '#5C3D24',
               borderRadius: '8px',
               padding: '10px 14px',
               fontSize: '13px',
@@ -164,23 +204,34 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout }) =
               justifyContent: 'center',
               gap: '8px',
               marginBottom: '12px',
+              boxShadow: '0 1px 3px rgba(100, 70, 40, 0.05)',
               transition: 'all 0.2s'
             }}
-            title="Sign out of account"
+            onMouseOver={(e) => { 
+              e.currentTarget.style.background = '#FAF8F5';
+              e.currentTarget.style.borderColor = '#8C5521';
+              e.currentTarget.style.color = '#8C5521';
+            }}
+            onMouseOut={(e) => { 
+              e.currentTarget.style.background = '#FFFFFF';
+              e.currentTarget.style.borderColor = '#D1C2AF';
+              e.currentTarget.style.color = '#5C3D24';
+            }}
+            title={t.logout}
           >
             <i className="fa-solid fa-arrow-right-from-bracket"></i>
-            <span>Logout</span>
+            <span>{t.logout}</span>
           </button>
           
           <div className="sidebar-footer-text">
             {isEmployee ? (
               <>
-                <strong style={{color: '#E5E7EB'}}>Worker Portal: {user?.name || 'Anurag'}</strong><br/>
-                ID: {user?.id || 'EMP-101'} · Modern Interior
+                <strong style={{color: '#2B2520'}}>{t.worker}: {user?.name || 'Anurag'}</strong><br/>
+                ID: {user?.id || 'EMP-101'}
               </>
             ) : (
               <>
-                © 2026 Modern Interior<br/>All rights reserved.
+                © 2026 Modern Interior
               </>
             )}
           </div>

@@ -1,11 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/Header.css';
 import { API_BASE } from '../config/api';
+import { getTranslation } from '../utils/translations';
 
-const Header = ({ onLogout, onToggleSidebar, user }) => {
+const Header = ({ onLogout, onToggleSidebar, user, lang = 'hi', onLangChange }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const dropdownRef = useRef(null);
+
+  const t = {
+    workerPortal: getTranslation(lang, 'workerPortal'),
+    logout: getTranslation(lang, 'logout'),
+  };
 
   // Change Password state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -98,35 +104,64 @@ const Header = ({ onLogout, onToggleSidebar, user }) => {
 
         {isEmployee ? (
           <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-            <span style={{
-              background: 'rgba(185, 120, 45, 0.15)',
-              color: 'var(--gold-light, #D4993F)',
-              border: '1px solid rgba(185, 120, 45, 0.3)',
+            <span className="header-portal-badge" style={{
+              background: 'rgba(140, 85, 33, 0.1)',
+              color: 'var(--coffee-medium, #8C5521)',
+              border: '1px solid var(--coffee-border, #D1C2AF)',
               borderRadius: '20px',
-              padding: '4px 12px',
-              fontSize: '12px',
+              padding: '4px 10px',
+              fontSize: '11.5px',
               fontWeight: '700',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px'
             }}>
-              <i className="fa-solid fa-helmet-safety"></i> Worker Portal
+              <i className="fa-solid fa-helmet-safety"></i>
+              <span className="portal-badge-text">{t.workerPortal}</span>
             </span>
           </div>
         ) : (
           <div className="header-search">
             <i className="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search employees, sites, customers..." />
+            <input type="text" placeholder="Search..." />
           </div>
         )}
       </div>
 
       <div className="header-right">
-        <select className="header-lang" aria-label="Select Language">
-          <option value="en">EN</option>
-          <option value="mr">मराठी</option>
-          <option value="hi">हिंदी</option>
-        </select>
+        {/* Short & Simple Language Selector for Workers */}
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          background: '#FFFFFF',
+          border: '1.5px solid var(--coffee-border, #D1C2AF)',
+          borderRadius: '8px',
+          padding: '4px 8px',
+          boxShadow: '0 1px 3px rgba(100, 70, 40, 0.04)'
+        }}>
+          <i className="fa-solid fa-language" style={{ color: 'var(--coffee-medium, #8C5521)', fontSize: '13px' }}></i>
+          <select 
+            className="header-lang" 
+            aria-label="Select Language"
+            value={lang}
+            onChange={(e) => onLangChange && onLangChange(e.target.value)}
+            style={{
+              cursor: 'pointer',
+              fontWeight: '800',
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: 'var(--coffee-dark, #5C3D24)',
+              fontSize: '12px',
+              padding: '2px 0'
+            }}
+          >
+            <option value="hi">हिंदी</option>
+            <option value="en">ENG</option>
+            <option value="mr">मराठी</option>
+          </select>
+        </div>
 
         <div className="header-divider"></div>
 
@@ -141,7 +176,7 @@ const Header = ({ onLogout, onToggleSidebar, user }) => {
           <div className="header-user" onClick={() => setShowDropdown(!showDropdown)}>
             <div className="header-user-info">
               <div className="header-user-name">{user?.name || (isEmployee ? 'Anurag' : 'Mahendra Sharma')}</div>
-              <div className="header-user-role">{user?.roleTitle || (isEmployee ? 'Carpenter' : 'Administrator')}</div>
+              <div className="header-user-role">{user?.roleTitle || (isEmployee ? 'Worker' : 'Admin')}</div>
             </div>
           </div>
 
@@ -149,8 +184,8 @@ const Header = ({ onLogout, onToggleSidebar, user }) => {
             <div className="header-dropdown-menu">
               <div style={{padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: '4px'}}>
                 <div style={{fontSize: '13px', fontWeight: '700', color: '#F9FAFB'}}>{user?.fullName || user?.name}</div>
-                <div style={{fontSize: '11px', color: 'var(--gold-light)'}}>
-                  {isEmployee ? `ID: ${user?.id || 'EMP'} · Mobile: ${user?.mobile || ''}` : 'Administrator'}
+                <div style={{fontSize: '11px', color: 'var(--gold-light, #C4874A)'}}>
+                  {isEmployee ? `ID: ${user?.id || 'EMP'} · ${user?.mobile || ''}` : 'Admin'}
                 </div>
               </div>
               <a 
@@ -164,11 +199,11 @@ const Header = ({ onLogout, onToggleSidebar, user }) => {
                   setShowDropdown(false); 
                 }}
               >
-                <i className="fa-solid fa-key" style={{color: 'var(--gold, #B9782D)'}}></i> Change Password / PIN
+                <i className="fa-solid fa-key" style={{color: 'var(--gold, #A56A30)'}}></i> Change Password / PIN
               </a>
               <div className="header-dropdown-divider"></div>
               <a href="#" className="header-dropdown-item danger" onClick={(e) => { e.preventDefault(); onLogout(); }}>
-                <i className="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                <i className="fa-solid fa-arrow-right-from-bracket"></i> {t.logout}
               </a>
             </div>
           )}
@@ -177,12 +212,13 @@ const Header = ({ onLogout, onToggleSidebar, user }) => {
         {/* Directly Visible Logout Button */}
         <button
           onClick={onLogout}
+          className="header-logout-btn"
           style={{
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.35)',
-            color: '#FCA5A5',
+            background: '#FFFFFF',
+            border: '1.5px solid #D1C2AF',
+            color: '#5C3D24',
             borderRadius: '8px',
-            padding: '7px 12px',
+            padding: '6px 12px',
             fontSize: '12px',
             fontWeight: '600',
             cursor: 'pointer',
@@ -190,14 +226,23 @@ const Header = ({ onLogout, onToggleSidebar, user }) => {
             alignItems: 'center',
             gap: '6px',
             transition: 'all 0.2s',
-            marginLeft: '6px'
+            marginLeft: '4px',
+            boxShadow: '0 1px 3px rgba(100, 70, 40, 0.05)'
           }}
-          onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'; }}
-          onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
-          title="Sign out of account"
+          onMouseOver={(e) => { 
+            e.currentTarget.style.background = '#FAF8F5';
+            e.currentTarget.style.borderColor = '#8C5521';
+            e.currentTarget.style.color = '#8C5521';
+          }}
+          onMouseOut={(e) => { 
+            e.currentTarget.style.background = '#FFFFFF';
+            e.currentTarget.style.borderColor = '#D1C2AF';
+            e.currentTarget.style.color = '#5C3D24';
+          }}
+          title={t.logout}
         >
           <i className="fa-solid fa-arrow-right-from-bracket"></i>
-          <span>Logout</span>
+          <span className="logout-btn-label">{t.logout}</span>
         </button>
       </div>
 
@@ -218,7 +263,7 @@ const Header = ({ onLogout, onToggleSidebar, user }) => {
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
               <div>
                 <h3 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                  <i className="fa-solid fa-key" style={{color: 'var(--gold, #B9782D)'}}></i>
+                  <i className="fa-solid fa-key" style={{color: 'var(--gold, #A56A30)'}}></i>
                   Change Password / PIN
                 </h3>
                 <div style={{fontSize: '12px', color: '#6B7280', marginTop: '2px'}}>

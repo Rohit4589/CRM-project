@@ -95,8 +95,10 @@ const Dashboard = ({ onNavigate, user }) => {
       {/* ===== Hero / Welcome ===== */}
       <div className="dash-hero">
         <div className="dash-hero-left">
-          <h1>{getGreeting()}, {user?.name || 'Administrator'}</h1>
-          <p>Here's what's happening across Modern Interior today.</p>
+          <h1>{getGreeting()}, {user?.name || 'Admin'}</h1>
+          <p style={{ margin: '3px 0 6px 0', fontSize: '13px', color: '#7D6C5E' }}>
+            Daily operations overview
+          </p>
           <div className="dash-date">
             <i className="fa-regular fa-calendar"></i>
             {formatDate()}
@@ -112,61 +114,48 @@ const Dashboard = ({ onNavigate, user }) => {
       {/* ===== KPI Cards ===== */}
       <div className="dash-kpi-grid">
         <div className="dash-kpi">
-          <div className="dash-kpi-icon gold">
-            <i className="fa-solid fa-location-dot"></i>
+          <div className="dash-kpi-top">
+            <span className="dash-kpi-label">Active Sites</span>
           </div>
-          <div className="dash-kpi-body">
-            <div className="dash-kpi-label">Active Sites</div>
-            <div className="dash-kpi-value">{loadingStats ? '...' : siteStats.active}</div>
-            <div className="dash-kpi-meta up">
-              <i className="fa-solid fa-database" style={{ fontSize: '9px' }}></i> Live in Database
-            </div>
+          <div className="dash-kpi-value">{loadingStats ? '...' : siteStats.active}</div>
+          <div className="dash-kpi-meta" style={{ color: '#8C7B6D', fontSize: '11.5px', marginTop: '4px' }}>
+            Running project sites
           </div>
         </div>
 
         <div className="dash-kpi">
-          <div className="dash-kpi-icon blue">
-            <i className="fa-solid fa-users"></i>
+          <div className="dash-kpi-top">
+            <span className="dash-kpi-label">Clients</span>
           </div>
-          <div className="dash-kpi-body">
-            <div className="dash-kpi-label">Total Sites / Clients</div>
-            <div className="dash-kpi-value">{loadingStats ? '...' : siteStats.total}</div>
-            <div className="dash-kpi-meta up">
-              <i className="fa-solid fa-database" style={{ fontSize: '9px' }}></i> Live in Database
-            </div>
+          <div className="dash-kpi-value">{loadingStats ? '...' : siteStats.total}</div>
+          <div className="dash-kpi-meta" style={{ color: '#8C7B6D', fontSize: '11.5px', marginTop: '4px' }}>
+            Total client accounts
           </div>
         </div>
 
         <div className="dash-kpi">
-          <div className="dash-kpi-icon green">
-            <i className="fa-solid fa-user-group"></i>
+          <div className="dash-kpi-top">
+            <span className="dash-kpi-label">Employees</span>
           </div>
-          <div className="dash-kpi-body">
-            <div className="dash-kpi-label">Active Workers</div>
-            <div className="dash-kpi-value">{loadingStats ? '...' : employeeCount}</div>
-            <div className="dash-kpi-meta up">
-              <i className="fa-solid fa-database" style={{ fontSize: '9px' }}></i> Registered Employees
-            </div>
+          <div className="dash-kpi-value">{loadingStats ? '...' : employeeCount}</div>
+          <div className="dash-kpi-meta" style={{ color: '#8C7B6D', fontSize: '11.5px', marginTop: '4px' }}>
+            Registered staff members
           </div>
         </div>
 
         <div 
-          className="dash-kpi" 
+          className="dash-kpi clickable" 
           onClick={() => onNavigate && onNavigate('salary')} 
-          style={{ cursor: 'pointer' }}
-          title="Click to view salary details"
+          title="View salary details"
         >
-          <div className="dash-kpi-icon purple">
-            <i className="fa-solid fa-indian-rupee-sign"></i>
+          <div className="dash-kpi-top">
+            <span className="dash-kpi-label">Month Payroll</span>
           </div>
-          <div className="dash-kpi-body">
-            <div className="dash-kpi-label">Present Month Payroll</div>
-            <div className="dash-kpi-value">
-              {loadingStats ? '...' : `₹${presentMonthPayroll.toLocaleString('en-IN')}`}
-            </div>
-            <div className="dash-kpi-meta success" style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <i className="fa-solid fa-circle-check" style={{ fontSize: '10px' }}></i> Real attendance: {presentMonthDays.toFixed(1)} days
-            </div>
+          <div className="dash-kpi-value">
+            {loadingStats ? '...' : `₹${presentMonthPayroll.toLocaleString('en-IN')}`}
+          </div>
+          <div className="dash-kpi-meta success" style={{ color: '#059669', fontWeight: '600', fontSize: '11.5px', marginTop: '4px' }}>
+            {presentMonthDays.toFixed(1)} days logged
           </div>
         </div>
       </div>
@@ -174,16 +163,16 @@ const Dashboard = ({ onNavigate, user }) => {
       {/* ===== Quick Actions ===== */}
       <div className="dash-quick-actions">
         <button className="dash-quick-btn" onClick={() => onNavigate && onNavigate('sites')}>
-          <i className="fa-solid fa-location-dot"></i> Add Site / Customer
+          <i className="fa-solid fa-plus"></i> Add Site
         </button>
         <button className="dash-quick-btn" onClick={() => onNavigate && onNavigate('employees')}>
-          <i className="fa-solid fa-user-tie"></i> Add Employee
+          <i className="fa-solid fa-plus"></i> Add Employee
         </button>
         <button className="dash-quick-btn" onClick={() => onNavigate && onNavigate('attendance')}>
-          <i className="fa-solid fa-clipboard-check"></i> View Attendance
+          <i className="fa-solid fa-clipboard-user"></i> Attendance
         </button>
         <button className="dash-quick-btn" onClick={() => onNavigate && onNavigate('salary')}>
-          <i className="fa-solid fa-money-bill-wave"></i> Process Salary
+          <i className="fa-solid fa-money-bill-wave"></i> Payroll
         </button>
       </div>
 
@@ -205,31 +194,32 @@ const Dashboard = ({ onNavigate, user }) => {
             <div className="dash-attendance-summary" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
               <div className="dash-attendance-stat">
                 <div className="dash-attendance-stat-value success">{presentCount}</div>
-                <div className="dash-attendance-stat-label">Logged</div>
+                <div className="dash-attendance-stat-label">Present</div>
               </div>
               <div className="dash-attendance-stat">
                 <div className="dash-attendance-stat-value danger">{absentCount}</div>
-                <div className="dash-attendance-stat-label">Not Punched</div>
+                <div className="dash-attendance-stat-label">Absent</div>
               </div>
               <div className="dash-attendance-stat">
                 <div className="dash-attendance-stat-value info">{employeeCount}</div>
-                <div className="dash-attendance-stat-label">Total Workers</div>
+                <div className="dash-attendance-stat-label">Total</div>
               </div>
             </div>
 
             {/* Recent Check-ins */}
             {todayAttendance.length === 0 ? (
-              <div style={{ padding: '24px 16px', textAlign: 'center', color: '#9CA3AF' }}>
-                <i className="fa-regular fa-calendar-check" style={{ fontSize: '26px', color: '#D1D5DB', marginBottom: '8px' }}></i>
-                <div style={{ fontSize: '13px', fontWeight: '500' }}>No attendance punches logged yet today.</div>
+              <div style={{ padding: '24px 16px', textAlign: 'center', color: '#7D6C5E' }}>
+                <i className="fa-regular fa-calendar-check" style={{ fontSize: '26px', color: '#D1C2AF', marginBottom: '8px' }}></i>
+                <div style={{ fontSize: '13px', fontWeight: '500' }}>No attendance recorded today</div>
                 <button
                   onClick={() => onNavigate && onNavigate('attendance')}
                   style={{
                     marginTop: '10px',
                     padding: '6px 14px',
                     borderRadius: '6px',
-                    border: '1px solid #D1D5DB',
+                    border: '1px solid #D1C2AF',
                     background: '#fff',
+                    color: '#4A2C17',
                     fontSize: '12px',
                     fontWeight: '600',
                     cursor: 'pointer'
@@ -259,7 +249,7 @@ const Dashboard = ({ onNavigate, user }) => {
           </div>
           <div className="dash-card-footer">
             <button className="dash-view-all" onClick={() => onNavigate && onNavigate('attendance')}>
-              View All Logs <i className="fa-solid fa-arrow-right" style={{ fontSize: '10px' }}></i>
+              View All <i className="fa-solid fa-arrow-right" style={{ fontSize: '10px' }}></i>
             </button>
           </div>
         </div>
@@ -276,18 +266,18 @@ const Dashboard = ({ onNavigate, user }) => {
           </div>
           <div className="dash-card-body">
             {activeSitesList.length === 0 ? (
-              <div style={{ padding: '30px', textAlign: 'center', color: '#9CA3AF' }}>
-                <i className="fa-regular fa-folder-open" style={{ fontSize: '28px', color: '#D1D5DB', marginBottom: '8px' }}></i>
-                <div>No running sites right now.</div>
+              <div style={{ padding: '30px', textAlign: 'center', color: '#8C7B6D' }}>
+                <i className="fa-regular fa-folder-open" style={{ fontSize: '28px', color: '#D1C2AF', marginBottom: '8px' }}></i>
+                <div>No active sites.</div>
               </div>
             ) : (
               <table className="dash-project-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '15%' }}>Site Code</th>
-                    <th style={{ width: '25%' }}>Customer / Site Name</th>
+                    <th style={{ width: '15%' }}>Code</th>
+                    <th style={{ width: '25%' }}>Site / Client</th>
                     <th style={{ width: '24%' }}>Location</th>
-                    <th style={{ width: '22%' }}>Contact Info</th>
+                    <th style={{ width: '22%' }}>Contact</th>
                     <th style={{ width: '14%' }}>Status</th>
                   </tr>
                 </thead>
@@ -296,13 +286,13 @@ const Dashboard = ({ onNavigate, user }) => {
                     <tr key={site.id}>
                       <td>
                         <span style={{
-                          background: 'rgba(185, 120, 45, 0.08)',
-                          color: 'var(--gold, #B9782D)',
+                          background: 'rgba(165, 106, 48, 0.08)',
+                          color: 'var(--gold, #A56A30)',
                           fontWeight: '700',
                           padding: '4px 8px',
                           borderRadius: '5px',
                           fontSize: '12px',
-                          border: '1px solid rgba(185, 120, 45, 0.2)',
+                          border: '1px solid rgba(165, 106, 48, 0.2)',
                           letterSpacing: '0.5px',
                           fontFamily: 'monospace'
                         }}>
@@ -316,13 +306,13 @@ const Dashboard = ({ onNavigate, user }) => {
                       </td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #B9782D)', fontSize: '11px' }}></i>
+                          <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', fontSize: '11px' }}></i>
                           <span>{site.location || 'Location'}</span>
                         </div>
                       </td>
                       <td>
                         <div style={{ fontSize: '12px', color: '#374151', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <i className="fa-solid fa-phone" style={{ fontSize: '10px', color: 'var(--gold, #B9782D)' }}></i>
+                          <i className="fa-solid fa-phone" style={{ fontSize: '10px', color: 'var(--gold, #A56A30)' }}></i>
                           <span>{site.phone || 'N/A'}</span>
                         </div>
                         {site.email && (

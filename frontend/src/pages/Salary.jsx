@@ -277,8 +277,8 @@ const Salary = () => {
                 transition: 'all 0.15s'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--gold, #B9782D)';
-                e.currentTarget.style.color = 'var(--gold, #B9782D)';
+                e.currentTarget.style.borderColor = 'var(--gold, #A56A30)';
+                e.currentTarget.style.color = 'var(--gold, #A56A30)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#D1D5DB';
@@ -301,15 +301,15 @@ const Salary = () => {
                   {activeEmployee.name} - Day-Wise Salary
                 </h1>
                 <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '4px' }}>
-                  <span style={{ fontWeight: '700', color: 'var(--gold, #B9782D)' }}>{activeEmployee.id}</span> · {activeEmployee.role}
+                  <span style={{ fontWeight: '700', color: 'var(--gold, #A56A30)' }}>{activeEmployee.id}</span> · {activeEmployee.role}
                 </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{
-                  background: '#EFF6FF',
-                  color: '#2563EB',
-                  border: '1px solid #BFDBFE',
+                  background: '#F3EDE6',
+                  color: '#7A4518',
+                  border: '1px solid #D1C2AF',
                   padding: '7px 14px',
                   borderRadius: '8px',
                   fontSize: '13px',
@@ -344,23 +344,23 @@ const Salary = () => {
             gap: '14px',
             marginBottom: '22px'
           }}>
-            <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+            <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
               <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Logged Shifts</div>
               <div style={{ fontSize: '24px', fontWeight: '800', color: '#111827', marginTop: '4px' }}>
                 {activeEmployee.attendanceLogs.length} Shifts
               </div>
             </div>
 
-            <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+            <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
               <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Day Units</div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: '#2563EB', marginTop: '4px' }}>
+              <div style={{ fontSize: '24px', fontWeight: '800', color: '#8C5521', marginTop: '4px' }}>
                 {activeEmployee.totalDays.toFixed(1)} Days
               </div>
             </div>
 
-            <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+            <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
               <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Daily Wage Rate</div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--gold, #B9782D)', marginTop: '4px' }}>
+              <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--gold, #A56A30)', marginTop: '4px' }}>
                 ₹{activeEmployee.dailyRate.toLocaleString('en-IN')}
               </div>
             </div>
@@ -425,7 +425,7 @@ const Salary = () => {
 
                         <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
                           <div style={{ fontWeight: '600', color: '#111827', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #B9782D)', fontSize: '12px', flexShrink: 0 }}></i>
+                            <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', fontSize: '12px', flexShrink: 0 }}></i>
                             <span>{log.siteRef}: {log.customerName}</span>
                           </div>
                           <div style={{ fontSize: '11px', color: '#6B7280', paddingLeft: '18px', marginTop: '2px' }}>
@@ -498,7 +498,7 @@ const Salary = () => {
                     <td style={{ padding: '16px 18px', fontSize: '14px', color: '#0F172A', fontWeight: '800', textAlign: 'center' }}>
                       {activeEmployee.attendanceLogs.reduce((sum, l) => sum + (Number(l.workHours) || 0), 0)} hrs
                     </td>
-                    <td style={{ padding: '16px 18px', fontSize: '14px', color: '#2563EB', fontWeight: '800', textAlign: 'center' }}>
+                    <td style={{ padding: '16px 18px', fontSize: '14px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
                       {activeEmployee.totalDays.toFixed(1)} Days
                     </td>
                     <td style={{ padding: '16px 18px', fontSize: '17px', fontWeight: '800', color: '#059669', textAlign: 'right' }}>
@@ -536,8 +536,8 @@ const Salary = () => {
                 transition: 'all 0.15s'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--gold, #B9782D)';
-                e.currentTarget.style.color = 'var(--gold, #B9782D)';
+                e.currentTarget.style.borderColor = 'var(--gold, #A56A30)';
+                e.currentTarget.style.color = 'var(--gold, #A56A30)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#D1D5DB';
@@ -558,9 +558,9 @@ const Salary = () => {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <span style={{
-                    background: 'rgba(185, 120, 45, 0.12)',
-                    color: 'var(--gold, #B9782D)',
-                    border: '1px solid rgba(185, 120, 45, 0.3)',
+                    background: 'rgba(165, 106, 48, 0.12)',
+                    color: 'var(--gold, #A56A30)',
+                    border: '1px solid rgba(165, 106, 48, 0.3)',
                     padding: '4px 10px',
                     borderRadius: '6px',
                     fontSize: '13px',
@@ -574,7 +574,7 @@ const Salary = () => {
                   </h1>
                 </div>
                 <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span><i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #B9782D)', marginRight: '4px' }}></i>{activeSite.location || activeSite.fullAddress || 'Assigned Location'}</span>
+                  <span><i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', marginRight: '4px' }}></i>{activeSite.location || activeSite.fullAddress || 'Assigned Location'}</span>
                   <span>•</span>
                   <span>Status: <strong style={{ color: activeSite.status === 'Running' ? '#059669' : '#4B5563' }}>{activeSite.status}</strong></span>
                 </div>
@@ -582,9 +582,9 @@ const Salary = () => {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{
-                  background: '#EFF6FF',
-                  color: '#2563EB',
-                  border: '1px solid #BFDBFE',
+                  background: '#F3EDE6',
+                  color: '#7A4518',
+                  border: '1px solid #D1C2AF',
                   padding: '7px 14px',
                   borderRadius: '8px',
                   fontSize: '13px',
@@ -628,16 +628,16 @@ const Salary = () => {
               </div>
             </div>
 
-            <div style={{ background: '#fff', padding: '18px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+            <div style={{ background: '#fff', padding: '18px 20px', borderRadius: '10px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
               <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Total Man-Days Logged
               </div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: '#2563EB', marginTop: '6px' }}>
+              <div style={{ fontSize: '24px', fontWeight: '800', color: '#8C5521', marginTop: '6px' }}>
                 {activeSite.totalDays.toFixed(1)} Days
               </div>
             </div>
 
-            <div style={{ background: '#fff', padding: '18px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+            <div style={{ background: '#fff', padding: '18px 20px', borderRadius: '10px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
               <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Workers Deployed
               </div>
@@ -650,7 +650,7 @@ const Salary = () => {
               <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Total Work Hours
               </div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--gold, #B9782D)', marginTop: '6px' }}>
+              <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--gold, #A56A30)', marginTop: '6px' }}>
                 {activeSite.totalHours} hrs
               </div>
             </div>
@@ -689,13 +689,13 @@ const Salary = () => {
               <i className="fa-solid fa-user-tie" style={{ color: siteTableTab === 'workers' ? '#FBBF24' : '#64748B' }}></i>
               <span>Employee Worked Data</span>
               <span style={{
-                background: siteTableTab === 'workers' ? '#2563EB' : '#F1F5F9',
-                color: siteTableTab === 'workers' ? '#FFFFFF' : '#475569',
+                background: siteTableTab === 'workers' ? 'var(--gold, #A56A30)' : '#F3EDE6',
+                color: siteTableTab === 'workers' ? '#FFFFFF' : '#7A4518',
                 padding: '2px 8px',
                 borderRadius: '10px',
                 fontSize: '11px',
                 fontWeight: '800',
-                border: siteTableTab === 'workers' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #E2E8F0'
+                border: siteTableTab === 'workers' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #D1C2AF'
               }}>
                 {activeSite.workers.length}
               </span>
@@ -707,7 +707,7 @@ const Salary = () => {
               style={{
                 padding: '9px 18px',
                 borderRadius: '8px',
-                border: siteTableTab === 'attendance' ? '2px solid var(--navy, #111827)' : '1.5px solid #CBD5E1',
+                border: siteTableTab === 'attendance' ? '2px solid var(--navy, #111827)' : '1.5px solid #D1C2AF',
                 fontSize: '13px',
                 fontWeight: '800',
                 cursor: 'pointer',
@@ -723,13 +723,13 @@ const Salary = () => {
               <i className="fa-regular fa-calendar-days" style={{ color: siteTableTab === 'attendance' ? '#FBBF24' : '#64748B' }}></i>
               <span>Day-Wise Attendance</span>
               <span style={{
-                background: siteTableTab === 'attendance' ? '#2563EB' : '#F1F5F9',
-                color: siteTableTab === 'attendance' ? '#FFFFFF' : '#475569',
+                background: siteTableTab === 'attendance' ? 'var(--gold, #A56A30)' : '#F3EDE6',
+                color: siteTableTab === 'attendance' ? '#FFFFFF' : '#7A4518',
                 padding: '2px 8px',
                 borderRadius: '10px',
                 fontSize: '11px',
                 fontWeight: '800',
-                border: siteTableTab === 'attendance' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #E2E8F0'
+                border: siteTableTab === 'attendance' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #D1C2AF'
               }}>
                 {activeSite.shifts.length}
               </span>
@@ -785,7 +785,7 @@ const Salary = () => {
                           <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
                             <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>{worker.name}</div>
                             <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
-                              <span style={{ fontWeight: '600', color: 'var(--gold, #B9782D)' }}>{worker.id}</span> · {worker.role}
+                              <span style={{ fontWeight: '600', color: 'var(--gold, #A56A30)' }}>{worker.id}</span> · {worker.role}
                             </div>
                           </td>
 
@@ -840,7 +840,7 @@ const Salary = () => {
                         <td style={{ padding: '16px 18px', fontSize: '14px', color: '#0F172A', fontWeight: '800', textAlign: 'left' }}>
                           Total Project Labor Expense
                         </td>
-                        <td style={{ padding: '16px 18px', fontSize: '14px', color: '#2563EB', fontWeight: '800', textAlign: 'center' }}>
+                        <td style={{ padding: '16px 18px', fontSize: '14px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
                           {activeSite.totalDays.toFixed(1)} Days
                         </td>
                         <td style={{ padding: '16px 18px', fontSize: '12px', color: '#6B7280', fontWeight: '700', textAlign: 'center' }}>
@@ -921,7 +921,7 @@ const Salary = () => {
                                 {log.employeeName || log.name || empObj?.name || 'Worker'}
                               </div>
                               <div style={{ fontSize: '11px', color: '#6B7280' }}>
-                                <span style={{ fontWeight: '600', color: 'var(--gold, #B9782D)' }}>{log.empId || empObj?.id}</span> · {log.employeeRole || empObj?.role || 'Staff'}
+                                <span style={{ fontWeight: '600', color: 'var(--gold, #A56A30)' }}>{log.empId || empObj?.id}</span> · {log.employeeRole || empObj?.role || 'Staff'}
                               </div>
                             </td>
 
@@ -987,7 +987,7 @@ const Salary = () => {
                         <td style={{ padding: '14px 18px', fontSize: '13px', color: '#0F172A', fontWeight: '800', textAlign: 'center' }}>
                           {activeSite.totalHours} hrs
                         </td>
-                        <td style={{ padding: '14px 18px', fontSize: '13px', color: '#2563EB', fontWeight: '800', textAlign: 'center' }}>
+                        <td style={{ padding: '14px 18px', fontSize: '13px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
                           {activeSite.totalDays.toFixed(1)} Days
                         </td>
                         <td style={{ padding: '14px 18px', fontSize: '16px', fontWeight: '800', color: '#059669', textAlign: 'right' }}>
@@ -1017,8 +1017,11 @@ const Salary = () => {
           }}>
             <div>
               <h1 className="page-title" style={{ margin: 0, fontSize: '26px', fontWeight: '800', color: 'var(--navy, #111827)' }}>
-                Monthly Salary & Project Labor Cost
+                Salary & Payroll
               </h1>
+              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#7D6C5E' }}>
+                Wage statements & site billing
+              </p>
             </div>
 
             <div className="header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1101,15 +1104,15 @@ const Salary = () => {
                 }}
               >
                 <i className="fa-solid fa-user-tie" style={{ color: viewMode === 'employee' ? '#FBBF24' : '#64748B', fontSize: '14px' }}></i>
-                <span>Person-Wise Salary</span>
+                <span>By Employee</span>
                 <span style={{
-                  background: viewMode === 'employee' ? '#2563EB' : '#F1F5F9',
-                  color: viewMode === 'employee' ? '#FFFFFF' : '#475569',
+                  background: viewMode === 'employee' ? 'var(--gold, #A56A30)' : '#F3EDE6',
+                  color: viewMode === 'employee' ? '#FFFFFF' : '#7A4518',
                   padding: '2px 9px',
                   borderRadius: '12px',
                   fontSize: '11px',
                   fontWeight: '800',
-                  border: viewMode === 'employee' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #E2E8F0'
+                  border: viewMode === 'employee' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #D1C2AF'
                 }}>
                   {salaryRows.length}
                 </span>
@@ -1121,7 +1124,7 @@ const Salary = () => {
                 style={{
                   padding: '10px 20px',
                   borderRadius: '9px',
-                  border: viewMode === 'site' ? '2px solid var(--navy, #111827)' : '1.5px solid #CBD5E1',
+                  border: viewMode === 'site' ? '2px solid var(--navy, #111827)' : '1.5px solid #D1C2AF',
                   fontSize: '13px',
                   fontWeight: '800',
                   cursor: 'pointer',
@@ -1135,17 +1138,17 @@ const Salary = () => {
                 }}
               >
                 <i className="fa-solid fa-location-dot" style={{ color: viewMode === 'site' ? '#FBBF24' : '#64748B', fontSize: '14px' }}></i>
-                <span>Site-Wise Project Billing</span>
+                <span>By Site</span>
                 <span style={{
-                  background: viewMode === 'site' ? '#2563EB' : '#F1F5F9',
-                  color: viewMode === 'site' ? '#FFFFFF' : '#475569',
+                  background: viewMode === 'site' ? 'var(--gold, #A56A30)' : '#F3EDE6',
+                  color: viewMode === 'site' ? '#FFFFFF' : '#7A4518',
                   padding: '2px 9px',
                   borderRadius: '12px',
                   fontSize: '11px',
                   fontWeight: '800',
-                  border: viewMode === 'site' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #E2E8F0'
+                  border: viewMode === 'site' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #D1C2AF'
                 }}>
-                  {activeSitesCount} Active
+                  {activeSitesCount}
                 </span>
               </button>
             </div>
@@ -1154,7 +1157,7 @@ const Salary = () => {
             <div style={{ position: 'relative', width: '280px' }}>
               <input
                 type="text"
-                placeholder={viewMode === 'employee' ? 'Search employee name, code...' : 'Search site, customer, locality...'}
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
@@ -1208,20 +1211,20 @@ const Salary = () => {
           }}>
             {viewMode === 'employee' ? (
               <>
-                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
+                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
                   <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Payroll</div>
                   <div style={{ fontSize: '22px', fontWeight: '800', color: '#059669', marginTop: '4px' }}>
                     ₹{totalEmployeePayroll.toLocaleString('en-IN')}
                   </div>
                 </div>
-                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Days Worked</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#2563EB', marginTop: '4px' }}>
+                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
+                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Days</div>
+                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#8C5521', marginTop: '4px' }}>
                     {salaryRows.reduce((sum, r) => sum + r.totalDays, 0).toFixed(1)} Days
                   </div>
                 </div>
-                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Employees With Punches</div>
+                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
+                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Active Employees</div>
                   <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--navy, #111827)', marginTop: '4px' }}>
                     {salaryRows.filter(r => r.totalDays > 0).length} / {salaryRows.length}
                   </div>
@@ -1230,20 +1233,20 @@ const Salary = () => {
             ) : (
               <>
                 <div style={{ background: '#ECFDF5', padding: '14px 18px', borderRadius: '10px', border: '1px solid #A7F3D0' }}>
-                  <div style={{ fontSize: '11px', color: '#065F46', fontWeight: '800', textTransform: 'uppercase' }}>Total Site Labor Expense</div>
+                  <div style={{ fontSize: '11px', color: '#065F46', fontWeight: '800', textTransform: 'uppercase' }}>Total Labor Cost</div>
                   <div style={{ fontSize: '22px', fontWeight: '800', color: '#065F46', marginTop: '4px' }}>
                     ₹{totalSitePayroll.toLocaleString('en-IN')}
                   </div>
                 </div>
-                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Project Man-Days</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#2563EB', marginTop: '4px' }}>
+                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
+                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Days</div>
+                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#8C5521', marginTop: '4px' }}>
                     {totalSiteManDays.toFixed(1)} Days
                   </div>
                 </div>
-                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Active Sites with Work</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #B9782D)', marginTop: '4px' }}>
+                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
+                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Active Sites</div>
+                  <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #A56A30)', marginTop: '4px' }}>
                     {activeSitesCount} Sites
                   </div>
                 </div>
@@ -1287,7 +1290,7 @@ const Salary = () => {
                   {loading ? (
                     <tr>
                       <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#6B7280' }}>
-                        <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '22px', color: 'var(--gold, #B9782D)', marginBottom: '8px' }}></i>
+                        <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '22px', color: 'var(--gold, #A56A30)', marginBottom: '8px' }}></i>
                         <div>Calculating real payroll from attendance...</div>
                       </td>
                     </tr>
@@ -1315,7 +1318,7 @@ const Salary = () => {
                           <div>
                             <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>{row.name}</div>
                             <div style={{ fontSize: '11px', color: '#6B7280' }}>
-                              <span style={{ fontWeight: '600', color: 'var(--gold, #B9782D)' }}>{row.id}</span> · {row.role}
+                              <span style={{ fontWeight: '600', color: 'var(--gold, #A56A30)' }}>{row.id}</span> · {row.role}
                             </div>
                           </div>
                         </td>
@@ -1402,7 +1405,7 @@ const Salary = () => {
                   {loading ? (
                     <tr>
                       <td colSpan="6" style={{ padding: '40px', textAlign: 'center', color: '#6B7280' }}>
-                        <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '22px', color: 'var(--gold, #B9782D)', marginBottom: '8px' }}></i>
+                        <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '22px', color: 'var(--gold, #A56A30)', marginBottom: '8px' }}></i>
                         <div>Calculating site-wise labor billing expenses...</div>
                       </td>
                     </tr>
@@ -1430,8 +1433,8 @@ const Salary = () => {
                         <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{
-                              background: 'rgba(185, 120, 45, 0.1)',
-                              color: 'var(--gold, #B9782D)',
+                              background: 'rgba(165, 106, 48, 0.1)',
+                              color: 'var(--gold, #A56A30)',
                               fontWeight: '800',
                               padding: '3px 8px',
                               borderRadius: '5px',
@@ -1454,8 +1457,9 @@ const Salary = () => {
                         {/* Workers Count */}
                         <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
                           <span style={{
-                            background: site.workerCount > 0 ? '#EFF6FF' : '#F3F4F6',
-                            color: site.workerCount > 0 ? '#2563EB' : '#9CA3AF',
+                            background: site.workerCount > 0 ? 'rgba(165, 106, 48, 0.1)' : '#F3EDE6',
+                            color: site.workerCount > 0 ? '#7A4518' : '#7D7368',
+                            border: '1px solid #D1C2AF',
                             padding: '4px 10px',
                             borderRadius: '12px',
                             fontSize: '12px',
@@ -1528,8 +1532,8 @@ const Salary = () => {
                               transition: 'all 0.15s'
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.borderColor = 'var(--gold, #B9782D)';
-                              e.currentTarget.style.color = 'var(--gold, #B9782D)';
+                              e.currentTarget.style.borderColor = 'var(--gold, #A56A30)';
+                              e.currentTarget.style.color = 'var(--gold, #A56A30)';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.borderColor = '#CBD5E1';
@@ -1558,7 +1562,7 @@ const Salary = () => {
                       <td style={{ padding: '16px 18px', fontSize: '13px', color: '#0F172A', fontWeight: '800' }}>
                         {activeSitesCount} Active Sites
                       </td>
-                      <td style={{ padding: '16px 18px', fontSize: '14px', color: '#2563EB', fontWeight: '800' }}>
+                      <td style={{ padding: '16px 18px', fontSize: '14px', color: '#8C5521', fontWeight: '800' }}>
                         {totalSiteManDays.toFixed(1)} Days
                       </td>
                       <td style={{ padding: '16px 18px', fontSize: '13px', color: '#0F172A', fontWeight: '800' }}>
