@@ -327,13 +327,13 @@ const Employees = () => {
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px'
               }}>
-                <th style={{ padding: '12px 16px', width: '22%' }}>Employee</th>
-                <th style={{ padding: '12px 16px', width: '12%' }}>ID</th>
-                <th style={{ padding: '12px 16px', width: '16%' }}>Role</th>
-                <th style={{ padding: '12px 16px', width: '14%' }}>Daily Wage</th>
-                <th style={{ padding: '12px 16px', width: '16%' }}>Login PIN</th>
-                <th style={{ padding: '12px 16px', width: '10%' }}>Status</th>
-                <th style={{ padding: '12px 16px', width: '10%', textAlign: 'center' }}>Actions</th>
+                <th style={{ padding: '12px 16px', width: '13%', textAlign: 'left' }}>ID</th>
+                <th style={{ padding: '12px 16px', width: '21%', textAlign: 'center' }}>Employee</th>
+                <th style={{ padding: '12px 16px', width: '15%', textAlign: 'center' }}>Role</th>
+                <th style={{ padding: '12px 16px', width: '14%', textAlign: 'center' }}>Daily Wage</th>
+                <th style={{ padding: '12px 16px', width: '15%', textAlign: 'center' }}>Login PIN</th>
+                <th style={{ padding: '12px 16px', width: '10%', textAlign: 'center' }}>Status</th>
+                <th style={{ padding: '12px 20px', width: '12%', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -347,12 +347,8 @@ const Employees = () => {
               ) : (
                 filteredEmployees.map((emp) => (
                   <tr key={emp.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                    {/* Employee Info without image */}
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
-                      <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>{emp.name}</div>
-                      <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>{emp.phone || '-'}</div>
-                    </td>
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                    {/* 1. Employee ID Badge - Left Aligned */}
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'left' }}>
                       <span style={{
                         background: 'rgba(165, 106, 48, 0.1)',
                         color: 'var(--gold, #A56A30)',
@@ -369,14 +365,25 @@ const Employees = () => {
                         {emp.id}
                       </span>
                     </td>
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', color: '#374151', fontSize: '13px', fontWeight: '500' }}>
+
+                    {/* 2. Employee Name & Phone - Centered */}
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
+                      <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>{emp.name}</div>
+                      <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>{emp.phone || '-'}</div>
+                    </td>
+
+                    {/* 3. Role - Centered */}
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center', color: '#374151', fontSize: '13px', fontWeight: '500' }}>
                       {emp.role || '-'}
                     </td>
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', fontWeight: '700', color: '#111827', fontSize: '13px' }}>
+
+                    {/* 4. Daily Wage - Centered */}
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center', fontWeight: '700', color: '#111827', fontSize: '13px' }}>
                       ₹{emp.dailySalary?.toLocaleString()}
                     </td>
-                    {/* Login Password / PIN */}
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+
+                    {/* 5. Login Password / PIN - Centered */}
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
                       <span style={{
                         background: '#FFFBEB',
                         color: '#92400E',
@@ -394,7 +401,9 @@ const Employees = () => {
                         {emp.password || '1234'}
                       </span>
                     </td>
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+
+                    {/* 6. Status - Centered */}
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
                       <span style={{
                         background: emp.status === 'Active' ? '#ECFDF5' : '#F3F4F6',
                         color: emp.status === 'Active' ? '#065F46' : '#6B7280',
@@ -404,8 +413,9 @@ const Employees = () => {
                         {emp.status}
                       </span>
                     </td>
-                    {/* Action Column with Edit Button */}
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
+
+                    {/* 7. Action Column with Edit Button - Right Aligned */}
+                    <td style={{ padding: '14px 20px', verticalAlign: 'middle', textAlign: 'right' }}>
                       <button
                         onClick={() => openEditModal(emp)}
                         style={{
