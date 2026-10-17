@@ -59,16 +59,16 @@ const getAttendance = async (req, res) => {
       SELECT 
         a.id,
         a.user_id as "userId",
-        u.full_name as "employeeName",
-        u.emp_code as "empCode",
-        u.role_title as "employeeRole",
+        COALESCE(u.full_name, a.employee_name, 'Former Employee') as "employeeName",
+        COALESCE(u.emp_code, a.emp_code, a.user_id::text) as "empCode",
+        COALESCE(u.role_title, a.employee_role, 'Staff') as "employeeRole",
         u.avatar as "employeeAvatar",
-        u.daily_rate as "dailyRate",
-        u.mobile as "employeePhone",
+        COALESCE(u.daily_rate, a.daily_rate, 0) as "dailyRate",
+        COALESCE(u.mobile, '') as "employeePhone",
         a.site_id as "siteId",
-        s.site_ref as "siteRef",
-        s.customer_name as "customerName",
-        s.location as "siteLocation",
+        COALESCE(s.site_ref, a.site_ref, 'SITE') as "siteRef",
+        COALESCE(s.customer_name, a.site_name, 'Work Site') as "customerName",
+        COALESCE(s.location, '') as "siteLocation",
         TO_CHAR(a.attendance_date, 'YYYY-MM-DD') as "attendanceDate",
         a.in_time as "inTime",
         a.out_time as "outTime",
@@ -82,7 +82,7 @@ const getAttendance = async (req, res) => {
         a.notes,
         a.created_at as "createdAt"
       FROM public.attendance a
-      JOIN public.users u ON a.user_id = u.id
+      LEFT JOIN public.users u ON a.user_id = u.id
       LEFT JOIN public.sites s ON a.site_id = s.id
       WHERE 1=1
     `;
@@ -117,11 +117,10 @@ const getAttendance = async (req, res) => {
     if (search && search.trim()) {
       const keyword = `%${search.trim()}%`;
       query += ` AND (
-        u.full_name ILIKE $${pIdx} OR 
-        u.username ILIKE $${pIdx} OR 
-        u.emp_code ILIKE $${pIdx} OR 
-        s.customer_name ILIKE $${pIdx} OR 
-        s.site_ref ILIKE $${pIdx}
+        COALESCE(u.full_name, a.employee_name, '') ILIKE $${pIdx} OR 
+        COALESCE(u.emp_code, a.emp_code, '') ILIKE $${pIdx} OR 
+        COALESCE(s.customer_name, a.site_name, '') ILIKE $${pIdx} OR 
+        COALESCE(s.site_ref, a.site_ref, '') ILIKE $${pIdx}
       )`;
       params.push(keyword);
       pIdx++;
@@ -132,16 +131,17 @@ const getAttendance = async (req, res) => {
     const result = await pool.query(query, params);
 
     const formattedList = result.rows.map((row) => {
-      const rawCode = row.empCode || String(row.userId + 100);
-      const displayEmpId = rawCode.startsWith('EMP-') ? rawCode : `EMP-${rawCode}`;
+      const rawCode = row.empCode || String(row.userId ? row.userId + 100 : '101');
+      const cleanEmpCode = String(rawCode).replace(/^EMP-/i, '').replace(/_del_.*$/, '').replace(/_deleted_.*$/, '');
+      const displayEmpId = `EMP-${cleanEmpCode}`;
       const isBonus = row.inTime === 'GIFT' || row.inTime === 'EXTRA' || row.outTime === 'BONUS' || row.outTime === 'ADDED';
       const displaySiteRef = isBonus 
         ? 'EXTRA' 
-        : (row.siteRef || (row.siteId ? `SITE-${String(row.siteId).padStart(3, '0')}` : 'General / Unassigned'));
+        : (row.siteRef || (row.siteId ? `SITE-${String(row.siteId).padStart(3, '0')}` : 'SITE'));
+      const displayCustomerName = isBonus ? 'Extra Attendance' : (row.customerName || 'Work Site');
       const displaySiteName = isBonus 
         ? 'Extra Attendance' 
-        : (row.customerName ? `${row.customerName} (${row.siteLocation || ''})` : 'Unassigned Site');
-      const displayCustomerName = isBonus ? 'Extra Attendance' : (row.customerName || 'N/A');
+        : (row.customerName ? `${row.customerName}${row.siteLocation ? ` (${row.siteLocation})` : ''}` : 'Work Site');
 
       return {
         id: row.id,
@@ -214,6 +214,17 @@ const markAttendance = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please select an attendance date' });
     }
 
+    // Snapshot employee details so historical attendance is permanently preserved
+    const userRes = await pool.query(
+      'SELECT full_name, emp_code, role_title, daily_rate FROM public.users WHERE id = $1',
+      [Number(userId)]
+    );
+    const empData = userRes.rows[0] || {};
+    const empName = empData.full_name || 'Staff Member';
+    const empCode = empData.emp_code || String(Number(userId) + 100);
+    const empRole = empData.role_title || 'Carpenter';
+    const empRate = Number(empData.daily_rate || 0);
+
     // Prepare list of sessions
     let sessions = [];
     if (Array.isArray(sites) && sites.length > 0) {
@@ -242,6 +253,20 @@ const markAttendance = async (req, res) => {
       const sess = sessions[i];
       const hours = calculateHours(sess.inTime, sess.outTime);
 
+      // Snapshot site details if site provided
+      let siteName = null;
+      let siteRef = null;
+      if (sess.siteId) {
+        const siteRes = await pool.query(
+          'SELECT customer_name, site_ref FROM public.sites WHERE id = $1',
+          [sess.siteId]
+        );
+        if (siteRes.rows.length > 0) {
+          siteName = siteRes.rows[0].customer_name;
+          siteRef = siteRes.rows[0].site_ref;
+        }
+      }
+
       const insertQuery = `
         INSERT INTO public.attendance (
           user_id,
@@ -252,8 +277,14 @@ const markAttendance = async (req, res) => {
           work_hours,
           day_value,
           status,
-          notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          notes,
+          employee_name,
+          emp_code,
+          employee_role,
+          daily_rate,
+          site_name,
+          site_ref
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         RETURNING *;
       `;
 
@@ -267,6 +298,12 @@ const markAttendance = async (req, res) => {
         perSessionDayValue,
         attStatus,
         notes || '',
+        empName,
+        empCode,
+        empRole,
+        empRate,
+        siteName,
+        siteRef,
       ];
 
       const result = await pool.query(insertQuery, insertValues);
@@ -305,6 +342,13 @@ const bulkMarkAttendance = async (req, res) => {
 
     await client.query('BEGIN');
 
+    // Pre-cache employees and sites to optimize performance
+    const allUsers = await client.query('SELECT id, full_name, emp_code, role_title, daily_rate FROM public.users');
+    const userMap = new Map(allUsers.rows.map(u => [u.id, u]));
+
+    const allSites = await client.query('SELECT id, customer_name, site_ref FROM public.sites');
+    const siteMap = new Map(allSites.rows.map(s => [s.id, s]));
+
     const insertedRows = [];
 
     for (const rec of records) {
@@ -323,6 +367,16 @@ const bulkMarkAttendance = async (req, res) => {
       const attStatus = rec.status || status || 'Verified';
       const notes = rec.notes || '';
 
+      const uData = userMap.get(userId) || {};
+      const empName = uData.full_name || 'Staff Member';
+      const empCode = uData.emp_code || String(userId + 100);
+      const empRole = uData.role_title || 'Carpenter';
+      const empRate = Number(uData.daily_rate || 0);
+
+      const sData = siteId ? siteMap.get(siteId) : null;
+      const siteName = sData ? sData.customer_name : null;
+      const siteRef = sData ? sData.site_ref : null;
+
       const insertQuery = `
         INSERT INTO public.attendance (
           user_id,
@@ -333,8 +387,14 @@ const bulkMarkAttendance = async (req, res) => {
           work_hours,
           day_value,
           status,
-          notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          notes,
+          employee_name,
+          emp_code,
+          employee_role,
+          daily_rate,
+          site_name,
+          site_ref
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         RETURNING *;
       `;
 
@@ -348,6 +408,12 @@ const bulkMarkAttendance = async (req, res) => {
         dayValue,
         attStatus,
         notes,
+        empName,
+        empCode,
+        empRole,
+        empRate,
+        siteName,
+        siteRef,
       ];
 
       const result = await client.query(insertQuery, insertValues);
@@ -407,6 +473,32 @@ const updateAttendance = async (req, res) => {
     const newStatus = status || current.status || 'Approved';
     const newNotes = notes !== undefined ? notes : current.notes;
 
+    // Refresh employee snapshot if user changed or was missing
+    let empName = current.employee_name;
+    let empCode = current.emp_code;
+    let empRole = current.employee_role;
+    let empRate = current.daily_rate;
+    if (newUserId && (!empName || newUserId !== current.user_id)) {
+      const uRes = await pool.query('SELECT full_name, emp_code, role_title, daily_rate FROM public.users WHERE id = $1', [newUserId]);
+      if (uRes.rows.length > 0) {
+        empName = uRes.rows[0].full_name;
+        empCode = uRes.rows[0].emp_code;
+        empRole = uRes.rows[0].role_title;
+        empRate = uRes.rows[0].daily_rate;
+      }
+    }
+
+    // Refresh site snapshot if site changed or was missing
+    let siteName = current.site_name;
+    let siteRef = current.site_ref;
+    if (newSiteId && (!siteName || newSiteId !== current.site_id)) {
+      const sRes = await pool.query('SELECT customer_name, site_ref FROM public.sites WHERE id = $1', [newSiteId]);
+      if (sRes.rows.length > 0) {
+        siteName = sRes.rows[0].customer_name;
+        siteRef = sRes.rows[0].site_ref;
+      }
+    }
+
     const updateQuery = `
       UPDATE public.attendance
       SET 
@@ -419,8 +511,14 @@ const updateAttendance = async (req, res) => {
         day_value = $7,
         status = $8,
         notes = $9,
+        employee_name = $10,
+        emp_code = $11,
+        employee_role = $12,
+        daily_rate = $13,
+        site_name = $14,
+        site_ref = $15,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $10
+      WHERE id = $16
       RETURNING *;
     `;
 
@@ -434,6 +532,12 @@ const updateAttendance = async (req, res) => {
       newDayValue,
       newStatus,
       newNotes,
+      empName,
+      empCode,
+      empRole,
+      empRate,
+      siteName,
+      siteRef,
       id,
     ]);
 
@@ -472,6 +576,17 @@ const awardBonusAttendance = async (req, res) => {
       ? notes.trim() 
       : `Extra Attendance (+${days} Days)`;
 
+    const userRes = await pool.query(
+      'SELECT full_name, emp_code, role_title, daily_rate FROM public.users WHERE id = $1',
+      [Number(userId)]
+    );
+    const empData = userRes.rows[0] || {};
+    const empName = empData.full_name || 'Employee';
+    const empCode = empData.emp_code || String(Number(userId) + 100);
+    const empRole = empData.role_title || 'Carpenter';
+    const rate = Number(empData.daily_rate || 0);
+    const addedSalary = Math.round(days * rate);
+
     const insertQuery = `
       INSERT INTO public.attendance (
         user_id,
@@ -482,8 +597,14 @@ const awardBonusAttendance = async (req, res) => {
         work_hours,
         day_value,
         status,
-        notes
-      ) VALUES ($1, NULL, $2, 'EXTRA', 'ADDED', 0.0, $3, 'Approved', $4)
+        notes,
+        employee_name,
+        emp_code,
+        employee_role,
+        daily_rate,
+        site_name,
+        site_ref
+      ) VALUES ($1, NULL, $2, 'EXTRA', 'ADDED', 0.0, $3, 'Approved', $4, $5, $6, $7, $8, 'Extra Attendance', 'EXTRA')
       RETURNING *;
     `;
 
@@ -492,12 +613,11 @@ const awardBonusAttendance = async (req, res) => {
       attendanceDate,
       days,
       bonusNote,
+      empName,
+      empCode,
+      empRole,
+      rate,
     ]);
-
-    const userRes = await pool.query('SELECT full_name, daily_rate FROM public.users WHERE id = $1', [userId]);
-    const empName = userRes.rows[0]?.full_name || 'Employee';
-    const rate = Number(userRes.rows[0]?.daily_rate || 0);
-    const addedSalary = Math.round(days * rate);
 
     return res.status(201).json({
       success: true,
@@ -558,7 +678,29 @@ const punchAttendance = async (req, res) => {
       hour12: true,
     });
 
-    const todayDate = new Date().toISOString().split('T')[0];
+    // Fetch user details for permanent snapshot
+    const userRes = await pool.query(
+      'SELECT full_name, emp_code, role_title, daily_rate FROM public.users WHERE id = $1',
+      [Number(userId)]
+    );
+    const empData = userRes.rows[0] || {};
+    const empName = empData.full_name || 'Staff Member';
+    const empCode = empData.emp_code || String(Number(userId) + 100);
+    const empRole = empData.role_title || 'Carpenter';
+    const empRate = Number(empData.daily_rate || 0);
+
+    // Fetch site details if siteId provided
+    let siteName = null;
+    let siteRef = null;
+    let siteLocation = '';
+    if (siteId) {
+      const siteRow = await pool.query('SELECT customer_name, site_ref, location FROM public.sites WHERE id = $1', [Number(siteId)]);
+      if (siteRow.rows.length > 0) {
+        siteName = siteRow.rows[0].customer_name;
+        siteRef = siteRow.rows[0].site_ref;
+        siteLocation = siteRow.rows[0].location || '';
+      }
+    }
 
     // Check existing attendance for this user today
     const existing = await pool.query(
@@ -581,8 +723,14 @@ const punchAttendance = async (req, res) => {
           in_gps,
           status,
           work_hours,
-          day_value
-        ) VALUES ($1, $2, CURRENT_DATE, $3, '--:--', $4, $5, 'In Progress', 0.0, 0.0)
+          day_value,
+          employee_name,
+          emp_code,
+          employee_role,
+          daily_rate,
+          site_name,
+          site_ref
+        ) VALUES ($1, $2, CURRENT_DATE, $3, '--:--', $4, $5, 'In Progress', 0.0, 0.0, $6, $7, $8, $9, $10, $11)
         RETURNING *;
       `;
 
@@ -592,15 +740,18 @@ const punchAttendance = async (req, res) => {
         nowTime,
         selfie || null,
         gps || 'GPS verified within 500m',
+        empName,
+        empCode,
+        empRole,
+        empRate,
+        siteName,
+        siteRef,
       ]);
 
       // Update user's last_site if site provided
-      if (siteId) {
-        const siteRow = await pool.query('SELECT customer_name, location FROM public.sites WHERE id = $1', [siteId]);
-        if (siteRow.rows.length > 0) {
-          const siteName = `${siteRow.rows[0].customer_name} (${siteRow.rows[0].location || ''})`;
-          await pool.query('UPDATE public.users SET last_site = $1 WHERE id = $2', [siteName, userId]);
-        }
+      if (siteId && siteName) {
+        const fullSiteStr = `${siteName} (${siteLocation})`;
+        await pool.query('UPDATE public.users SET last_site = $1 WHERE id = $2', [fullSiteStr, userId]);
       }
 
       return res.status(201).json({
@@ -635,8 +786,14 @@ const punchAttendance = async (req, res) => {
             out_gps,
             work_hours,
             status,
-            day_value
-          ) VALUES ($1, $2, CURRENT_DATE, '09:00 AM', $3, $4, $5, $6, 'Pending Approval', $7)
+            day_value,
+            employee_name,
+            emp_code,
+            employee_role,
+            daily_rate,
+            site_name,
+            site_ref
+          ) VALUES ($1, $2, CURRENT_DATE, '09:00 AM', $3, $4, $5, $6, 'Pending Approval', $7, $8, $9, $10, $11, $12, $13)
           RETURNING *;
         `;
         const insertRes = await pool.query(insertQuery, [
@@ -647,6 +804,12 @@ const punchAttendance = async (req, res) => {
           gps || 'GPS verified within 500m',
           hours,
           dayVal,
+          empName,
+          empCode,
+          empRole,
+          empRate,
+          siteName,
+          siteRef,
         ]);
 
         return res.status(200).json({
@@ -673,8 +836,14 @@ const punchAttendance = async (req, res) => {
           work_hours = $4,
           day_value = $5,
           status = 'Pending Approval',
+          employee_name = COALESCE(employee_name, $6),
+          emp_code = COALESCE(emp_code, $7),
+          employee_role = COALESCE(employee_role, $8),
+          daily_rate = COALESCE(daily_rate, $9),
+          site_name = COALESCE(site_name, $10),
+          site_ref = COALESCE(site_ref, $11),
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = $6
+        WHERE id = $12
         RETURNING *;
       `;
 
@@ -684,6 +853,12 @@ const punchAttendance = async (req, res) => {
         gps || 'GPS verified within 500m',
         hours,
         dayVal,
+        empName,
+        empCode,
+        empRole,
+        empRate,
+        siteName,
+        siteRef,
         targetId,
       ]);
 
@@ -721,9 +896,9 @@ const getEmployeeAttendance = async (req, res) => {
         TO_CHAR(a.attendance_date, 'FMDay, DD Mon YYYY') as "formattedDate",
         TO_CHAR(a.attendance_date, 'FMMonth YYYY') as "monthYear",
         a.site_id as "siteId",
-        s.site_ref as "siteRef",
-        s.customer_name as "customerName",
-        s.location as "siteLocation",
+        COALESCE(s.site_ref, a.site_ref, 'SITE') as "siteRef",
+        COALESCE(s.customer_name, a.site_name, 'Work Site') as "customerName",
+        COALESCE(s.location, '') as "siteLocation",
         a.in_time as "inTime",
         a.out_time as "outTime",
         a.work_hours as "workHours",

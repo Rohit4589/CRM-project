@@ -20,7 +20,7 @@ const getEmployees = async (req, res) => {
         last_site as "lastSite",
         created_at
       FROM public.users
-      WHERE role = 'employee'
+      WHERE role = 'employee' AND COALESCE(status, 'Active') != 'Deleted'
       ORDER BY id ASC;
     `;
 
@@ -383,8 +383,27 @@ const deleteEmployee = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Employee not found or cannot be deleted' });
     }
 
+    // 1. Permanently snapshot employee details onto all historical attendance records
+    await pool.query(
+      `UPDATE public.attendance a
+       SET 
+         employee_name = COALESCE(a.employee_name, u.full_name),
+         emp_code = COALESCE(a.emp_code, u.emp_code),
+         employee_role = COALESCE(a.employee_role, u.role_title),
+         daily_rate = COALESCE(a.daily_rate, u.daily_rate)
+       FROM public.users u
+       WHERE a.user_id = u.id AND u.id = $1`,
+      [dbId]
+    );
+
+    // 2. Soft-delete employee: mark status 'Deleted', and modify username/emp_code so they cannot login
+    // and duplicate keys are never caused if the code/username is reused.
     const deleteQuery = `
-      DELETE FROM public.users
+      UPDATE public.users
+      SET 
+        status = 'Deleted',
+        username = username || '_del_' || id,
+        emp_code = emp_code || '_del_' || id
       WHERE id = $1 AND role = 'employee'
       RETURNING id, full_name as name;
     `;

@@ -429,6 +429,17 @@ const deleteSite = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Site not found' });
     }
 
+    // Permanently snapshot site details onto historical attendance records before deleting site
+    await pool.query(
+      `UPDATE public.attendance a
+       SET 
+         site_name = COALESCE(a.site_name, s.customer_name),
+         site_ref = COALESCE(a.site_ref, s.site_ref)
+       FROM public.sites s
+       WHERE a.site_id = s.id AND s.id = $1`,
+      [targetDbId]
+    );
+
     const deleteQuery = `
       DELETE FROM public.sites
       WHERE id = $1

@@ -164,14 +164,61 @@ const Salary = () => {
   // 1. COMPUTE SALARY PER EMPLOYEE (EMPLOYEE-WISE)
   // =========================================================================
   const salaryRows = useMemo(() => {
-    return employees.map(emp => {
+    // 1. Gather all unique employee entities (active employees + former employees who worked in this month)
+    const empMap = new Map();
+
+    (employees || []).forEach(emp => {
+      const key = String(emp.dbId || emp.id);
+      empMap.set(key, {
+        id: emp.id,
+        dbId: emp.dbId,
+        name: emp.name,
+        role: emp.role,
+        avatar: emp.avatar,
+        dailyRate: Number(emp.dailySalary || 0),
+        isFormer: false,
+      });
+    });
+
+    // Also include any employee from attendance logs who is no longer active
+    (attendanceLogs || []).forEach(log => {
+      const exists = Array.from(empMap.values()).some(e => 
+        (log.userId && e.dbId === log.userId) || 
+        (log.empId && String(e.id).toUpperCase() === String(log.empId).toUpperCase())
+      );
+      if (!exists) {
+        const key = `user_${log.userId || log.empId || log.name}`;
+        if (!empMap.has(key)) {
+          empMap.set(key, {
+            id: log.empId || (log.userId ? `EMP-${log.userId}` : 'EMP-000'),
+            dbId: log.userId || null,
+            name: log.name || log.employeeName || 'Former Employee',
+            role: log.role || 'Carpenter',
+            avatar: null,
+            dailyRate: Number(log.dailyRate || 0),
+            isFormer: true,
+          });
+        }
+      }
+    });
+
+    const rows = Array.from(empMap.values()).map(emp => {
       // Only count Approved and Verified records in salary calculation
       const empAtt = attendanceLogs.filter(a => 
-        (a.userId === emp.dbId || String(a.empId) === String(emp.id)) && 
-        (a.status === 'Approved' || a.status === 'Verified')
+        (emp.dbId && a.userId === emp.dbId) || 
+        (emp.id && String(a.empId).toUpperCase() === String(emp.id).toUpperCase()) ||
+        (emp.name && a.name === emp.name)
       );
-      const totalDays = empAtt.reduce((sum, a) => sum + (parseFloat(a.dayValue) || 0), 0);
-      const dailyRate = Number(emp.dailySalary || 0);
+      const approvedAtt = empAtt.filter(a => a.status === 'Approved' || a.status === 'Verified');
+      const totalDays = approvedAtt.reduce((sum, a) => sum + (parseFloat(a.dayValue) || 0), 0);
+
+      // Determine daily rate: emp.dailyRate, or from their attendance log snapshots
+      let dailyRate = emp.dailyRate;
+      if (!dailyRate && empAtt.length > 0) {
+        const found = empAtt.find(a => Number(a.dailyRate) > 0);
+        if (found) dailyRate = Number(found.dailyRate);
+      }
+
       const grossAmount = Math.round(totalDays * dailyRate);
       const deductions = 0; // Configurable advance / deduction
       const netPayable = grossAmount - deductions;
@@ -182,15 +229,19 @@ const Salary = () => {
         name: emp.name,
         role: emp.role,
         avatar: emp.avatar,
+        isFormer: emp.isFormer,
         totalDays,
         dailyRate,
         grossAmount,
         deductions,
         netPayable,
-        status: totalDays > 0 ? 'Ready' : 'No Punches',
+        status: totalDays > 0 ? 'Ready' : (emp.isFormer ? 'Former Employee' : 'No Punches'),
         attendanceLogs: empAtt.sort((a, b) => (a.attendanceDate || '').localeCompare(b.attendanceDate || ''))
       };
     });
+
+    // If an employee is former and has 0 attendance records in this month, don't show them
+    return rows.filter(r => !r.isFormer || r.attendanceLogs.length > 0);
   }, [employees, attendanceLogs]);
 
   const totalEmployeePayroll = useMemo(() => {
@@ -234,14 +285,14 @@ const Salary = () => {
 
     // Also collect any sites that have attendance records but might not be in sites array
     attendanceLogs.forEach(log => {
-      const sRef = log.siteRef || (log.siteId ? `SITE-${String(log.siteId).padStart(3, '0')}` : 'General / Unassigned');
+      const sRef = log.siteRef || (log.siteId ? `SITE-${String(log.siteId).padStart(3, '0')}` : 'SITE');
       const key = String(log.siteId || sRef);
       if (!siteMap.has(key)) {
         siteMap.set(key, {
           id: sRef,
           siteRef: sRef,
           dbId: log.siteId || null,
-          customerName: log.customerName || 'General / Unassigned',
+          customerName: log.customerName || log.siteName || 'Work Site',
           location: log.siteLocation || '',
           fullAddress: log.siteLocation || '',
           phone: '',
