@@ -1,4 +1,5 @@
 import React from 'react';
+import { toTitleCase } from '../../utils/autoCapitalize';
 
 const AddSiteModal = ({
   show,
@@ -124,7 +125,7 @@ const AddSiteModal = ({
                 type="text"
                 placeholder="e.g. Rahul Deshmukh"
                 value={formData.customerName}
-                onChange={(e) => setFormData({...formData, customerName: e.target.value})}
+                onChange={(e) => setFormData({...formData, customerName: toTitleCase(e.target.value)})}
                 style={{
                   width: '100%', padding: '9px 12px', borderRadius: '6px',
                   border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
@@ -145,7 +146,7 @@ const AddSiteModal = ({
                 type="text"
                 placeholder="Enter Name"
                 value={formData.refName || ''}
-                onChange={(e) => setFormData({...formData, refName: e.target.value})}
+                onChange={(e) => setFormData({...formData, refName: toTitleCase(e.target.value)})}
                 style={{
                   width: '100%', padding: '9px 12px', borderRadius: '6px',
                   border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
@@ -156,9 +157,14 @@ const AddSiteModal = ({
 
           <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
             <div style={{flex: '1 1 200px'}}>
-              <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                Mobile Number *
-              </label>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+                <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  Mobile Number
+                </label>
+                <span style={{color: '#6B7280', fontSize: '11px', fontWeight: '500'}}>
+                  (Optional)
+                </span>
+              </div>
               <input
                 type="tel"
                 placeholder="+91 98765 43210"
@@ -168,7 +174,6 @@ const AddSiteModal = ({
                   width: '100%', padding: '9px 12px', borderRadius: '6px',
                   border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
                 }}
-                required
               />
             </div>
             <div style={{flex: '1 1 200px'}}>
@@ -196,7 +201,7 @@ const AddSiteModal = ({
               type="text"
               placeholder="e.g. Kothrud, Pune"
               value={formData.location}
-              onChange={(e) => setFormData({...formData, location: e.target.value})}
+              onChange={(e) => setFormData({...formData, location: toTitleCase(e.target.value)})}
               style={{
                 width: '100%', padding: '9px 12px', borderRadius: '6px',
                 border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
@@ -297,7 +302,7 @@ const AddSiteModal = ({
               placeholder="Enter complete site address with building and landmark..."
               rows="2"
               value={formData.fullAddress}
-              onChange={(e) => setFormData({...formData, fullAddress: e.target.value})}
+              onChange={(e) => setFormData({...formData, fullAddress: toTitleCase(e.target.value)})}
               style={{
                 width: '100%', padding: '9px 12px', borderRadius: '6px',
                 border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',

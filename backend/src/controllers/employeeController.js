@@ -62,6 +62,13 @@ const getEmployees = async (req, res) => {
   }
 };
 
+const toTitleCase = (val) => {
+  if (!val || typeof val !== 'string') return val;
+  return val.replace(/(^|[\s\/\-\,\.\(\)\[\]])([a-zA-Z])([a-zA-Z]*)/g, (match, prefix, first, rest) => {
+    return prefix + first.toUpperCase() + rest.toLowerCase();
+  });
+};
+
 // POST /api/employees
 const addEmployee = async (req, res) => {
   try {
@@ -71,7 +78,7 @@ const addEmployee = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Employee full name is required' });
     }
 
-    const cleanName = name.trim();
+    const cleanName = toTitleCase(name.trim());
     const rawDigits = (phone && typeof phone === 'string') ? phone.replace(/[^0-9]/g, '') : '';
     const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : (rawDigits.length > 0 ? rawDigits : null);
 
@@ -113,7 +120,7 @@ const addEmployee = async (req, res) => {
       ? password.trim() 
       : (cleanPhone && cleanPhone.length >= 4 ? cleanPhone.slice(-4) : (cleanEmpCode || '1234'));
 
-    const cleanRole = (role && role.trim()) ? role.trim() : null;
+    const cleanRole = (role && role.trim()) ? toTitleCase(role.trim()) : null;
     const cleanStatus = status || 'Active';
     const randomAvatar = null;
 
@@ -246,10 +253,10 @@ const updateEmployee = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Daily wage rate cannot be negative' });
     }
 
-    const cleanName = name.trim();
+    const cleanName = toTitleCase(name.trim());
     const rawDigits = (phone && typeof phone === 'string') ? phone.replace(/[^0-9]/g, '') : '';
     const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : (rawDigits.length > 0 ? rawDigits : null);
-    const cleanRole = (role && role.trim()) ? role.trim() : null;
+    const cleanRole = (role && role.trim()) ? toTitleCase(role.trim()) : null;
     const cleanStatus = status || 'Active';
     const newPassword = (password && password.trim()) ? password.trim() : null;
     const cleanEmpCode = empCode ? String(empCode).trim().replace(/^EMP-/i, '') : null;

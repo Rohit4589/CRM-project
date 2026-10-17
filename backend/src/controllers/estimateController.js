@@ -178,7 +178,7 @@ exports.getEstimates = async (req, res) => {
       query += ` AND e.project_type = $${params.length}`;
     }
 
-    query += ` ORDER BY e.created_at DESC`;
+    query += ` ORDER BY NULLIF(regexp_replace(e.estimate_number, '[^0-9]', '', 'g'), '')::int DESC NULLS LAST, e.created_at DESC`;
 
     const result = await pool.query(query, params);
 

@@ -287,6 +287,13 @@ const Sites = ({ onNavigate }) => {
       matchesStatus = true;
     }
     return matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    const rawA = String(a.siteCode || a.siteRef || a.id || '').replace(/[^0-9]/g, '');
+    const rawB = String(b.siteCode || b.siteRef || b.id || '').replace(/[^0-9]/g, '');
+    const numA = parseInt(rawA, 10) || (a.dbId || 0);
+    const numB = parseInt(rawB, 10) || (b.dbId || 0);
+    if (numB !== numA) return numB - numA; // Greater number on top (newest first)
+    return (b.dbId || 0) - (a.dbId || 0);
   });
 
   const counts = {

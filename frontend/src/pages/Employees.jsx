@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../config/api';
+import { toTitleCase } from '../utils/autoCapitalize';
 
 const Employees = () => {
   const [employees, setEmployees] = useState([]);
@@ -503,7 +504,7 @@ const Employees = () => {
                   type="text"
                   placeholder="e.g. Rahul Patil"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, name: toTitleCase(e.target.value) })}
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
                   required
                 />
@@ -589,7 +590,7 @@ const Employees = () => {
                     type="text"
                     placeholder="e.g. Carpenter, Painter (Optional)"
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, role: toTitleCase(e.target.value) })}
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
                   />
                 </div>
@@ -723,7 +724,7 @@ const Employees = () => {
                 <input
                   type="text"
                   value={editFormData.name}
-                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: toTitleCase(e.target.value) })}
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
                   required
                 />
@@ -803,7 +804,7 @@ const Employees = () => {
                     type="text"
                     placeholder="e.g. Carpenter, Painter (Optional)"
                     value={editFormData.role}
-                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+                    onChange={(e) => setEditFormData({ ...editFormData, role: toTitleCase(e.target.value) })}
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
                   />
                 </div>
