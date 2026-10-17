@@ -9,6 +9,7 @@ const Employees = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAddPassword, setShowAddPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,6 +120,7 @@ const Employees = () => {
   // Open Edit Modal
   const openEditModal = (emp) => {
     setApiError('');
+    setShowDeleteConfirm(false);
     const rawEmpCode = emp.empCode || emp.rawCode || String(emp.id || '').replace(/^EMP-/i, '');
     setEditFormData({
       dbId: emp.dbId,
@@ -181,13 +183,14 @@ const Employees = () => {
     }
   };
 
-  // Delete Employee Handler
-  const handleDeleteEmployee = async () => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to permanently delete employee "${editFormData.name}" (${editFormData.id}) from the database?`
-    );
-    if (!confirmDelete) return;
+  // Trigger Custom Delete Confirmation Modal
+  const promptDeleteEmployee = () => {
+    setApiError('');
+    setShowDeleteConfirm(true);
+  };
 
+  // Confirm Delete Employee Handler
+  const handleConfirmDeleteEmployee = async () => {
     setSaving(true);
     setApiError('');
 
@@ -207,8 +210,9 @@ const Employees = () => {
 
       // Remove from state
       setEmployees(prev => prev.filter(emp => emp.dbId !== editFormData.dbId));
+      setShowDeleteConfirm(false);
       setShowEditModal(false);
-      setSuccessMessage(`Employee "${editFormData.name}" was permanently deleted from the database.`);
+      setSuccessMessage(`Employee "${editFormData.name}" (${editFormData.id}) was permanently deleted from the database.`);
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
       console.error('Error deleting employee:', err);
@@ -835,7 +839,7 @@ const Employees = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid #E5E7EB' }}>
                 <button
                   type="button"
-                  onClick={handleDeleteEmployee}
+                  onClick={promptDeleteEmployee}
                   disabled={saving}
                   style={{
                     background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#DC2626',
@@ -874,6 +878,108 @@ const Employees = () => {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          CUSTOM DELETE CONFIRMATION MODAL
+         ======================================================== */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.7)', display: 'flex',
+          justifyContent: 'center', alignItems: 'center', zIndex: 1400,
+          backdropFilter: 'blur(4px)', padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff', borderRadius: '16px',
+            width: '100%', maxWidth: '420px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+            overflow: 'hidden', padding: '26px 24px 22px',
+            textAlign: 'center', boxSizing: 'border-box'
+          }}>
+            {/* Warning Icon Badge */}
+            <div style={{
+              width: '54px', height: '54px', borderRadius: '50%',
+              background: '#FEE2E2', color: '#DC2626',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 14px', fontSize: '22px'
+            }}>
+              <i className="fa-solid fa-triangle-exclamation"></i>
+            </div>
+
+            <h3 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: '800', color: '#111827' }}>
+              Delete Employee?
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#6B7280', lineHeight: '1.45' }}>
+              Are you sure you want to permanently delete this employee from the database? This action cannot be undone.
+            </p>
+
+            {/* Employee Preview Card */}
+            <div style={{
+              background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '10px',
+              padding: '12px 14px', marginBottom: '20px', textAlign: 'left',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px'
+            }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontWeight: '700', fontSize: '14px', color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {editFormData.name}
+                </div>
+                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
+                  {editFormData.role || 'Employee'} {editFormData.phone ? `· ${editFormData.phone}` : ''}
+                </div>
+              </div>
+              <span style={{
+                background: 'rgba(165, 106, 48, 0.1)', color: 'var(--gold, #A56A30)',
+                border: '1px solid rgba(165, 106, 48, 0.25)',
+                padding: '4px 8px', borderRadius: '6px', fontWeight: '800', fontSize: '12px',
+                whiteSpace: 'nowrap'
+              }}>
+                {editFormData.id}
+              </span>
+            </div>
+
+            {/* Actions: Cancel & Confirm Delete */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={saving}
+                style={{
+                  flex: 1, padding: '10px 16px', borderRadius: '8px',
+                  border: '1px solid #D1D5DB', background: '#ffffff',
+                  color: '#374151', cursor: saving ? 'not-allowed' : 'pointer',
+                  fontWeight: '600', fontSize: '13px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteEmployee}
+                disabled={saving}
+                style={{
+                  flex: 1, padding: '10px 16px', borderRadius: '8px',
+                  border: 'none', background: '#DC2626', color: '#ffffff',
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  fontWeight: '700', fontSize: '13px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  boxShadow: '0 2px 4px rgba(220, 38, 38, 0.25)',
+                  opacity: saving ? 0.75 : 1
+                }}
+              >
+                {saving ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i> Deleting...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-trash-can"></i> Yes, Delete
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
