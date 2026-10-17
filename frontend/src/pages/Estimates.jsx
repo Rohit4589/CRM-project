@@ -113,6 +113,13 @@ const Estimates = ({ onNavigate }) => {
     }
 
     return matchesSearch && matchesType && matchesStatus;
+  }).sort((a, b) => {
+    const rawA = String(a.estimate_number || '').replace(/[^0-9]/g, '');
+    const rawB = String(b.estimate_number || '').replace(/[^0-9]/g, '');
+    const numA = parseInt(rawA, 10) || (a.id || 0);
+    const numB = parseInt(rawB, 10) || (b.id || 0);
+    if (numB !== numA) return numB - numA; // Greater number on top (newest first)
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
   });
 
   // Move order/estimate status (e.g. from Running to Quotation)

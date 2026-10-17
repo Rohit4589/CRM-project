@@ -1,4 +1,5 @@
 import React from 'react';
+import { toTitleCase } from '../../utils/autoCapitalize';
 
 const EditSiteModal = ({
   editingSite,
@@ -129,7 +130,7 @@ const EditSiteModal = ({
               <input
                 type="text"
                 value={editingSite.customerName}
-                onChange={(e) => setEditingSite({...editingSite, customerName: e.target.value})}
+                onChange={(e) => setEditingSite({...editingSite, customerName: toTitleCase(e.target.value)})}
                 style={{
                   width: '100%', padding: '9px 12px', borderRadius: '8px',
                   border: '1.5px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
@@ -151,7 +152,7 @@ const EditSiteModal = ({
                 type="text"
                 placeholder="Enter Name"
                 value={editingSite.refName || ''}
-                onChange={(e) => setEditingSite({...editingSite, refName: e.target.value})}
+                onChange={(e) => setEditingSite({...editingSite, refName: toTitleCase(e.target.value)})}
                 style={{
                   width: '100%', padding: '9px 12px', borderRadius: '8px',
                   border: '1.5px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
@@ -163,9 +164,14 @@ const EditSiteModal = ({
 
           <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
             <div style={{flex: '1 1 200px'}}>
-              <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                Phone Number
-              </label>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+                <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  Mobile Number
+                </label>
+                <span style={{color: '#6B7280', fontSize: '11px', fontWeight: '500'}}>
+                  (Optional)
+                </span>
+              </div>
               <input
                 type="tel"
                 value={editingSite.phone}
@@ -174,7 +180,6 @@ const EditSiteModal = ({
                   width: '100%', padding: '9px 12px', borderRadius: '6px',
                   border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
                 }}
-                required
               />
             </div>
             <div style={{flex: '1 1 200px'}}>
@@ -201,7 +206,7 @@ const EditSiteModal = ({
               <input
                 type="text"
                 value={editingSite.location}
-                onChange={(e) => setEditingSite({...editingSite, location: e.target.value})}
+                onChange={(e) => setEditingSite({...editingSite, location: toTitleCase(e.target.value)})}
                 style={{
                   width: '100%', padding: '9px 12px', borderRadius: '6px',
                   border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
@@ -319,7 +324,7 @@ const EditSiteModal = ({
             <textarea
               rows="2"
               value={editingSite.fullAddress}
-              onChange={(e) => setEditingSite({...editingSite, fullAddress: e.target.value})}
+              onChange={(e) => setEditingSite({...editingSite, fullAddress: toTitleCase(e.target.value)})}
               style={{
                 width: '100%', padding: '9px 12px', borderRadius: '6px',
                 border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',

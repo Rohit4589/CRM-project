@@ -21,7 +21,7 @@ const getSites = async (req, res) => {
         notes,
         created_at
       FROM public.sites
-      ORDER BY id ASC;
+      ORDER BY NULLIF(regexp_replace(site_ref, '[^0-9]', '', 'g'), '')::int DESC NULLS LAST, id DESC;
     `;
 
     const result = await pool.query(query);
@@ -66,6 +66,13 @@ const getSites = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+const toTitleCase = (val) => {
+  if (!val || typeof val !== 'string') return val;
+  return val.replace(/(^|[\s\/\-\,\.\(\)\[\]])([a-zA-Z])([a-zA-Z]*)/g, (match, prefix, first, rest) => {
+    return prefix + first.toUpperCase() + rest.toLowerCase();
+  });
 };
 
 // POST /api/sites
@@ -156,12 +163,12 @@ const addSite = async (req, res) => {
 
     const result = await pool.query(insertQuery, [
       finalSiteRef,
-      customerName.trim(),
+      toTitleCase(customerName.trim()),
       phone ? phone.trim() : '',
       email ? email.trim() : '',
-      location ? location.trim() : '',
-      refName ? refName.trim() : '',
-      fullAddress ? fullAddress.trim() : '',
+      location ? toTitleCase(location.trim()) : '',
+      refName ? toTitleCase(refName.trim()) : '',
+      fullAddress ? toTitleCase(fullAddress.trim()) : '',
       latLng ? latLng.trim() : '',
       startDate || null,
       targetDate || null,
@@ -326,12 +333,12 @@ const updateSite = async (req, res) => {
 
     const result = await pool.query(updateQuery, [
       newSiteRef,
-      customerName ? customerName.trim() : null,
+      customerName ? toTitleCase(customerName.trim()) : null,
       phone ? phone.trim() : null,
       email ? email.trim() : null,
-      location ? location.trim() : null,
-      refName !== undefined ? (refName ? refName.trim() : '') : null,
-      fullAddress ? fullAddress.trim() : null,
+      location ? toTitleCase(location.trim()) : null,
+      refName !== undefined ? (refName ? toTitleCase(refName.trim()) : '') : null,
+      fullAddress ? toTitleCase(fullAddress.trim()) : null,
       latLng !== undefined ? (latLng ? latLng.trim() : '') : null,
       startDate || null,
       targetDate || null,
