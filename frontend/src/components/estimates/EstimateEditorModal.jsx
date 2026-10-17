@@ -1,32 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EstimateRoomSection from './EstimateRoomSection';
 import EstimateSummaryFooter from './EstimateSummaryFooter';
+import AddRoomModal from './AddRoomModal';
 
 const EstimateEditorModal = ({
   estimate,
   catalog,
   onSave,
   onClose,
+  onPreview,
   saving = false
 }) => {
   const [customerName, setCustomerName] = useState(estimate.customer_name || '');
   const [phone, setPhone] = useState(estimate.phone || '');
   const [email, setEmail] = useState(estimate.email || '');
   const [address, setAddress] = useState(estimate.address || '');
-  const [date, setDate] = useState(estimate.date || new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(
+    estimate.date ? String(estimate.date).split('T')[0] : new Date().toISOString().split('T')[0]
+  );
   const [projectType, setProjectType] = useState(estimate.project_type || 'Residential');
   const [furnitureLevel, setFurnitureLevel] = useState(estimate.furniture_level || 'Luxury-Modern');
   const [status, setStatus] = useState(estimate.status || 'Draft');
 
-  const [rooms, setRooms] = useState(estimate.rooms_data || []);
+  const [rooms, setRooms] = useState(() => {
+    if (!estimate.rooms_data) return [];
+    if (typeof estimate.rooms_data === 'string') {
+      try {
+        return JSON.parse(estimate.rooms_data) || [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return estimate.rooms_data || [];
+  });
   const [designFeePct, setDesignFeePct] = useState(estimate.design_fee_pct ?? 10);
   const [gstPct, setGstPct] = useState(estimate.gst_pct ?? 0);
   const [roundOff, setRoundOff] = useState(estimate.round_off ?? 0);
   const [notes, setNotes] = useState(estimate.notes || catalog?.defaultNote || '');
   const [termsConditions, setTermsConditions] = useState(estimate.terms_conditions || catalog?.defaultTerms || '');
   const [paymentTerms, setPaymentTerms] = useState(estimate.payment_terms || catalog?.defaultPaymentTerms || '');
-  const [bankDetails, setBankDetails] = useState(estimate.bank_details || catalog?.defaultBankDetails || {});
+  const [bankDetails, setBankDetails] = useState(() => {
+    let bd = estimate.bank_details;
+    if (typeof bd === 'string') {
+      try {
+        bd = JSON.parse(bd);
+      } catch (e) {
+        bd = null;
+      }
+    }
+    return bd || catalog?.defaultBankDetails || {};
+  });
   const [roomToDelete, setRoomToDelete] = useState(null);
+  const [showAddRoomModal, setShowAddRoomModal] = useState(false);
 
   // Handle tier rate switch across existing items if desired
   const handleTierChange = (newTier) => {
@@ -72,18 +97,77 @@ const EstimateEditorModal = ({
     }
   };
 
-  const handleAddCustomRoom = () => {
-    const roomName = window.prompt('Enter new room name:', 'EXTRA ROOM');
-    if (roomName && roomName.trim()) {
-      const newRoom = {
-        id: `room_${Date.now()}`,
-        roomName: roomName.trim().toUpperCase(),
-        roomTotal: 0,
-        items: []
-      };
-      setRooms([...rooms, newRoom]);
+  const handleAddNewRooms = (newRoomsList) => {
+    setRooms(prev => [...prev, ...newRoomsList]);
+  };
+
+  const handlePreviewDraft = () => {
+    const subTotal = rooms.reduce((sum, r) => sum + (Number(r.roomTotal) || 0), 0);
+    const designFeeAmount = Math.round((subTotal * Number(designFeePct || 0)) / 100);
+    const taxableAmount = subTotal + designFeeAmount;
+    const gstAmount = Math.round((taxableAmount * Number(gstPct || 0)) / 100);
+    const finalTotal = Math.round(taxableAmount + gstAmount - Number(roundOff || 0));
+
+    const draft = {
+      ...estimate,
+      customer_name: customerName,
+      phone,
+      email,
+      address,
+      date,
+      project_type: projectType,
+      furniture_level: furnitureLevel,
+      status,
+      rooms_data: rooms,
+      sub_total: subTotal,
+      design_fee_pct: designFeePct,
+      design_fee_amount: designFeeAmount,
+      gst_pct: gstPct,
+      gst_amount: gstAmount,
+      round_off: roundOff,
+      final_total: finalTotal,
+      notes,
+      terms_conditions: termsConditions,
+      payment_terms: paymentTerms,
+      bank_details: bankDetails
+    };
+
+    if (onPreview) {
+      onPreview(draft);
     }
   };
+
+  // Intercept Ctrl+P inside the editor so user gets the finalized A4 bill rather than raw form inputs
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault();
+        e.stopPropagation();
+        handlePreviewDraft();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    customerName,
+    phone,
+    email,
+    address,
+    date,
+    projectType,
+    furnitureLevel,
+    status,
+    rooms,
+    designFeePct,
+    gstPct,
+    roundOff,
+    notes,
+    termsConditions,
+    paymentTerms,
+    bankDetails,
+    estimate,
+    onPreview
+  ]);
 
   const handleSaveSubmit = (e) => {
     e.preventDefault();
@@ -186,15 +270,14 @@ const EstimateEditorModal = ({
             </div>
 
             <div className="editor-field">
-              <label>Status</label>
+              <label>Folder Status</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
-                <option value="Draft">Draft</option>
-                <option value="Sent">Sent</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
+                <option value="Running">Running</option>
+                <option value="Completed">Completed</option>
+                <option value="On Hold">On Hold</option>
               </select>
             </div>
           </div>
@@ -207,8 +290,8 @@ const EstimateEditorModal = ({
             <button
               type="button"
               className="btn-create-estimate"
-              style={{ padding: '6px 14px', fontSize: '12px' }}
-              onClick={handleAddCustomRoom}
+              style={{ padding: '7px 16px', fontSize: '12.5px', gap: '6px' }}
+              onClick={() => setShowAddRoomModal(true)}
             >
               <i className="fa-solid fa-plus"></i> Add New Room
             </button>
@@ -256,6 +339,26 @@ const EstimateEditorModal = ({
               disabled={saving}
             >
               Cancel
+            </button>
+            <button
+              type="button"
+              className="btn-action-icon"
+              style={{
+                width: 'auto',
+                padding: '10px 18px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#FAF8F5',
+                border: '1px solid #DCD4CA',
+                color: '#4A2C17',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+              onClick={handlePreviewDraft}
+              title="Preview finalized A4 bill & Print without editing controls"
+            >
+              <i className="fa-solid fa-file-invoice"></i> Preview & Print
             </button>
             <button
               type="submit"
@@ -376,6 +479,17 @@ const EstimateEditorModal = ({
           </div>
         </div>
       )}
+
+      {/* Add Room Modal (Presets & Custom) */}
+      <AddRoomModal
+        isOpen={showAddRoomModal}
+        onClose={() => setShowAddRoomModal(false)}
+        catalog={catalog}
+        projectType={projectType}
+        existingRooms={rooms}
+        furnitureTier={furnitureLevel}
+        onAddRooms={handleAddNewRooms}
+      />
     </div>
   );
 };

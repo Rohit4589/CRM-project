@@ -193,7 +193,7 @@
   border-collapse: collapse;
   text-align: left;
   font-size: 13px;
-  table-layout: fixed;
+  min-width: 1080px;
 }
 
 .estimate-table th {
@@ -225,6 +225,7 @@
   padding: 4px 8px;
   border-radius: 6px;
   display: inline-block;
+  white-space: nowrap;
 }
 
 .badge-tier {
@@ -259,6 +260,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: nowrap;
 }
 
 .btn-action-icon {
@@ -274,12 +276,26 @@
   cursor: pointer;
   transition: all 0.15s;
   font-size: 13px;
+  flex-shrink: 0;
 }
 
 .btn-action-icon:hover {
   background: #4A2C17;
   color: #FFFFFF;
   border-color: #4A2C17;
+}
+
+.btn-action-icon.edit {
+  color: #4A2C17;
+  border-color: #D1C2AF;
+  background: #FAF8F5;
+}
+
+.btn-action-icon.edit:hover {
+  background: #4A2C17;
+  border-color: #4A2C17;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(74, 44, 23, 0.2);
 }
 
 .btn-action-icon.revision {
@@ -424,6 +440,10 @@
   padding: 20px;
 }
 
+.estimate-preview-modal-overlay {
+  z-index: 1100;
+}
+
 .estimate-modal {
   background: #FFFFFF;
   border-radius: 16px;
@@ -439,6 +459,17 @@
 
 .estimate-modal.modal-large {
   max-width: 1300px;
+}
+
+.estimate-preview-modal-card {
+  max-height: 95vh;
+}
+
+.estimate-preview-body {
+  background: #EAE4DD;
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 @keyframes modalSlideIn {
@@ -839,9 +870,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 2px solid #4A2C17;
-  padding-bottom: 14px;
-  margin-bottom: 20px;
+  border-bottom: none; /* Reduced duplicate line - room title row below provides the single clean divider */
+  padding-bottom: 8px;
+  margin-bottom: 16px;
   gap: 24px;
 }
 
@@ -965,8 +996,9 @@
   padding-top: 16px;
 }
 
-.print-footer-info h5 {
-  margin: 0 0 4px 0;
+.print-footer-info h5,
+.print-section-h5 {
+  margin: 0 0 6px 0;
   font-size: 11px;
   font-weight: 700;
   color: #4A2C17;
@@ -979,26 +1011,466 @@
   line-height: 1.4;
 }
 
-/* Print CSS */
+/* Screen styles for Preview Modal footer sections */
+.print-terms-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  font-size: 10px;
+  color: #333;
+  line-height: 1.45;
+}
+
+.print-terms-col div {
+  margin-bottom: 4px;
+}
+
+.print-closing-block {
+  margin-top: 14px;
+}
+
+.print-payment-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 14px;
+  margin-bottom: 20px;
+  padding-top: 14px;
+  border-top: 1px solid #E5D9C5;
+}
+
+.print-bank-card {
+  background: #FAF8F5;
+  border: 1px solid #E5D9C5;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.print-signature-section {
+  display: flex;
+  justify-content: space-between;
+  padding: 28px 40px 10px 40px;
+  margin-top: 16px;
+  border-top: 1px dashed #E5D9C5;
+}
+
+.print-sig-col {
+  text-align: center;
+}
+
+.print-sig-line {
+  border-top: 1px solid #555;
+  width: 160px;
+  padding-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #444;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   Print CSS - Scoped to Estimate Preview Modal
+   Fixes Ctrl+P freezing/static issue by restoring document flow,
+   neutralizing modal containers, and enabling multi-page pagination.
+   Ensures proper A4 margins (all 4 sides) and prevents row/content cutting.
+   ============================================================ */
+@page {
+  size: A4 portrait;
+  margin: 20mm 14mm 20mm 14mm;
+  margin-top: 20mm;
+  margin-bottom: 20mm;
+  margin-left: 14mm;
+  margin-right: 14mm;
+}
+
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    size: A4 portrait;
+    margin: 20mm 14mm 20mm 14mm;
+    margin-top: 20mm;
+    margin-bottom: 20mm;
+    margin-left: 14mm;
+    margin-right: 14mm;
   }
-  .estimate-printable-sheet,
-  .estimate-printable-sheet * {
-    visibility: visible;
+
+  /* Global fragmentation rules */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  .estimate-printable-sheet {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 15mm;
-    box-shadow: none;
-  }
-  .no-print {
+
+  /* 1. Hide UI elements, navigation, CRM shell, editing forms, and non-preview siblings */
+  .no-print,
+  .sidebar,
+  .app-sidebar,
+  aside,
+  header,
+  .header,
+  .topbar,
+  .app-header,
+  .estimate-modal-header,
+  .estimates-header,
+  .estimate-modal-overlay > :not(.estimate-modal),
+  .estimate-modal:not(.estimate-preview-modal-card),
+  .editor-header-fields,
+  .room-section,
+  .room-header-actions,
+  .room-items-table,
+  .btn-add-item,
+  .estimate-summary-footer,
+  .estimate-modal-footer,
+  .modal-close-btn,
+  .btn-edit-desc,
+  .btn-delete-item,
+  body.estimate-preview-modal-open .sidebar,
+  body.estimate-preview-modal-open aside,
+  body.estimate-preview-modal-open header,
+  body.estimate-preview-modal-open .header,
+  body.estimate-preview-modal-open .topbar,
+  body.estimate-preview-modal-open .estimates-header,
+  body.estimate-preview-modal-open .estimates-container > *:not(.estimate-modal-overlay),
+  body:has(.estimate-printable-sheet) .sidebar,
+  body:has(.estimate-printable-sheet) aside,
+  body:has(.estimate-printable-sheet) header,
+  body:has(.estimate-printable-sheet) .header,
+  body:has(.estimate-printable-sheet) .topbar,
+  body:has(.estimate-printable-sheet) .estimates-header,
+  body:has(.estimate-printable-sheet) .estimates-container > *:not(.estimate-modal-overlay) {
     display: none !important;
+  }
+
+  /* 2. Reset html & body to crisp white with natural page flow */
+  html,
+  body,
+  body.estimate-preview-modal-open,
+  body:has(.estimate-printable-sheet) {
+    background: #FFFFFF !important;
+    color: #111111 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+  }
+
+  /* 3. Strip layout wrappers of scroll / fixed constraints */
+  #root,
+  .layout,
+  .main-wrapper,
+  .dashboard-content,
+  .estimates-container,
+  .estimates-page {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 4. Neutralize the modal overlay into a transparent, unconstrained block */
+  .estimate-modal-overlay {
+    position: static !important;
+    display: block !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+    z-index: auto !important;
+  }
+
+  /* 5. Neutralize the modal card - remove max-height and fixed borders */
+  .estimate-modal,
+  .estimate-modal.modal-large,
+  .estimate-preview-modal-card {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    animation: none !important;
+  }
+
+  /* 6. Neutralize modal body - remove background tint and overflow */
+  .estimate-modal-body,
+  .estimate-preview-body {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* 7. Printable Sheet in normal document flow - allows natural page fragmentation */
+  .estimate-printable-sheet {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 12mm 10mm !important;
+    box-sizing: border-box !important;
+    background: #FFFFFF !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    color: #111111 !important;
+    font-size: 10.5px !important;
+    -webkit-box-decoration-break: clone !important;
+    box-decoration-break: clone !important;
+  }
+
+  /* Header Brand Section */
+  .estimate-printable-sheet .print-brand-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 16px !important;
+    margin-top: 2mm !important;
+    margin-bottom: 16px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-customer-box-card {
+    min-width: 420px !important;
+    max-width: 500px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 8. Table page-break rules — prevent cutting any row */
+  .estimate-printable-sheet table {
+    width: 100% !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    border-collapse: collapse !important;
+  }
+
+  /* 8. Table page-break rules — DO NOT repeat headings on page break continuation */
+  .estimate-printable-sheet thead,
+  .estimate-printable-sheet .print-room-table thead {
+    display: table-row-group !important;
+  }
+
+  .estimate-printable-sheet tfoot {
+    display: table-row-group !important;
+  }
+
+  /* CRITICAL: Every table row must not be split across pages */
+  .estimate-printable-sheet tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  .estimate-printable-sheet td,
+  .estimate-printable-sheet th {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-room-table {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    margin-top: 4mm !important;
+    margin-bottom: 12px !important;
+  }
+
+  .estimate-printable-sheet .print-room-table td,
+  .estimate-printable-sheet .print-room-table th {
+    padding: 4.5px 7px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Room title row must stay with table header */
+  .estimate-printable-sheet .print-room-title-row {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-room-title-row td {
+    border-top: 2px solid #4A2C17 !important;
+    background: #F4EFEA !important;
+  }
+
+  .estimate-printable-sheet .print-room-table th {
+    background: #4A2C17 !important;
+    color: #FFFFFF !important;
+  }
+
+  /* Room total row — keep on same page as data rows before it */
+  .estimate-printable-sheet .print-room-total-row {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 10. Summary table — never split */
+  .estimate-printable-sheet .print-summary-table {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-top: 8px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .estimate-printable-sheet .print-note-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* 11. Terms & Conditions section */
+  .estimate-printable-sheet .print-terms-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-top: 12px !important;
+    margin-bottom: 12px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid #E5D9C5 !important;
+  }
+
+  .estimate-printable-sheet .print-terms-grid {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 16px 0 !important;
+  }
+
+  .estimate-printable-sheet .print-terms-col {
+    display: table-cell !important;
+    width: 50% !important;
+    vertical-align: top !important;
+    font-size: 9.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* 12. UNBREAKABLE CLOSING BLOCK:
+         Bank Account Details + Payment Terms + Signatures are grouped together.
+         If there is no room at the bottom of the page, the whole closing block
+         pushes cleanly to the next page instead of cutting in half. */
+  .estimate-printable-sheet .print-closing-block {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: auto !important;
+    break-before: auto !important;
+    display: block !important;
+    margin-top: 14px !important;
+  }
+
+  .estimate-printable-sheet .print-payment-section {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 16px 0 !important;
+    margin-top: 8px !important;
+    margin-bottom: 12px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid #E5D9C5 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-payment-col {
+    display: table-cell !important;
+    width: 50% !important;
+    vertical-align: top !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-bank-card {
+    background: #FAF8F5 !important;
+    border: 1px solid #DCD4CA !important;
+    padding: 8px 12px !important;
+    border-radius: 4px !important;
+    font-size: 9.5px !important;
+    line-height: 1.45 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-section-h5 {
+    margin: 0 0 5px 0 !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    color: #4A2C17 !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-signature-section {
+    display: table !important;
+    width: 100% !important;
+    margin-top: 16px !important;
+    padding: 22px 20px 4px 20px !important;
+    border-top: 1px dashed #DCD4CA !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-sig-col {
+    display: table-cell !important;
+    width: 50% !important;
+    text-align: center !important;
+    vertical-align: bottom !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-sig-line {
+    border-top: 1px solid #444 !important;
+    width: 160px !important;
+    margin: 0 auto !important;
+    padding-top: 5px !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    color: #333 !important;
+  }
+
+  .estimate-printable-sheet .print-footer-info {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 13. Orphans/widows — never leave single lines at top/bottom of page */
+  .estimate-printable-sheet p,
+  .estimate-printable-sheet div,
+  .estimate-printable-sheet li {
+    orphans: 3 !important;
+    widows: 3 !important;
   }
 }
 

@@ -62,6 +62,12 @@ function App() {
     return localStorage.getItem('mi_crm_lang') || 'hi';
   });
 
+  // Set lang attribute on root for Hindi typography styling
+  React.useEffect(() => {
+    document.documentElement.lang = lang;
+    document.body.setAttribute('data-lang', lang);
+  }, [lang]);
+
   const handleLangChange = (newLang) => {
     setLang(newLang);
     localStorage.setItem('mi_crm_lang', newLang);
@@ -108,7 +114,7 @@ function App() {
     // Admin Panel Routing
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard onNavigate={handleTabChange} user={currentUser} />;
+        return <Dashboard onNavigate={handleTabChange} user={currentUser} lang={lang} />;
       case 'sites':
       case 'customers':
       case 'projects':
@@ -116,9 +122,9 @@ function App() {
       case 'employees':
         return <Employees />;
       case 'attendance':
-        return <Attendance />;
+        return <Attendance lang={lang} />;
       case 'salary':
-        return <Salary />;
+        return <Salary lang={lang} />;
       case 'reports':
         return <Reports />;
       case 'estimates':
@@ -126,7 +132,7 @@ function App() {
       case 'products-rates':
         return <ProductsRates onNavigate={handleTabChange} />;
       default:
-        return <Dashboard onNavigate={handleTabChange} user={currentUser} />;
+        return <Dashboard onNavigate={handleTabChange} user={currentUser} lang={lang} />;
     }
   };
 
@@ -135,7 +141,7 @@ function App() {
   }
 
   return (
-    <div className="layout">
+    <div className={`layout lang-${lang}`} data-lang={lang}>
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={handleTabChange} 
@@ -153,6 +159,7 @@ function App() {
           user={currentUser}
           lang={lang}
           onLangChange={handleLangChange}
+          onNavigate={handleTabChange}
         />
         {renderContent()}
       </div>

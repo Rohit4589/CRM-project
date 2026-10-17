@@ -3,14 +3,21 @@ import '../styles/Header.css';
 import { API_BASE } from '../config/api';
 import { getTranslation } from '../utils/translations';
 
-const Header = ({ onLogout, onToggleSidebar, user, lang = 'hi', onLangChange }) => {
+const Header = ({ onLogout, onToggleSidebar, user, lang = 'hi', onLangChange, onNavigate }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Notification state
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const notifRef = useRef(null);
+
   const t = {
     workerPortal: getTranslation(lang, 'workerPortal'),
     logout: getTranslation(lang, 'logout'),
+    worker: getTranslation(lang, 'worker'),
+    administrator: getTranslation(lang, 'administrator'),
   };
 
   // Change Password state
@@ -25,15 +32,63 @@ const Header = ({ onLogout, onToggleSidebar, user, lang = 'hi', onLangChange }) 
 
   const isEmployee = user?.role === 'employee';
 
+  const fetchPendingNotifications = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/attendance`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        const pending = data.data.filter(log => log.status === 'Pending Approval');
+        setNotifications(pending);
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingNotifications();
+    const interval = setInterval(fetchPendingNotifications, 10000);
+    const handleAttendanceChange = () => fetchPendingNotifications();
+    window.addEventListener('attendance-changed', handleAttendanceChange);
+    window.addEventListener('focus', handleAttendanceChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('attendance-changed', handleAttendanceChange);
+      window.removeEventListener('focus', handleAttendanceChange);
+    };
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowDropdown(false);
       }
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifDropdown(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleQuickApprove = async (id, e) => {
+    if (e) e.stopPropagation();
+    try {
+      const res = await fetch(`${API_BASE}/attendance/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        window.dispatchEvent(new Event('attendance-changed'));
+      }
+    } catch (err) {
+      console.error('Error approving notification:', err);
+    }
+  };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -165,10 +220,216 @@ const Header = ({ onLogout, onToggleSidebar, user, lang = 'hi', onLangChange }) 
 
         <div className="header-divider"></div>
 
-        <button className="header-icon-btn" title="Notifications" aria-label="Notifications">
-          <i className="fa-regular fa-bell"></i>
-          <span className="header-notification-dot"></span>
-        </button>
+        {/* Notification Bell with Badge & Dropdown */}
+        <div style={{ position: 'relative' }} ref={notifRef}>
+          <button 
+            className="header-icon-btn" 
+            title="Notifications" 
+            aria-label="Notifications"
+            onClick={() => {
+              setShowNotifDropdown(!showNotifDropdown);
+              setShowDropdown(false);
+            }}
+            style={{
+              position: 'relative',
+              background: showNotifDropdown ? '#F3EDE6' : '#FFFFFF',
+              borderColor: showNotifDropdown ? 'var(--gold, #A56A30)' : '#D1C2AF'
+            }}
+          >
+            <i 
+              className={`fa-${notifications.length > 0 ? 'solid' : 'regular'} fa-bell`} 
+              style={{ color: notifications.length > 0 ? 'var(--gold, #A56A30)' : '#4B5563', fontSize: '15px' }}
+            ></i>
+            {notifications.length > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                background: '#DC2626',
+                color: '#FFFFFF',
+                fontSize: '10px',
+                fontWeight: '800',
+                minWidth: '18px',
+                height: '18px',
+                borderRadius: '9px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 4px',
+                border: '2px solid #FFFFFF',
+                boxShadow: '0 2px 4px rgba(220,38,38,0.35)'
+              }}>
+                {notifications.length}
+              </span>
+            )}
+          </button>
+
+          {showNotifDropdown && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 8px)',
+              right: 0,
+              width: '360px',
+              maxWidth: 'calc(100vw - 32px)',
+              background: '#FFFFFF',
+              borderRadius: '12px',
+              boxShadow: '0 15px 35px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08)',
+              zIndex: 1500,
+              overflow: 'hidden'
+            }}>
+              {/* Dropdown Header */}
+              <div style={{
+                padding: '12px 16px',
+                background: '#F9FAFB',
+                borderBottom: '1px solid #E5E7EB',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="fa-solid fa-bell" style={{ color: 'var(--gold, #A56A30)', fontSize: '13px' }}></i>
+                  <span style={{ fontWeight: '800', fontSize: '13px', color: '#111827' }}>Notifications</span>
+                  {notifications.length > 0 && (
+                    <span style={{
+                      background: '#FEF2F2',
+                      color: '#DC2626',
+                      border: '1px solid #FECACA',
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      fontSize: '11px',
+                      fontWeight: '700'
+                    }}>
+                      {notifications.length} Pending
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNotifDropdown(false)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: '14px',
+                    color: '#9CA3AF',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Notification Items List */}
+              <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
+                {notifications.length === 0 ? (
+                  <div style={{ padding: '36px 20px', textAlign: 'center', color: '#6B7280' }}>
+                    <i className="fa-regular fa-circle-check" style={{ fontSize: '32px', color: '#10B981', marginBottom: '8px', display: 'block' }}></i>
+                    <div style={{ fontWeight: '700', fontSize: '13px', color: '#111827' }}>All Caught Up!</div>
+                    <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '3px' }}>
+                      No pending attendance approval requests.
+                    </div>
+                  </div>
+                ) : (
+                  notifications.map((notif) => {
+                    const salaryVal = Math.round((parseFloat(notif.dayValue) || 0) * (Number(notif.dailyRate) || 1000));
+                    return (
+                      <div
+                        key={notif.id}
+                        style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid #F3F4F6',
+                          background: '#FEFDFB',
+                          transition: 'background 0.15s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FAF8F5'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FEFDFB'}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontWeight: '700', color: '#111827', fontSize: '12.5px' }}>
+                                {notif.employeeName}
+                              </span>
+                              <span style={{ fontSize: '10.5px', color: '#A56A30', fontWeight: '700', background: 'rgba(165,106,48,0.1)', padding: '1px 5px', borderRadius: '4px' }}>
+                                {notif.empCode || `EMP-${notif.userId}`}
+                              </span>
+                            </div>
+
+                            <div style={{ fontSize: '11.5px', color: '#4B5563', marginTop: '3px' }}>
+                              Punched OUT: <strong>{notif.outTime || '--:--'}</strong> ({notif.valueText || `${notif.dayValue} Day`} · ₹{salaryVal.toLocaleString('en-IN')})
+                            </div>
+
+                            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <i className="fa-solid fa-location-dot" style={{ fontSize: '10px', color: '#A56A30' }}></i>
+                              <span>{notif.siteRef}: {notif.customerName || 'Work Site'}</span>
+                              <span>·</span>
+                              <span>{notif.attendanceDate}</span>
+                            </div>
+                          </div>
+
+                          {/* Quick Approve Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleQuickApprove(notif.id, e)}
+                            title="Quick Approve shift"
+                            style={{
+                              background: '#059669',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '5px 10px',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              flexShrink: 0,
+                              boxShadow: '0 1px 3px rgba(5,150,105,0.25)'
+                            }}
+                          >
+                            <i className="fa-solid fa-check"></i> Approve
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Dropdown Footer */}
+              <div style={{
+                padding: '10px 16px',
+                background: '#F9FAFB',
+                borderTop: '1px solid #E5E7EB',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNotifDropdown(false);
+                    if (onNavigate) onNavigate('attendance');
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--gold, #A56A30)',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <span>Open Attendance Sheet</span>
+                  <i className="fa-solid fa-arrow-right" style={{ fontSize: '10px' }}></i>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="header-divider"></div>
 
@@ -176,7 +437,7 @@ const Header = ({ onLogout, onToggleSidebar, user, lang = 'hi', onLangChange }) 
           <div className="header-user" onClick={() => setShowDropdown(!showDropdown)}>
             <div className="header-user-info">
               <div className="header-user-name">{user?.name || (isEmployee ? 'Anurag' : 'Mahendra Sharma')}</div>
-              <div className="header-user-role">{user?.roleTitle || (isEmployee ? 'Worker' : 'Admin')}</div>
+              <div className="header-user-role">{user?.roleTitle || (isEmployee ? t.worker : t.administrator)}</div>
             </div>
           </div>
 

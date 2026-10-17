@@ -49,6 +49,8 @@ const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
     savePin: getTranslation(lang, 'savePin'),
     saving: getTranslation(lang, 'saving'),
     cancel: getTranslation(lang, 'cancel'),
+    shiftCompletedPending: getTranslation(lang, 'shiftCompletedPending'),
+    pendingApproval: getTranslation(lang, 'pendingApproval'),
   };
 
   // Real DB employee profile and monthly metrics
@@ -142,7 +144,11 @@ const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
             ? currentMonthName 
             : (records[0]?.monthYear || currentMonthName);
 
-          const totalDays = targetRecords.reduce((sum, r) => sum + (parseFloat(r.dayValue) || 1.0), 0);
+          // Only count Approved/Verified records in salary (not In Progress, Pending Approval, Rejected)
+          const approvedRecords = targetRecords.filter(r => 
+            r.status === 'Approved' || r.status === 'Verified'
+          );
+          const totalDays = approvedRecords.reduce((sum, r) => sum + (parseFloat(r.dayValue) || 0), 0);
           const rate = freshDailyRate || Number(user?.dailyRate || 1000);
           const grossEarned = Math.round(totalDays * rate);
           const advanceTaken = 0;
@@ -166,9 +172,12 @@ const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
               setPunchedIn(true);
               setInTime(todayLog.inTime);
               setPunchedSite({
-                customerName: todayLog.customerName || todayLog.siteName,
+                customerName: todayLog.customerName || todayLog.siteName || 'Assigned Site',
                 location: todayLog.siteLocation || ''
               });
+              if (todayLog.rawSiteId || todayLog.siteId) {
+                setSelectedSiteId(String(todayLog.rawSiteId || todayLog.siteId));
+              }
             }
             if (todayLog.outTime && todayLog.outTime !== '--:--') {
               setPunchedOut(true);
@@ -246,8 +255,8 @@ const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
     const now = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     try {
-      const targetSiteId = currentSite?.dbId || currentSite?.id || selectedSiteId;
-      if (!targetSiteId) {
+      const targetSiteId = currentSite?.dbId || currentSite?.id || selectedSiteId || punchedSite?.dbId || punchedSite?.id || null;
+      if (!targetSiteId && cameraType === 'IN') {
         setPunchMessage(t.pleaseSelectSite || 'Please select a site first');
         return;
       }
@@ -448,7 +457,8 @@ const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
               </div>
               <div style={{flex: 1}}>
                 <div style={{fontSize: '12.5px', fontWeight: '700', color: '#111827'}}>
-                  {punchedSite?.customerName || currentSite.customerName} ({punchedSite?.location || currentSite.location})
+                  {punchedSite?.customerName || currentSite?.customerName || 'Work Site'}
+                  {(punchedSite?.location || currentSite?.location) ? ` (${punchedSite?.location || currentSite?.location})` : ''}
                 </div>
                 <div style={{fontSize: '12px', color: '#4B5563', marginTop: '2px', display: 'flex', gap: '14px', flexWrap: 'wrap'}}>
                   {punchedIn && <span>{t.inTime}: <strong style={{color: '#16A34A'}}>{inTime}</strong></span>}
@@ -519,15 +529,16 @@ const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
               <div style={{
                 width: '100%',
                 padding: '14px',
-                background: '#ECFDF5',
-                border: '1.5px solid #A7F3D0',
+                background: '#FEF3C7',
+                border: '1.5px solid #FCD34D',
                 borderRadius: '10px',
                 textAlign: 'center',
-                color: '#065F46',
+                color: '#92400E',
                 fontWeight: '800',
-                fontSize: '14.5px'
+                fontSize: '13.5px'
               }}>
-                {t.dayCompleted}
+                <i className="fa-solid fa-clock" style={{ marginRight: '8px' }}></i>
+                {t.shiftCompletedPending}
               </div>
             )}
           </div>
@@ -575,7 +586,7 @@ const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
             </div>
 
             <div style={{fontSize: '12px', color: '#7D6C5E', marginBottom: '14px'}}>
-              {t.siteLabel} <strong>{currentSite?.customerName || 'Work Site'} ({currentSite?.location || ''})</strong>
+              {t.siteLabel} <strong>{currentSite?.customerName || punchedSite?.customerName || 'Work Site'} {(currentSite?.location || punchedSite?.location) ? `(${currentSite?.location || punchedSite?.location})` : ''}</strong>
             </div>
 
             {/* Camera Viewfinder Box */}
@@ -711,7 +722,7 @@ const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
               {t.daysWorked}
             </div>
             <div style={{fontSize: '20px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', marginTop: '2px'}}>
-              {monthlyStats.loading ? '...' : `${monthlyStats.totalDays.toFixed(1)} ${t.days}`}
+              {monthlyStats.loading ? '...' : `${Number(monthlyStats.totalDays.toFixed(2))} ${t.days}`}
             </div>
           </div>
 

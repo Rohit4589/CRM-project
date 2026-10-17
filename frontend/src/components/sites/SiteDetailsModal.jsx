@@ -101,6 +101,11 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
               <div style={{display: 'flex', gap: '8px'}}>
                 <i className="fa-solid fa-map-location-dot" style={{color: 'var(--gold, #A56A30)', marginTop: '3px'}}></i>
                 <div>
+                  {selectedSite.refName && (
+                    <div style={{fontWeight: '600', color: '#111827', marginBottom: '4px'}}>
+                      Ref: {selectedSite.refName}
+                    </div>
+                  )}
                   <div>{selectedSite.fullAddress}</div>
                   {selectedSite.latLng && (
                     <div style={{fontSize: '12px', color: '#6B7280', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>

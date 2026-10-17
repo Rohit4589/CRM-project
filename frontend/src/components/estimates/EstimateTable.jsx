@@ -8,7 +8,8 @@ const EstimateTable = ({
   onRevision,
   onDownload,
   onShare,
-  onDelete
+  onDelete,
+  onStatusChange
 }) => {
   if (loading) {
     return (
@@ -23,8 +24,8 @@ const EstimateTable = ({
     return (
       <div className="estimate-table-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
         <i className="fa-solid fa-file-invoice" style={{ fontSize: '40px', color: '#DCD4CA', marginBottom: '14px' }}></i>
-        <h3 style={{ fontSize: '16px', color: '#2B2520', margin: '0 0 6px 0' }}>No Estimates Found</h3>
-        <p style={{ fontSize: '13px', color: '#8C827A', margin: 0 }}>Create a new estimate with 1-click default tiers or custom room items.</p>
+        <h3 style={{ fontSize: '16px', color: '#2B2520', margin: '0 0 6px 0' }}>No Estimates Found in this Folder</h3>
+        <p style={{ fontSize: '13px', color: '#8C827A', margin: 0 }}>Create a new estimate or move existing orders between Running & Quotation folders.</p>
       </div>
     );
   }
@@ -35,13 +36,14 @@ const EstimateTable = ({
         <table className="estimate-table">
           <thead>
             <tr>
-              <th style={{ width: '11%' }}>Order No</th>
-              <th style={{ width: '27%' }}>Customer Name</th>
-              <th style={{ width: '14%' }}>Phone / Site</th>
-              <th style={{ width: '12%' }}>Project Type</th>
-              <th style={{ width: '11%' }}>Date</th>
-              <th style={{ width: '11%' }}>Final Total</th>
-              <th style={{ width: '14%', textAlign: 'right' }}>Actions</th>
+              <th style={{ width: '85px', minWidth: '85px' }}>Order No</th>
+              <th style={{ minWidth: '180px' }}>Customer Name</th>
+              <th style={{ width: '130px', minWidth: '120px' }}>Phone / Site</th>
+              <th style={{ width: '110px', minWidth: '100px' }}>Project Type</th>
+              <th style={{ width: '100px', minWidth: '95px' }}>Date</th>
+              <th style={{ width: '125px', minWidth: '120px' }}>Folder Status</th>
+              <th style={{ width: '130px', minWidth: '125px', whiteSpace: 'nowrap' }}>Final Total</th>
+              <th style={{ width: '220px', minWidth: '220px', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -79,10 +81,15 @@ const EstimateTable = ({
               // Strip manual -01, -02 from customer name if user had typed it
               const cleanCustomerName = String(est.customer_name || '').replace(/-\d+$/, '').trim();
 
+              const currentStatus = est.order_status || est.site_status || est.status || 'Running';
+              const isRunning = currentStatus === 'Running' || currentStatus === 'Draft' || currentStatus === 'Quotation';
+              const isCompleted = currentStatus === 'Completed' || currentStatus === 'Complete';
+              const isOnHold = currentStatus === 'On Hold' || currentStatus === 'Hold / Cancelled' || currentStatus === 'Hold';
+
               return (
                 <tr key={est.id}>
                   <td>
-                    <span className="estimate-num-badge">Order #{baseOrder}</span>
+                    <span className="estimate-num-badge">#{baseOrder}</span>
                     {revNumber ? (
                       <div style={{ marginTop: '3px' }}>
                         <span className="estimate-rev-badge">Bill #{parseInt(revNumber, 10) || revNumber}</span>
@@ -90,7 +97,20 @@ const EstimateTable = ({
                     ) : null}
                   </td>
                   <td>
-                    <strong style={{ color: '#2B2520', fontSize: '13.5px' }}>{cleanCustomerName}</strong>
+                    <strong
+                      style={{
+                        color: '#2B2520',
+                        fontSize: '13.5px',
+                        cursor: onEdit ? 'pointer' : 'default',
+                        transition: 'color 0.15s ease'
+                      }}
+                      onClick={() => onEdit && onEdit(est)}
+                      title={onEdit ? 'Click to Edit Estimate' : ''}
+                      onMouseOver={(e) => { if (onEdit) e.currentTarget.style.color = '#8A5D3B'; }}
+                      onMouseOut={(e) => { if (onEdit) e.currentTarget.style.color = '#2B2520'; }}
+                    >
+                      {cleanCustomerName}
+                    </strong>
                     {est.address && (
                       <div style={{ fontSize: '11.5px', color: '#8C827A', marginTop: '3px', lineHeight: '1.4', wordBreak: 'break-word' }}>
                         {est.address}
@@ -106,11 +126,48 @@ const EstimateTable = ({
                     </div>
                   </td>
                   <td>{dateStr}</td>
+                  
+                  {/* Status Dropdown: 3 Categories (Running, Completed, On Hold) */}
                   <td>
+                    <select
+                      value={isCompleted ? 'Completed' : (isOnHold ? 'On Hold' : 'Running')}
+                      onChange={(e) => onStatusChange && onStatusChange(est.id, e.target.value)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11.5px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        border: '1.5px solid',
+                        background: isRunning ? '#ECFDF5' : (isCompleted ? '#F3F4F6' : '#FEF3C7'),
+                        color: isRunning ? '#065F46' : (isCompleted ? '#4B5563' : '#92400E'),
+                        borderColor: isRunning ? '#A7F3D0' : (isCompleted ? '#D1D5DB' : '#FCD34D'),
+                        transition: 'all 0.15s ease'
+                      }}
+                      title="Move Order Status (Running / Completed / On Hold)"
+                    >
+                      <option value="Running">● Running</option>
+                      <option value="Completed">● Completed</option>
+                      <option value="On Hold">● On Hold</option>
+                    </select>
+                  </td>
+
+                  <td style={{ whiteSpace: 'nowrap', width: '130px', minWidth: '125px' }}>
                     <strong style={{ fontSize: '14px', color: '#2E7D32' }}>{formattedTotal}</strong>
                   </td>
-                  <td>
-                    <div className="estimate-actions" style={{ justifyContent: 'flex-end' }}>
+                  <td style={{ textAlign: 'right', width: '220px', minWidth: '220px', whiteSpace: 'nowrap' }}>
+                    <div className="estimate-actions" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+                      {onEdit && (
+                        <button
+                          className="btn-action-icon edit"
+                          title="Edit Estimate"
+                          onClick={() => onEdit(est)}
+                        >
+                          <i className="fa-solid fa-pen-to-square"></i>
+                        </button>
+                      )}
+
                       <button
                         className="btn-action-icon"
                         title="Preview & Print"
@@ -121,10 +178,10 @@ const EstimateTable = ({
 
                       <button
                         className="btn-action-icon"
-                        title="Edit Estimate"
-                        onClick={() => onEdit(est)}
+                        title="Download / Print Bill"
+                        onClick={() => (onDownload ? onDownload(est) : onView(est))}
                       >
-                        <i className="fa-solid fa-pen-to-square"></i>
+                        <i className="fa-solid fa-download"></i>
                       </button>
 
                       {onRevision && (
@@ -136,22 +193,6 @@ const EstimateTable = ({
                           <i className="fa-solid fa-copy"></i>
                         </button>
                       )}
-
-                      <button
-                        className="btn-action-icon"
-                        title="Download PDF"
-                        onClick={() => onDownload(est)}
-                      >
-                        <i className="fa-solid fa-file-pdf"></i>
-                      </button>
-
-                      <button
-                        className="btn-action-icon whatsapp"
-                        title="Send via WhatsApp"
-                        onClick={() => onShare(est)}
-                      >
-                        <i className="fa-brands fa-whatsapp"></i>
-                      </button>
 
                       <button
                         className="btn-action-icon delete"

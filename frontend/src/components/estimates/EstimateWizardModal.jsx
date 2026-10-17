@@ -159,6 +159,11 @@ const EstimateWizardModal = ({
       return;
     }
 
+    if (!selectedSiteId) {
+      alert('Please select a registered site customer. Estimates can only be generated for existing site customers.');
+      return;
+    }
+
     const activeRooms = selectedRooms.filter(r => r.checked).map(r => r.name);
     if (!copyExisting && activeRooms.length === 0) {
       alert('Please select at least one room');
@@ -182,6 +187,8 @@ const EstimateWizardModal = ({
     });
   };
 
+  const hasNoSites = !sites || sites.length === 0;
+
   return (
     <div className="estimate-modal-overlay">
       <div className="estimate-modal">
@@ -197,83 +204,108 @@ const EstimateWizardModal = ({
 
         <form onSubmit={handleSubmit} className="estimate-modal-body">
           {/* Customer / Site Selection */}
-          <div className="wizard-section-title">1. Customer / Site Details</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
-            <div className="editor-field">
-              <label>Link to Existing Customer / Site (Optional)</label>
-              <select value={selectedSiteId} onChange={handleSiteSelect}>
-                <option value="">-- Direct New Customer --</option>
-                {sites.map(s => {
-                  const rawRef = s.siteRef || s.site_ref || s.siteCode || s.id;
-                  const match = String(rawRef || '').match(/\d+/);
-                  let ref = rawRef;
-                  if (match) {
-                    const num = parseInt(match[0], 10);
-                    ref = num < 1000 ? String(num).padStart(3, '0') : String(num);
-                  } else {
-                    ref = String(rawRef || '').replace(/^SITE-/i, '');
-                  }
-                  const name = s.customerName || s.customer_name || 'Customer';
-                  const val = s.dbId || s.id;
-                  return (
-                    <option key={val} value={val}>
-                      {ref} - {name}
-                    </option>
-                  );
-                })}
-              </select>
+          <div className="wizard-section-title">1. Site / Customer Selection (Mandatory)</div>
+          
+          {hasNoSites ? (
+            <div style={{
+              padding: '24px',
+              background: '#FEF3C7',
+              border: '1.5px solid #FCD34D',
+              borderRadius: '10px',
+              textAlign: 'center',
+              marginBottom: '20px'
+            }}>
+              <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '32px', color: '#D97706', marginBottom: '10px' }}></i>
+              <h3 style={{ margin: '0 0 6px 0', color: '#92400E', fontSize: '16px' }}>No Registered Sites Found</h3>
+              <p style={{ margin: 0, color: '#B45309', fontSize: '13px', lineHeight: '1.5' }}>
+                Estimates can only be generated for registered site customers. Please create a Site under the <strong>Sites</strong> tab first before generating an estimate.
+              </p>
             </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+              <div className="editor-field" style={{ gridColumn: 'span 2' }}>
+                <label style={{ fontWeight: '700', color: '#4A2C17', fontSize: '13px' }}>
+                  Select Registered Site / Customer *
+                </label>
+                <select
+                  value={selectedSiteId}
+                  onChange={handleSiteSelect}
+                  required
+                  style={{
+                    border: '2px solid #4A2C17',
+                    fontWeight: '700',
+                    fontSize: '13.5px',
+                    padding: '10px 12px',
+                    background: '#FAF8F5'
+                  }}
+                >
+                  <option value="" disabled>-- Select Existing Site / Customer --</option>
+                  {sites.map(s => {
+                    const rawRef = s.siteRef || s.site_ref || s.siteCode || s.id;
+                    const match = String(rawRef || '').match(/\d+/);
+                    let ref = rawRef;
+                    if (match) {
+                      const num = parseInt(match[0], 10);
+                      ref = num < 1000 ? String(num).padStart(3, '0') : String(num);
+                    } else {
+                      ref = String(rawRef || '').replace(/^SITE-/i, '');
+                    }
+                    const name = s.customerName || s.customer_name || 'Customer';
+                    const val = s.dbId || s.id;
+                    const statusText = s.status || 'Running';
+                    return (
+                      <option key={val} value={val}>
+                        Order #{ref} · {name} ({statusText})
+                      </option>
+                    );
+                  })}
+                </select>
+                <div style={{ fontSize: '11px', color: '#7D6C5E', marginTop: '4px' }}>
+                  ℹ️ Estimates are strictly linked to registered site customers and their order folders.
+                </div>
+              </div>
 
-            <div className="editor-field">
-              <label>Order Number {selectedSiteId ? '(Linked)' : '(Optional)'}</label>
-              <input
-                type="text"
-                placeholder="e.g. 102, 202, 001"
-                value={orderNo}
-                onChange={(e) => {
-                  const numOnly = e.target.value.replace(/[^0-9]/g, '');
-                  setOrderNo(numOnly);
-                }}
-                onBlur={() => {
-                  if (orderNo) {
-                    const n = parseInt(orderNo, 10);
-                    if (!isNaN(n)) setOrderNo(n < 1000 ? String(n).padStart(3, '0') : String(n));
-                  }
-                }}
-              />
-            </div>
+              <div className="editor-field">
+                <label>Linked Order Number</label>
+                <input
+                  type="text"
+                  readOnly
+                  style={{ background: '#FAF8F5', fontWeight: '700', color: '#4A2C17' }}
+                  value={orderNo ? `Order #${orderNo}` : '-- (Auto-assigned from Site)'}
+                />
+              </div>
 
-            <div className="editor-field">
-              <label>Customer Name *</label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Mrs. Sujata Warade"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-              />
-            </div>
+              <div className="editor-field">
+                <label>Customer Name</label>
+                <input
+                  type="text"
+                  readOnly
+                  style={{ background: '#FAF8F5', fontWeight: '700', color: '#1F1A17' }}
+                  value={customerName || '-- (Auto-filled from Site)'}
+                />
+              </div>
 
-            <div className="editor-field">
-              <label>Phone Number</label>
-              <input
-                type="text"
-                placeholder="e.g. 77200 09234"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
+              <div className="editor-field">
+                <label>Phone Number</label>
+                <input
+                  type="text"
+                  readOnly
+                  style={{ background: '#FAF8F5' }}
+                  value={phone || '--'}
+                />
+              </div>
 
-            <div className="editor-field" style={{ gridColumn: 'span 2' }}>
-              <label>Site Address / Location</label>
-              <input
-                type="text"
-                placeholder="e.g. B 903, Woods Royal, Kothrud, Pune"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
+              <div className="editor-field">
+                <label>Site Address / Location</label>
+                <input
+                  type="text"
+                  readOnly
+                  style={{ background: '#FAF8F5' }}
+                  value={address || '--'}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Existing Estimate Detection Alert */}
           {existingEstimate && (
@@ -585,7 +617,15 @@ const EstimateWizardModal = ({
             <button type="button" className="btn-action-icon" style={{ width: 'auto', padding: '10px 18px' }} onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="btn-create-estimate">
+            <button
+              type="submit"
+              className="btn-create-estimate"
+              disabled={hasNoSites || !selectedSiteId}
+              style={{
+                opacity: (hasNoSites || !selectedSiteId) ? 0.55 : 1,
+                cursor: (hasNoSites || !selectedSiteId) ? 'not-allowed' : 'pointer'
+              }}
+            >
               <i className="fa-solid fa-arrow-right"></i>
               <span>Generate & Edit Estimate</span>
             </button>

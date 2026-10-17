@@ -76,10 +76,11 @@ const EmployeeAttendance = ({ user, lang = 'hi' }) => {
     return r.monthYear === selectedMonth;
   });
 
-  // Calculate real metrics
-  const totalDays = filteredRecords.reduce((acc, r) => acc + (parseFloat(r.dayValue) || 1.0), 0);
-  const fullDays = filteredRecords.filter(r => (parseFloat(r.dayValue) || 0) >= 1.0).length;
-  const halfDays = filteredRecords.filter(r => (parseFloat(r.dayValue) || 0) === 0.5).length;
+  // Calculate real metrics - only count Approved/Verified records
+  const approvedRecords = filteredRecords.filter(r => r.status === 'Approved' || r.status === 'Verified');
+  const totalDays = approvedRecords.reduce((acc, r) => acc + (parseFloat(r.dayValue) || 0), 0);
+  const fullDays = approvedRecords.filter(r => (parseFloat(r.dayValue) || 0) >= 1.0).length;
+  const halfDays = approvedRecords.filter(r => (parseFloat(r.dayValue) || 0) === 0.5).length;
   const dailyRate = Number(employeeProfile?.dailySalary || employeeProfile?.dailyRate || user?.dailySalary || user?.dailyRate || 1000);
   const estimatedEarned = Math.round(totalDays * dailyRate);
 
@@ -137,7 +138,7 @@ const EmployeeAttendance = ({ user, lang = 'hi' }) => {
         <div style={{ background: '#FFFFFF', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid var(--coffee-border, #D1C2AF)', boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)' }}>
           <div style={{ fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{t.totalDays}</div>
           <div style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', marginTop: '2px' }}>
-            {totalDays.toFixed(1)} {t.days}
+            {Number(totalDays.toFixed(2))} {t.days}
           </div>
         </div>
 
@@ -279,19 +280,42 @@ const EmployeeAttendance = ({ user, lang = 'hi' }) => {
                       </span>
                     </td>
                     <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
-                      <span style={{
-                        background: '#ECFDF5',
-                        color: '#065F46',
-                        border: '1px solid #A7F3D0',
-                        padding: '4px 12px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: '800',
-                        letterSpacing: '0.3px',
-                        display: 'inline-block'
-                      }}>
-                        ₹{Math.round((parseFloat(rec.dayValue) || 1.0) * dailyRate).toLocaleString('en-IN')}
-                      </span>
+                      {rec.status === 'Approved' || rec.status === 'Verified' ? (
+                        <span style={{
+                          background: '#ECFDF5',
+                          color: '#065F46',
+                          border: '1px solid #A7F3D0',
+                          padding: '4px 12px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '800',
+                          letterSpacing: '0.3px',
+                          display: 'inline-block'
+                        }}>
+                          ₹{Math.round((parseFloat(rec.dayValue) || 0) * dailyRate).toLocaleString('en-IN')}
+                        </span>
+                      ) : rec.status === 'Pending Approval' ? (
+                        <span style={{
+                          background: '#FEF3C7',
+                          color: '#92400E',
+                          border: '1px dashed #FCD34D',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          display: 'inline-block'
+                        }}>
+                          ₹{Math.round((parseFloat(rec.dayValue) || 0) * dailyRate).toLocaleString('en-IN')} (Pending)
+                        </span>
+                      ) : rec.status === 'In Progress' ? (
+                        <span style={{ color: '#6B7280', fontSize: '11.5px', fontStyle: 'italic' }}>
+                          Working...
+                        </span>
+                      ) : (
+                        <span style={{ color: '#DC2626', fontSize: '12px', fontWeight: '700' }}>
+                          ₹0
+                        </span>
+                      )}
                     </td>
                   <td style={{ padding: '14px 18px', verticalAlign: 'middle', fontSize: '12px', color: '#6B7280' }}>
                     {rec.notes || '--'}

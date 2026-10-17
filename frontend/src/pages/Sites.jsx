@@ -3,12 +3,12 @@ import LocationMapPicker from '../components/LocationMapPicker';
 import { API_BASE } from '../config/api';
 
 // Modular Feature Components
-import SitesKPICards from '../components/sites/SitesKPICards';
 import SitesFilterBar from '../components/sites/SitesFilterBar';
 import SitesTable from '../components/sites/SitesTable';
 import AddSiteModal from '../components/sites/AddSiteModal';
 import EditSiteModal from '../components/sites/EditSiteModal';
 import SiteDetailsModal from '../components/sites/SiteDetailsModal';
+import SiteStickerModal from '../components/sites/SiteStickerModal';
 
 const Sites = ({ onNavigate }) => {
   const [sites, setSites] = useState([]);
@@ -20,6 +20,7 @@ const Sites = ({ onNavigate }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
   const [editingSite, setEditingSite] = useState(null);
+  const [stickerSite, setStickerSite] = useState(null);
 
   // Map Picker & Geocoding State
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -31,6 +32,7 @@ const Sites = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     siteCode: '',
     customerName: '',
+    refName: '',
     phone: '',
     email: '',
     location: '',
@@ -79,6 +81,7 @@ const Sites = ({ onNavigate }) => {
     setFormData({
       siteCode: defaultCode,
       customerName: '',
+      refName: '',
       phone: '',
       email: '',
       location: '',
@@ -140,6 +143,7 @@ const Sites = ({ onNavigate }) => {
     setEditingSite({
       ...site,
       siteCode: formattedCode,
+      refName: site.refName || '',
       phone: site.phone || '',
       email: site.email || '',
       location: site.location || '',
@@ -274,7 +278,7 @@ const Sites = ({ onNavigate }) => {
     
     let matchesStatus = true;
     if (statusFilter === 'Running') {
-      matchesStatus = site.status === 'Running';
+      matchesStatus = site.status === 'Running' || (!site.status || (site.status !== 'Completed' && site.status !== 'On Hold' && site.status !== 'Cancelled'));
     } else if (statusFilter === 'Complete' || statusFilter === 'Completed') {
       matchesStatus = site.status === 'Completed';
     } else if (statusFilter === 'Hold / Cancelled' || statusFilter === 'On Hold') {
@@ -287,7 +291,7 @@ const Sites = ({ onNavigate }) => {
 
   const counts = {
     all: (sites || []).length,
-    running: (sites || []).filter(s => s?.status === 'Running').length,
+    running: (sites || []).filter(s => s?.status === 'Running' || (!s?.status || (s?.status !== 'Completed' && s?.status !== 'On Hold' && s?.status !== 'Cancelled'))).length,
     completed: (sites || []).filter(s => s?.status === 'Completed').length,
     onHold: (sites || []).filter(s => s?.status === 'On Hold' || s?.status === 'Cancelled').length
   };
@@ -374,9 +378,6 @@ const Sites = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* KPI Stat Cards (Modular) */}
-      <SitesKPICards counts={counts} />
-
       {/* Filter and Search Bar (Modular) */}
       <SitesFilterBar
         statusFilter={statusFilter}
@@ -393,6 +394,7 @@ const Sites = ({ onNavigate }) => {
         onView={setSelectedSite}
         onEdit={openEditModal}
         onDelete={handleDeleteSite}
+        onSticker={setStickerSite}
       />
 
       {/* Add Site Modal (Modular) */}
@@ -463,6 +465,14 @@ const Sites = ({ onNavigate }) => {
           setTimeout(() => setGeoNotice(''), 4500);
         }}
       />
+
+      {/* Folder Sticker Print Modal */}
+      {stickerSite && (
+        <SiteStickerModal
+          site={stickerSite}
+          onClose={() => setStickerSite(null)}
+        />
+      )}
 
     </main>
   );

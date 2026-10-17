@@ -19,9 +19,9 @@ const Estimates = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Filters
+  // Filters (Folder tabs match Sites tab: Running, Quotation, Completed, On Hold, All)
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('Running');
   const [typeFilter, setTypeFilter] = useState('All');
 
   // Modals state
@@ -36,12 +36,7 @@ const Estimates = ({ onNavigate }) => {
   const fetchEstimates = async () => {
     try {
       setLoading(true);
-      const queryParams = new URLSearchParams();
-      if (searchTerm) queryParams.append('search', searchTerm);
-      if (statusFilter !== 'All') queryParams.append('status', statusFilter);
-      if (typeFilter !== 'All') queryParams.append('project_type', typeFilter);
-
-      const res = await fetch(`${API_BASE}/estimates?${queryParams.toString()}`);
+      const res = await fetch(`${API_BASE}/estimates`);
       const data = await res.json();
       if (data.success) {
         setEstimates(data.estimates || []);
@@ -72,15 +67,90 @@ const Estimates = ({ onNavigate }) => {
     };
 
     initData();
+    fetchEstimates();
   }, []);
 
-  // Re-fetch when filters change (with small debounce for search)
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  // Compute folder counts (Running, Completed, On Hold, All)
+  const counts = {
+    all: (estimates || []).length,
+    running: (estimates || []).filter(e => {
+      const s = e.order_status || e.site_status || e.status;
+      return s === 'Running' || (!s || (s !== 'Completed' && s !== 'Complete' && s !== 'On Hold' && s !== 'Cancelled' && s !== 'Hold'));
+    }).length,
+    completed: (estimates || []).filter(e => {
+      const s = e.order_status || e.site_status || e.status;
+      return s === 'Completed' || s === 'Complete';
+    }).length,
+    onHold: (estimates || []).filter(e => {
+      const s = e.order_status || e.site_status || e.status;
+      return s === 'On Hold' || s === 'Cancelled' || s === 'Hold';
+    }).length
+  };
+
+  // Filter estimates by active folder, search keyword, and project type
+  const filteredEstimates = (estimates || []).filter(est => {
+    const sTerm = searchTerm.toLowerCase().trim();
+    const rawNum = String(est.estimate_number || '');
+    const matchesSearch = !sTerm ||
+      (est.customer_name || '').toLowerCase().includes(sTerm) ||
+      (est.site_ref || '').toLowerCase().includes(sTerm) ||
+      rawNum.toLowerCase().includes(sTerm) ||
+      (est.phone || '').includes(sTerm) ||
+      (est.address || '').toLowerCase().includes(sTerm);
+
+    const matchesType = typeFilter === 'All' || est.project_type === typeFilter;
+
+    const s = est.order_status || est.site_status || est.status || 'Running';
+    let matchesStatus = true;
+    if (statusFilter === 'Running') {
+      matchesStatus = s === 'Running' || (!s || (s !== 'Completed' && s !== 'Complete' && s !== 'On Hold' && s !== 'Cancelled' && s !== 'Hold'));
+    } else if (statusFilter === 'Complete' || statusFilter === 'Completed') {
+      matchesStatus = s === 'Completed' || s === 'Complete';
+    } else if (statusFilter === 'Hold / Cancelled' || statusFilter === 'On Hold') {
+      matchesStatus = s === 'On Hold' || s === 'Cancelled' || s === 'Hold';
+    } else if (statusFilter === 'All') {
+      matchesStatus = true;
+    }
+
+    return matchesSearch && matchesType && matchesStatus;
+  });
+
+  // Move order/estimate status (e.g. from Running to Quotation)
+  const handleStatusChange = async (estimateId, newStatus) => {
+    try {
+      // Optimistically update
+      setEstimates(prev => prev.map(est => {
+        if (est.id === estimateId) {
+          return {
+            ...est,
+            status: newStatus,
+            order_status: newStatus,
+            site_status: newStatus
+          };
+        }
+        return est;
+      }));
+
+      const res = await fetch(`${API_BASE}/estimates/${estimateId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.message || 'Failed to update order status');
+        fetchEstimates();
+      } else {
+        // Refresh both estimates and sites to ensure live synchronization across tabs
+        fetch(`${API_BASE}/sites`).then(r => r.json()).then(d => {
+          if (d.success) setSites(d.sites || []);
+        }).catch(() => {});
+      }
+    } catch (err) {
+      console.error('Error changing estimate status:', err);
       fetchEstimates();
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [searchTerm, statusFilter, typeFilter]);
+    }
+  };
 
   // When user completes wizard, build draft rooms with chosen tier rates or load previous bill
   const handleWizardProceed = (wizardData) => {
@@ -348,7 +418,7 @@ const Estimates = ({ onNavigate }) => {
       </div>
 
       {/* KPI Cards */}
-      <EstimateKPICards estimates={estimates} />
+      <EstimateKPICards estimates={filteredEstimates} />
 
       {/* Filter & Action Bar */}
       <EstimateFilterBar
@@ -356,6 +426,7 @@ const Estimates = ({ onNavigate }) => {
         setSearchTerm={setSearchTerm}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
+        counts={counts}
         typeFilter={typeFilter}
         setTypeFilter={setTypeFilter}
         onCreateNew={() => setShowWizard(true)}
@@ -363,7 +434,7 @@ const Estimates = ({ onNavigate }) => {
 
       {/* Estimates Table */}
       <EstimateTable
-        estimates={estimates}
+        estimates={filteredEstimates}
         loading={loading}
         onView={(est) => setPreviewEstimate(est)}
         onEdit={(est) => setEditingEstimate(est)}
@@ -371,6 +442,7 @@ const Estimates = ({ onNavigate }) => {
         onDownload={(est) => setPreviewEstimate(est)}
         onShare={(est) => setShareEstimate(est)}
         onDelete={handleDeleteEstimate}
+        onStatusChange={handleStatusChange}
       />
 
       {/* Wizard Modal */}
@@ -391,6 +463,7 @@ const Estimates = ({ onNavigate }) => {
           catalog={catalog}
           onSave={handleSaveEstimate}
           onClose={() => setEditingEstimate(null)}
+          onPreview={(draft) => setPreviewEstimate(draft)}
           saving={saving}
         />
       )}
@@ -400,10 +473,6 @@ const Estimates = ({ onNavigate }) => {
         <EstimatePreviewModal
           estimate={previewEstimate}
           onClose={() => setPreviewEstimate(null)}
-          onEdit={(est) => {
-            setPreviewEstimate(null);
-            setEditingEstimate(est);
-          }}
           onShare={(est) => {
             setShareEstimate(est);
           }}

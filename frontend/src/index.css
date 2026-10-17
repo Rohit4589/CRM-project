@@ -3,7 +3,7 @@
    Premium Interior Design Management Platform
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&display=swap');
 
 :root {
   /* 3-Color Luxury Combination */
@@ -87,7 +87,7 @@ html {
 body {
   background-color: var(--bg-page);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', 'Noto Sans Devanagari', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
@@ -338,3 +338,444 @@ table tbody tr:hover {
     font-size: 17px !important;
   }
 }
+
+/* ============================================
+   Hindi & Marathi High-Visibility Typography System
+   Makes all Hindi text bold, dark, high contrast, and larger
+   ============================================ */
+
+.lang-hi, [data-lang="hi"],
+.lang-mr, [data-lang="mr"] {
+  font-family: 'Noto Sans Devanagari', 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  --text-primary: #120D0A;
+  --text-secondary: #2C2017;
+  --text-muted: #423226;
+}
+
+/* Base Body when Hindi is selected */
+.lang-hi body, [data-lang="hi"] body,
+body[data-lang="hi"], body[data-lang="mr"] {
+  font-family: 'Noto Sans Devanagari', 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #120D0A;
+}
+
+/* Hero / Welcome Banner */
+.lang-hi .dash-hero-left h1,
+[data-lang="hi"] .dash-hero-left h1,
+body[data-lang="hi"] .dash-hero-left h1 {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  color: #120D0A !important;
+  letter-spacing: 0 !important;
+}
+
+.lang-hi .dash-hero-left p,
+[data-lang="hi"] .dash-hero-left p,
+body[data-lang="hi"] .dash-hero-left p {
+  font-size: 14.5px !important;
+  color: #2D1E14 !important;
+  font-weight: 600 !important;
+  margin-top: 4px !important;
+  line-height: 1.5 !important;
+}
+
+.lang-hi .dash-date,
+[data-lang="hi"] .dash-date,
+body[data-lang="hi"] .dash-date {
+  font-size: 13.5px !important;
+  color: #4A2C17 !important;
+  font-weight: 700 !important;
+}
+
+/* KPI Cards in Hindi: Bold, Dark & Prominent */
+.lang-hi .dash-kpi-label,
+[data-lang="hi"] .dash-kpi-label,
+body[data-lang="hi"] .dash-kpi-label {
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  color: #381E0C !important;
+  letter-spacing: 0.2px !important;
+}
+
+.lang-hi .dash-kpi-value,
+[data-lang="hi"] .dash-kpi-value,
+body[data-lang="hi"] .dash-kpi-value {
+  font-size: 27px !important;
+  font-weight: 800 !important;
+  color: #120D0A !important;
+}
+
+.lang-hi .dash-kpi-meta,
+[data-lang="hi"] .dash-kpi-meta,
+body[data-lang="hi"] .dash-kpi-meta {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #3B2A1E !important;
+  line-height: 1.4 !important;
+}
+
+.lang-hi .dash-kpi-meta.success,
+[data-lang="hi"] .dash-kpi-meta.success,
+body[data-lang="hi"] .dash-kpi-meta.success {
+  color: #047857 !important;
+  font-weight: 800 !important;
+}
+
+/* Quick Action Buttons in Hindi */
+.lang-hi .dash-quick-btn,
+[data-lang="hi"] .dash-quick-btn,
+body[data-lang="hi"] .dash-quick-btn {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #1F1209 !important;
+  border: 1.5px solid #C4B09A !important;
+  padding: 10px 18px !important;
+  background: #FFFFFF !important;
+}
+
+.lang-hi .dash-quick-btn:hover,
+[data-lang="hi"] .dash-quick-btn:hover,
+body[data-lang="hi"] .dash-quick-btn:hover {
+  background: #F3EDE6 !important;
+  color: #000000 !important;
+  border-color: #8C5521 !important;
+}
+
+/* Cards & Panel Headers */
+.lang-hi .dash-card-title,
+[data-lang="hi"] .dash-card-title,
+body[data-lang="hi"] .dash-card-title {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #1F150E !important;
+}
+
+.lang-hi .dash-card-action,
+[data-lang="hi"] .dash-card-action,
+body[data-lang="hi"] .dash-card-action {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #381E0C !important;
+  border: 1.5px solid #C4B09A !important;
+  background: #FFFFFF !important;
+}
+
+/* Attendance Snapshot Card in Hindi */
+.lang-hi .dash-attendance-stat-label,
+[data-lang="hi"] .dash-attendance-stat-label,
+body[data-lang="hi"] .dash-attendance-stat-label {
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #261B13 !important;
+  letter-spacing: 0.2px !important;
+}
+
+.lang-hi .dash-attendance-stat-value,
+[data-lang="hi"] .dash-attendance-stat-value,
+body[data-lang="hi"] .dash-attendance-stat-value {
+  font-size: 22px !important;
+  font-weight: 800 !important;
+}
+
+.lang-hi .dash-attendance-name,
+[data-lang="hi"] .dash-attendance-name,
+body[data-lang="hi"] .dash-attendance-name {
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  color: #120D0A !important;
+}
+
+.lang-hi .dash-attendance-site,
+[data-lang="hi"] .dash-attendance-site,
+body[data-lang="hi"] .dash-attendance-site {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #423226 !important;
+}
+
+.lang-hi .dash-attendance-loc,
+[data-lang="hi"] .dash-attendance-loc,
+body[data-lang="hi"] .dash-attendance-loc {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #3D2D21 !important;
+}
+
+.lang-hi .dash-view-all,
+[data-lang="hi"] .dash-view-all,
+body[data-lang="hi"] .dash-view-all {
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  color: #4A2C17 !important;
+}
+
+/* Tables across the entire CRM in Hindi */
+.lang-hi table thead th,
+[data-lang="hi"] table thead th,
+body[data-lang="hi"] table thead th,
+.lang-hi .dash-project-table thead th,
+[data-lang="hi"] .dash-project-table thead th {
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #1F150E !important;
+  letter-spacing: 0.2px !important;
+}
+
+.lang-hi table tbody td,
+[data-lang="hi"] table tbody td,
+body[data-lang="hi"] table tbody td {
+  font-size: 13.5px !important;
+  color: #1F1711 !important;
+  font-weight: 500;
+}
+
+/* Sidebar Menu in Hindi */
+.lang-hi .menu-title,
+[data-lang="hi"] .menu-title,
+body[data-lang="hi"] .menu-title {
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  color: #4A3A2F !important;
+  letter-spacing: 1.2px !important;
+}
+
+.lang-hi .menu-item,
+[data-lang="hi"] .menu-item,
+body[data-lang="hi"] .menu-item {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #1F1711 !important;
+}
+
+.lang-hi .menu-item.active,
+[data-lang="hi"] .menu-item.active,
+body[data-lang="hi"] .menu-item.active {
+  font-weight: 800 !important;
+  color: #361E0E !important;
+}
+
+/* Primary Action Buttons */
+.lang-hi .btn-primary,
+[data-lang="hi"] .btn-primary,
+body[data-lang="hi"] .btn-primary {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  padding: 10px 20px !important;
+  letter-spacing: 0.2px !important;
+}
+
+/* Form Labels & Inputs */
+.lang-hi label,
+[data-lang="hi"] label,
+body[data-lang="hi"] label {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #261B13 !important;
+}
+
+.lang-hi input,
+.lang-hi select,
+.lang-hi textarea,
+[data-lang="hi"] input,
+[data-lang="hi"] select,
+[data-lang="hi"] textarea,
+body[data-lang="hi"] input,
+body[data-lang="hi"] select,
+body[data-lang="hi"] textarea {
+  font-size: 13.5px !important;
+  color: #120D0A !important;
+  font-weight: 500;
+}
+
+/* Salary Shifts Table Screen Default */
+.salary-shifts-table {
+  min-width: 850px;
+}
+
+/* ============================================
+   Global Print Styles
+   ============================================ */
+@page {
+  size: A4 portrait;
+  margin: 20mm 14mm 20mm 14mm;
+  margin-top: 20mm;
+  margin-bottom: 20mm;
+  margin-left: 14mm;
+  margin-right: 14mm;
+}
+
+@media print {
+  /* Hide CRM shell elements when printing */
+  .sidebar,
+  .app-sidebar,
+  aside,
+  header,
+  .header,
+  .topbar,
+  .app-header,
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  /* Reset body and layout */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .layout {
+    display: block !important;
+  }
+
+  .main-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .dashboard-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Dedicated sheet container giving safe margin */
+  .salary-sheet-page {
+    padding: 4mm 6mm !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+  }
+
+  /* Ensure print-only elements display cleanly */
+  .salary-print-header,
+  .salary-print-footer,
+  .print-only {
+    display: block !important;
+  }
+
+  .salary-print-footer {
+    page-break-inside: avoid !important;
+  }
+
+  /* Hide Timings & Work Hours on PDF/Print */
+  .salary-hide-on-print {
+    display: none !important;
+  }
+
+  /* 4-column print total row */
+  .salary-print-total-row {
+    display: table-row !important;
+    background: #E2E8F0 !important;
+    border-top: 2px solid #94A3B8 !important;
+    border-bottom: 2px solid #94A3B8 !important;
+  }
+
+  .salary-print-total-row td {
+    padding: 9px 10px !important;
+  }
+
+  /* Remove table overflow wrappers and shadows in print */
+  .table-responsive {
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: 1px solid #CBD5E1 !important;
+    border-radius: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Salary Table Specific Print Optimizations: 4 Clean Columns */
+  table.salary-shifts-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  table.salary-shifts-table th.col-date,
+  table.salary-shifts-table td.col-date {
+    width: 18% !important;
+  }
+
+  table.salary-shifts-table th.col-site,
+  table.salary-shifts-table td.col-site {
+    width: 50% !important;
+  }
+
+  table.salary-shifts-table th.col-dayval,
+  table.salary-shifts-table td.col-dayval {
+    width: 15% !important;
+    text-align: center !important;
+  }
+
+  table.salary-shifts-table th.col-salary,
+  table.salary-shifts-table td.col-salary {
+    width: 17% !important;
+    text-align: right !important;
+  }
+
+  table.salary-shifts-table th,
+  table.salary-shifts-table td {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    box-sizing: border-box !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+
+  table.salary-shifts-table th {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    padding: 9px 10px !important;
+    background: #E2E8F0 !important;
+    color: #0F172A !important;
+    border-bottom: 2px solid #94A3B8 !important;
+  }
+
+  .salary-shifts-table .shift-badge-tag {
+    padding: 2px 7px !important;
+    font-size: 10.5px !important;
+    border-radius: 6px !important;
+  }
+
+  .salary-shifts-table .shift-salary-tag {
+    padding: 2px 7px !important;
+    font-size: 11.5px !important;
+    border-radius: 4px !important;
+  }
+
+  table {
+    width: 100% !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+}
+

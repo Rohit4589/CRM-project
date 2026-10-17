@@ -10,6 +10,8 @@ router.get('/', estimateController.getEstimates);
 router.get('/:id', estimateController.getEstimateById);
 router.post('/', estimateController.createEstimate);
 router.put('/:id', estimateController.updateEstimate);
+router.patch('/:id/status', estimateController.updateEstimateStatus);
+router.put('/:id/status', estimateController.updateEstimateStatus);
 router.delete('/:id', estimateController.deleteEstimate);
 
 // Share via WhatsApp / Email

@@ -40,6 +40,7 @@ async function initDb() {
         phone VARCHAR(20),
         email VARCHAR(100),
         location VARCHAR(150),
+        ref_name VARCHAR(150),
         full_address TEXT,
         lat_lng VARCHAR(50),
         start_date DATE,
@@ -49,6 +50,7 @@ async function initDb() {
         notes TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE public.sites ADD COLUMN IF NOT EXISTS ref_name VARCHAR(150);
     `);
     console.log('✅ Table "sites" checked/updated.');
 

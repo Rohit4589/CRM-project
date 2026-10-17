@@ -115,21 +115,43 @@ const AddSiteModal = ({
             </div>
           </div>
 
-          <div style={{marginBottom: '14px'}}>
-            <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-              Customer / Site Name *
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Rahul Deshmukh"
-              value={formData.customerName}
-              onChange={(e) => setFormData({...formData, customerName: e.target.value})}
-              style={{
-                width: '100%', padding: '9px 12px', borderRadius: '6px',
-                border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
-              }}
-              required
-            />
+          <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
+            <div style={{flex: '1 1 200px'}}>
+              <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                Customer / Site Name *
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Rahul Deshmukh"
+                value={formData.customerName}
+                onChange={(e) => setFormData({...formData, customerName: e.target.value})}
+                style={{
+                  width: '100%', padding: '9px 12px', borderRadius: '6px',
+                  border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
+                }}
+                required
+              />
+            </div>
+            <div style={{flex: '1 1 200px'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+                <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  Reference Name
+                </label>
+                <span style={{color: '#6B7280', fontSize: '11px', fontWeight: '500'}}>
+                  (Optional)
+                </span>
+              </div>
+              <input
+                type="text"
+                placeholder="Enter Name"
+                value={formData.refName || ''}
+                onChange={(e) => setFormData({...formData, refName: e.target.value})}
+                style={{
+                  width: '100%', padding: '9px 12px', borderRadius: '6px',
+                  border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
+                }}
+              />
+            </div>
           </div>
 
           <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
@@ -166,95 +188,94 @@ const AddSiteModal = ({
             </div>
           </div>
 
-          <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
-            <div style={{flex: '1 1 200px'}}>
-              <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                Site Area / Location *
+          <div style={{marginBottom: '14px'}}>
+            <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+              Site Area / Location *
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Kothrud, Pune"
+              value={formData.location}
+              onChange={(e) => setFormData({...formData, location: e.target.value})}
+              style={{
+                width: '100%', padding: '9px 12px', borderRadius: '6px',
+                border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
+              }}
+              required
+            />
+          </div>
+
+          <div style={{marginBottom: '14px'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+              <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                GPS Coordinates (Lat, Lng)
               </label>
+              <span style={{color: '#6B7280', fontSize: '11px', fontWeight: '500'}}>
+                (Optional)
+              </span>
+            </div>
+            <div style={{display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap'}}>
               <input
                 type="text"
-                placeholder="e.g. Kothrud, Pune"
-                value={formData.location}
-                onChange={(e) => setFormData({...formData, location: e.target.value})}
+                placeholder="e.g. 18.5204, 73.8567"
+                value={formData.latLng}
+                onChange={(e) => setFormData({...formData, latLng: e.target.value})}
                 style={{
-                  width: '100%', padding: '9px 12px', borderRadius: '6px',
-                  border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none'
+                  flex: '1 1 200px', padding: '9px 12px', borderRadius: '6px',
+                  border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
+                  fontSize: '13px'
                 }}
-                required
               />
-            </div>
-            <div style={{flex: '1 1 260px'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
-                <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                  GPS Coordinates (Lat, Lng)
-                </label>
-                <span style={{color: '#6B7280', fontSize: '11px', fontWeight: '500'}}>
-                  (Optional)
-                </span>
-              </div>
-              <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
-                <input
-                  type="text"
-                  placeholder="e.g. 18.5204, 73.8567"
-                  value={formData.latLng}
-                  onChange={(e) => setFormData({...formData, latLng: e.target.value})}
+              {formData.latLng && (
+                <button
+                  type="button"
+                  onClick={() => setFormData({...formData, latLng: ''})}
+                  title="Clear coordinates"
                   style={{
-                    flex: 1, padding: '9px 12px', borderRadius: '6px',
-                    border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                    fontSize: '13px'
+                    padding: '9px 10px', background: '#F3F4F6', border: '1px solid #D1D5DB',
+                    borderRadius: '6px', color: '#6B7280', cursor: 'pointer', fontSize: '12px'
                   }}
-                />
-                {formData.latLng && (
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, latLng: ''})}
-                    title="Clear coordinates"
-                    style={{
-                      padding: '9px 10px', background: '#F3F4F6', border: '1px solid #D1D5DB',
-                      borderRadius: '6px', color: '#6B7280', cursor: 'pointer', fontSize: '12px'
-                    }}
-                  >
-                    ✕
-                  </button>
+                >
+                  ✕
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onOpenMapPicker}
+                style={{
+                  padding: '9px 12px', background: 'rgba(165, 106, 48, 0.1)',
+                  border: '1px solid rgba(165, 106, 48, 0.35)', borderRadius: '6px',
+                  color: 'var(--gold, #A56A30)', cursor: 'pointer', fontSize: '12px',
+                  fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px',
+                  whiteSpace: 'nowrap'
+                }}
+                title="Open interactive map to pick location"
+              >
+                <i className="fa-solid fa-map-location-dot"></i> Pick on Map
+              </button>
+              <button
+                type="button"
+                onClick={onQuickFetch}
+                disabled={quickGeocoding}
+                style={{
+                  padding: '9px 10px', background: '#F8FAFC',
+                  border: '1px solid #CBD5E1', borderRadius: '6px',
+                  color: '#334155', cursor: 'pointer', fontSize: '12px',
+                  fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px',
+                  whiteSpace: 'nowrap'
+                }}
+                title="Auto-detect coordinates from entered address or area"
+              >
+                {quickGeocoding ? (
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                ) : (
+                  <i className="fa-solid fa-wand-magic-sparkles" style={{color: 'var(--gold, #A56A30)'}}></i>
                 )}
-                <button
-                  type="button"
-                  onClick={onOpenMapPicker}
-                  style={{
-                    padding: '9px 12px', background: 'rgba(165, 106, 48, 0.1)',
-                    border: '1px solid rgba(165, 106, 48, 0.35)', borderRadius: '6px',
-                    color: 'var(--gold, #A56A30)', cursor: 'pointer', fontSize: '12px',
-                    fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px',
-                    whiteSpace: 'nowrap'
-                  }}
-                  title="Open interactive map to pick location"
-                >
-                  <i className="fa-solid fa-map-location-dot"></i> Pick on Map
-                </button>
-                <button
-                  type="button"
-                  onClick={onQuickFetch}
-                  disabled={quickGeocoding}
-                  style={{
-                    padding: '9px 10px', background: '#F8FAFC',
-                    border: '1px solid #CBD5E1', borderRadius: '6px',
-                    color: '#334155', cursor: 'pointer', fontSize: '12px',
-                    fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px',
-                    whiteSpace: 'nowrap'
-                  }}
-                  title="Auto-detect coordinates from entered address or area"
-                >
-                  {quickGeocoding ? (
-                    <i className="fa-solid fa-spinner fa-spin"></i>
-                  ) : (
-                    <i className="fa-solid fa-wand-magic-sparkles" style={{color: 'var(--gold, #A56A30)'}}></i>
-                  )}
-                  Fetch
-                </button>
-              </div>
-              <div style={{fontSize: '11px', color: '#6B7280', marginTop: '4px'}}>
-                💡 Optional: Click <strong>Pick on Map</strong> to drag a pin, or <strong>Fetch</strong> from address.
-              </div>
+                Fetch
+              </button>
+            </div>
+            <div style={{fontSize: '11px', color: '#6B7280', marginTop: '4px'}}>
+              💡 Optional: Click <strong>Pick on Map</strong> to drag a pin, or <strong>Fetch</strong> from address.
             </div>
           </div>
 

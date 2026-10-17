@@ -16,6 +16,13 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lan
     logout: getTranslation(lang, 'logout'),
     worker: getTranslation(lang, 'worker'),
     changePin: getTranslation(lang, 'changePin'),
+    management: getTranslation(lang, 'management'),
+    operations: getTranslation(lang, 'operations'),
+    sites: getTranslation(lang, 'sites'),
+    employees: getTranslation(lang, 'employees'),
+    reports: getTranslation(lang, 'reports'),
+    estimates: getTranslation(lang, 'estimates'),
+    productsRates: getTranslation(lang, 'productsRates'),
   };
 
   const handleItemClick = (e, tab) => {
@@ -116,70 +123,63 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lan
                ========================================= */
             <>
               <div className="menu-group">
-                <div className="menu-title">Main</div>
+                <div className="menu-title">{t.main}</div>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'dashboard' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'dashboard')}
                 >
-                  <i className="fa-solid fa-chart-pie"></i> Dashboard
+                  <i className="fa-solid fa-chart-pie"></i> {t.dashboard}
                 </a>
               </div>
 
               <div className="menu-group">
-                <div className="menu-title">Management</div>
+                <div className="menu-title">{t.management}</div>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'sites' || activeTab === 'customers' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'sites')}
                 >
-                  <i className="fa-solid fa-location-dot"></i> Sites
+                  <i className="fa-solid fa-location-dot"></i> {t.sites}
                 </a>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'employees' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'employees')}
                 >
-                  <i className="fa-solid fa-user-tie"></i> Employees
+                  <i className="fa-solid fa-user-tie"></i> {t.employees}
                 </a>
               </div>
               
               <div className="menu-group">
-                <div className="menu-title">Operations</div>
+                <div className="menu-title">{t.operations}</div>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'attendance' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'attendance')}
                 >
-                  <i className="fa-solid fa-clipboard-user"></i> Attendance
+                  <i className="fa-solid fa-clipboard-user"></i> {t.attendance}
                 </a>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'salary' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'salary')}
                 >
-                  <i className="fa-solid fa-money-bill-wave"></i> Salary
-                </a>
-                <a 
-                  href="#" 
-                  className={`menu-item ${activeTab === 'reports' ? 'active' : ''}`} 
-                  onClick={(e) => handleItemClick(e, 'reports')}
-                >
-                  <i className="fa-solid fa-file-lines"></i> Reports
+                  <i className="fa-solid fa-money-bill-wave"></i> {t.salary}
                 </a>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'estimates' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'estimates')}
                 >
-                  <i className="fa-solid fa-file-invoice-dollar"></i> Estimates
+                  <i className="fa-solid fa-file-invoice-dollar"></i> {t.estimates}
                 </a>
                 <a 
                   href="#" 
                   className={`menu-item ${activeTab === 'products-rates' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'products-rates')}
                 >
-                  <i className="fa-solid fa-tags"></i> Products & Rates
+                  <i className="fa-solid fa-tags"></i> {t.productsRates}
                 </a>
               </div>
             </>

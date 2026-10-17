@@ -1,6 +1,6 @@
 import React from 'react';
 
-const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete }) => {
+const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker }) => {
   return (
     <div style={{
       background: '#fff',
@@ -194,6 +194,31 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete }) => {
                       onMouseOut={(e) => { e.currentTarget.style.background = '#FAF8F5'; e.currentTarget.style.borderColor = '#D1C2AF'; }}
                     >
                       <i className="fa-solid fa-eye"></i>
+                    </button>
+
+                    <button
+                      title="Print Folder Sticker"
+                      onClick={() => onSticker && onSticker(site)}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        background: '#FAF8F5',
+                        border: '1px solid #D1C2AF',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        color: '#A56A30',
+                        fontSize: '11px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.15s ease',
+                        padding: 0,
+                        flexShrink: 0
+                      }}
+                      onMouseOver={(e) => { e.currentTarget.style.background = '#F3EDE6'; e.currentTarget.style.borderColor = '#9A7B56'; }}
+                      onMouseOut={(e) => { e.currentTarget.style.background = '#FAF8F5'; e.currentTarget.style.borderColor = '#D1C2AF'; }}
+                    >
+                      <i className="fa-solid fa-tag"></i>
                     </button>
                     
                     <button

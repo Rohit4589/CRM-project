@@ -53,9 +53,11 @@ const EmployeeReports = ({ user, lang = 'hi' }) => {
     return r.monthYear === selectedMonth;
   });
 
-  const totalDays = filteredRecords.reduce((sum, r) => sum + (parseFloat(r.dayValue) || 1.0), 0);
-  const fullDays = filteredRecords.filter(r => (parseFloat(r.dayValue) || 0) >= 1.0).length;
-  const halfDays = filteredRecords.filter(r => (parseFloat(r.dayValue) || 0) === 0.5).length;
+  // Only count Approved/Verified records in reports
+  const approvedRecords = filteredRecords.filter(r => r.status === 'Approved' || r.status === 'Verified');
+  const totalDays = approvedRecords.reduce((sum, r) => sum + (parseFloat(r.dayValue) || 0), 0);
+  const fullDays = approvedRecords.filter(r => (parseFloat(r.dayValue) || 0) >= 1.0).length;
+  const halfDays = approvedRecords.filter(r => (parseFloat(r.dayValue) || 0) === 0.5).length;
   const grossEarnings = Math.round(totalDays * dailyRate);
   const totalDeductions = 0;
   const netPayable = grossEarnings - totalDeductions;
@@ -235,7 +237,7 @@ const EmployeeReports = ({ user, lang = 'hi' }) => {
         }}>
           <div>
             <span style={{ color: '#7D6C5E', fontSize: '13px' }}>{t('totalDaysPresent')}: </span>
-            <strong style={{ color: '#2B2520', fontSize: '14px' }}>{totalDays.toFixed(1)} Days</strong> 
+            <strong style={{ color: '#2B2520', fontSize: '14px' }}>{Number(totalDays.toFixed(2))} Days</strong> 
             <span style={{ fontSize: '12px', color: '#7D6C5E', marginLeft: '4px' }}>({fullDays}F + {halfDays}H)</span>
           </div>
           <div>
@@ -264,7 +266,7 @@ const EmployeeReports = ({ user, lang = 'hi' }) => {
             <tbody>
               <tr style={{ borderBottom: '1px solid #EAE4DD' }}>
                 <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '500' }}>
-                  {t('baseDailyWages')} ({totalDays.toFixed(1)} Days × ₹{dailyRate.toLocaleString('en-IN')})
+                  {t('baseDailyWages')} ({(totalDays % 1 === 0 ? totalDays.toFixed(0) : parseFloat(totalDays.toFixed(2)))} Days × ₹{dailyRate.toLocaleString('en-IN')})
                 </td>
                 <td style={{ padding: '12px 14px', fontSize: '13px', fontWeight: '700', textAlign: 'right', color: '#2B2520' }}>
                   ₹{grossEarnings.toLocaleString('en-IN')}

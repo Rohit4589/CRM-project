@@ -11,6 +11,7 @@ const getSites = async (req, res) => {
         phone, 
         email, 
         location, 
+        ref_name as "refName",
         full_address as "fullAddress", 
         lat_lng as "latLng", 
         TO_CHAR(start_date, 'YYYY-MM-DD') as "startDate", 
@@ -41,6 +42,7 @@ const getSites = async (req, res) => {
         phone: row.phone || '',
         email: row.email || '',
         location: row.location || '',
+        refName: row.refName || '',
         fullAddress: row.fullAddress || '',
         latLng: row.latLng || '',
         startDate: row.startDate || '',
@@ -76,6 +78,7 @@ const addSite = async (req, res) => {
       phone,
       email,
       location,
+      refName,
       fullAddress,
       latLng,
       startDate,
@@ -131,9 +134,9 @@ const addSite = async (req, res) => {
 
     const insertQuery = `
       INSERT INTO public.sites 
-        (site_ref, customer_name, phone, email, location, full_address, lat_lng, start_date, target_date, status, progress, notes)
+        (site_ref, customer_name, phone, email, location, ref_name, full_address, lat_lng, start_date, target_date, status, progress, notes)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING 
         id, 
         site_ref as "siteRef", 
@@ -141,6 +144,7 @@ const addSite = async (req, res) => {
         phone, 
         email, 
         location, 
+        ref_name as "refName",
         full_address as "fullAddress", 
         lat_lng as "latLng", 
         TO_CHAR(start_date, 'YYYY-MM-DD') as "startDate", 
@@ -156,6 +160,7 @@ const addSite = async (req, res) => {
       phone ? phone.trim() : '',
       email ? email.trim() : '',
       location ? location.trim() : '',
+      refName ? refName.trim() : '',
       fullAddress ? fullAddress.trim() : '',
       latLng ? latLng.trim() : '',
       startDate || null,
@@ -181,6 +186,7 @@ const addSite = async (req, res) => {
       phone: row.phone,
       email: row.email,
       location: row.location,
+      refName: row.refName || '',
       fullAddress: row.fullAddress,
       latLng: row.latLng,
       startDate: row.startDate || '',
@@ -249,6 +255,7 @@ const updateSite = async (req, res) => {
       phone,
       email,
       location,
+      refName,
       fullAddress,
       latLng,
       startDate,
@@ -291,14 +298,15 @@ const updateSite = async (req, res) => {
         phone = COALESCE($3, phone),
         email = COALESCE($4, email),
         location = COALESCE($5, location),
-        full_address = COALESCE($6, full_address),
-        lat_lng = CASE WHEN $7::varchar IS NOT NULL THEN $7::varchar ELSE lat_lng END,
-        start_date = $8,
-        target_date = $9,
-        status = COALESCE($10, status),
-        progress = COALESCE($11, progress),
-        notes = COALESCE($12, notes)
-      WHERE id = $13
+        ref_name = CASE WHEN $6::varchar IS NOT NULL THEN $6::varchar ELSE ref_name END,
+        full_address = COALESCE($7, full_address),
+        lat_lng = CASE WHEN $8::varchar IS NOT NULL THEN $8::varchar ELSE lat_lng END,
+        start_date = $9,
+        target_date = $10,
+        status = COALESCE($11, status),
+        progress = COALESCE($12, progress),
+        notes = COALESCE($13, notes)
+      WHERE id = $14
       RETURNING 
         id, 
         site_ref as "siteRef", 
@@ -306,6 +314,7 @@ const updateSite = async (req, res) => {
         phone, 
         email, 
         location, 
+        ref_name as "refName",
         full_address as "fullAddress", 
         lat_lng as "latLng", 
         TO_CHAR(start_date, 'YYYY-MM-DD') as "startDate", 
@@ -321,6 +330,7 @@ const updateSite = async (req, res) => {
       phone ? phone.trim() : null,
       email ? email.trim() : null,
       location ? location.trim() : null,
+      refName !== undefined ? (refName ? refName.trim() : '') : null,
       fullAddress ? fullAddress.trim() : null,
       latLng !== undefined ? (latLng ? latLng.trim() : '') : null,
       startDate || null,
@@ -333,6 +343,14 @@ const updateSite = async (req, res) => {
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Site not found' });
+    }
+
+    // Keep linked estimates in sync with site status
+    if (status) {
+      await pool.query(
+        `UPDATE public.estimates SET status = $1 WHERE site_id = $2`,
+        [status, targetDbId]
+      ).catch(e => console.error('Failed to sync estimates status:', e));
     }
 
     const row = result.rows[0];

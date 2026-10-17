@@ -38,7 +38,7 @@ const getEmployees = async (req, res) => {
         password: row.password,
         phone: row.phone ? (row.phone.startsWith('+91') ? row.phone : `+91 ${row.phone}`) : '',
         rawPhone: row.phone,
-        role: row.role || 'Carpenter',
+        role: row.role || '',
         dailySalary: Number(row.dailySalary || 0),
         sitePolicy: row.sitePolicy || 'Flexible / Self-Pick',
         lastSite: row.lastSite || 'Not yet punched',
@@ -71,13 +71,17 @@ const addEmployee = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Employee full name is required' });
     }
 
-    if (!phone || !phone.trim()) {
-      return res.status(400).json({ success: false, message: 'Mobile number is required' });
-    }
-
     const cleanName = name.trim();
-    const rawDigits = phone.replace(/[^0-9]/g, '');
-    const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits;
+    const rawDigits = (phone && typeof phone === 'string') ? phone.replace(/[^0-9]/g, '') : '';
+    const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : (rawDigits.length > 0 ? rawDigits : null);
+
+    if (dailySalary === undefined || dailySalary === null || dailySalary === '' || isNaN(Number(dailySalary))) {
+      return res.status(400).json({ success: false, message: 'Daily wage rate is required' });
+    }
+    const cleanSalary = Number(dailySalary);
+    if (cleanSalary < 0) {
+      return res.status(400).json({ success: false, message: 'Daily wage rate cannot be negative' });
+    }
 
     let cleanEmpCode = empCode ? String(empCode).trim().replace(/^EMP-/i, '') : null;
     if (cleanEmpCode) {
@@ -104,11 +108,12 @@ const addEmployee = async (req, res) => {
     }
 
     let username = cleanEmpCode || cleanPhone || cleanName.toLowerCase().replace(/\s+/g, '_');
-    // Admin-provided password or fallback to last 4 digits
-    const userPassword = (password && password.trim()) ? password.trim() : (cleanPhone.length >= 4 ? cleanPhone.slice(-4) : '1234');
+    // Admin-provided password or fallback to last 4 digits of phone or empCode
+    const userPassword = (password && password.trim()) 
+      ? password.trim() 
+      : (cleanPhone && cleanPhone.length >= 4 ? cleanPhone.slice(-4) : (cleanEmpCode || '1234'));
 
-    const cleanRole = (role && role.trim()) || 'Carpenter';
-    const cleanSalary = Number(dailySalary) >= 0 ? Number(dailySalary) : 1000;
+    const cleanRole = (role && role.trim()) ? role.trim() : null;
     const cleanStatus = status || 'Active';
     const randomAvatar = null;
 
@@ -233,11 +238,18 @@ const updateEmployee = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Employee name is required' });
     }
 
+    if (dailySalary === undefined || dailySalary === null || dailySalary === '' || isNaN(Number(dailySalary))) {
+      return res.status(400).json({ success: false, message: 'Daily wage rate is required' });
+    }
+    const cleanSalary = Number(dailySalary);
+    if (cleanSalary < 0) {
+      return res.status(400).json({ success: false, message: 'Daily wage rate cannot be negative' });
+    }
+
     const cleanName = name.trim();
-    const rawDigits = phone ? phone.replace(/[^0-9]/g, '') : '';
-    const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits;
-    const cleanRole = role ? role.trim() : 'Carpenter';
-    const cleanSalary = Number(dailySalary) >= 0 ? Number(dailySalary) : 1000;
+    const rawDigits = (phone && typeof phone === 'string') ? phone.replace(/[^0-9]/g, '') : '';
+    const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : (rawDigits.length > 0 ? rawDigits : null);
+    const cleanRole = (role && role.trim()) ? role.trim() : null;
     const cleanStatus = status || 'Active';
     const newPassword = (password && password.trim()) ? password.trim() : null;
     const cleanEmpCode = empCode ? String(empCode).trim().replace(/^EMP-/i, '') : null;

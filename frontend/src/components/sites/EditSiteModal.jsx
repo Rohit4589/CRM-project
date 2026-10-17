@@ -120,22 +120,45 @@ const EditSiteModal = ({
             </div>
           </div>
 
-          {/* Customer / Site Name */}
-          <div style={{marginBottom: '14px'}}>
-            <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-              Customer / Site Name *
-            </label>
-            <input
-              type="text"
-              value={editingSite.customerName}
-              onChange={(e) => setEditingSite({...editingSite, customerName: e.target.value})}
-              style={{
-                width: '100%', padding: '9px 12px', borderRadius: '8px',
-                border: '1.5px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                fontSize: '14px'
-              }}
-              required
-            />
+          {/* Customer / Site Name & Reference Name */}
+          <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
+            <div style={{flex: '1 1 200px'}}>
+              <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                Customer / Site Name *
+              </label>
+              <input
+                type="text"
+                value={editingSite.customerName}
+                onChange={(e) => setEditingSite({...editingSite, customerName: e.target.value})}
+                style={{
+                  width: '100%', padding: '9px 12px', borderRadius: '8px',
+                  border: '1.5px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
+                  fontSize: '14px'
+                }}
+                required
+              />
+            </div>
+            <div style={{flex: '1 1 200px'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+                <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  Reference Name
+                </label>
+                <span style={{color: '#6B7280', fontSize: '11px', fontWeight: '500'}}>
+                  (Optional)
+                </span>
+              </div>
+              <input
+                type="text"
+                placeholder="Enter Name"
+                value={editingSite.refName || ''}
+                onChange={(e) => setEditingSite({...editingSite, refName: e.target.value})}
+                style={{
+                  width: '100%', padding: '9px 12px', borderRadius: '8px',
+                  border: '1.5px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
           </div>
 
           <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>

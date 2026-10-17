@@ -4,6 +4,7 @@ const SitesKPICards = ({ counts }) => {
   const cards = [
     { label: 'Total Sites', value: counts.all, sub: 'All registered projects' },
     { label: 'Running', value: counts.running, sub: 'Active work sites' },
+    { label: 'Quotations', value: counts.quotation || 0, sub: 'Estimating & Proposal' },
     { label: 'Completed', value: counts.completed, sub: 'Finished client projects' },
     { label: 'On Hold', value: counts.onHold, sub: 'Temporarily paused work' }
   ];

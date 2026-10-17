@@ -1,11 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import modernLogo from '../../assets/logo.png';
 import { downloadEstimatePdf, printEstimateSheet } from '../../utils/estimatePdfGenerator';
 
 const EstimatePreviewModal = ({
   estimate,
   onClose,
-  onEdit,
   onShare
 }) => {
   const printSheetRef = useRef(null);
@@ -54,16 +53,69 @@ const EstimatePreviewModal = ({
     return estimate.estimate_number || '001';
   })();
 
+  // Sanitize illegal Windows filename characters: \ / : * ? " < > |
+  const sanitize = (str) => String(str || '').replace(/[\\/:*?"<>|]/g, '').trim();
+
+  // 1. Order Number
+  const cleanOrder = sanitize(orderNumber);
+
+  // 2. Customer Name
+  const cleanCustomer = sanitize(estimate.customer_name || 'Client');
+
+  // 3. Reference Name (from site location, site name, address society, or site_ref)
+  const cleanRef = sanitize(
+    estimate.site_location ||
+    estimate.location ||
+    estimate.site_name ||
+    (estimate.address ? estimate.address.split(',')[0].trim() : '') ||
+    (estimate.site_ref ? String(estimate.site_ref).replace(/^SITE-/i, '') : '') ||
+    ''
+  );
+
+  // 4. Date formatted as DD-MM-YYYY (safe for file names)
+  const fileDate = (() => {
+    const d = estimate.date ? new Date(estimate.date) : new Date();
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  })();
+
+  // Format: order number - name - refrance name - date
+  const pdfFileName = [cleanOrder, cleanCustomer, cleanRef, fileDate]
+    .filter(Boolean)
+    .join(' - ');
+
+  useEffect(() => {
+    document.body.classList.add('estimate-preview-modal-open');
+    const originalTitle = document.title;
+    if (pdfFileName) {
+      document.title = pdfFileName;
+    }
+    return () => {
+      document.body.classList.remove('estimate-preview-modal-open');
+      document.title = originalTitle;
+    };
+  }, [pdfFileName]);
+
+  const handleDownloadPreview = () => {
+    if (pdfFileName) {
+      document.title = pdfFileName;
+    }
+    // Opens native browser Print / Save as PDF preview dialog with full multi-page layout
+    printEstimateSheet();
+  };
+
   const handleDownloadPdf = async () => {
     if (printSheetRef.current) {
-      const filename = `Order_${orderNumber}_${(estimate.customer_name || 'Client').replace(/\s+/g, '_')}.pdf`;
+      const filename = `${pdfFileName}.pdf`;
       await downloadEstimatePdf(printSheetRef.current, filename);
     }
   };
 
   return (
-    <div className="estimate-modal-overlay">
-      <div className="estimate-modal modal-large" style={{ maxHeight: '95vh' }}>
+    <div className="estimate-modal-overlay estimate-preview-modal-overlay">
+      <div className="estimate-modal modal-large estimate-preview-modal-card">
         <div className="estimate-modal-header no-print">
           <h2>
             <i className="fa-solid fa-file-invoice" style={{ color: '#4A2C17' }}></i>
@@ -87,8 +139,8 @@ const EstimatePreviewModal = ({
                 cursor: 'pointer',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
               }}
-              onClick={handleDownloadPdf}
-              title="Download PDF"
+              onClick={handleDownloadPreview}
+              title="Download / Save as PDF (opens preview to download)"
             >
               <i className="fa-solid fa-download"></i>
             </button>
@@ -136,27 +188,6 @@ const EstimatePreviewModal = ({
               <i className="fa-solid fa-print"></i>
             </button>
             <button
-              className="btn-action-icon"
-              style={{
-                width: '36px',
-                height: '36px',
-                padding: 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: '#FAF8F5',
-                border: '1px solid #DCD4CA',
-                color: '#4A2C17',
-                cursor: 'pointer'
-              }}
-              onClick={() => onEdit(estimate)}
-              title="Edit Estimate"
-            >
-              <i className="fa-solid fa-pen"></i>
-            </button>
-            <button
               className="modal-close-btn"
               style={{
                 width: '36px',
@@ -177,7 +208,7 @@ const EstimatePreviewModal = ({
           </div>
         </div>
 
-        <div className="estimate-modal-body" style={{ background: '#EAE4DD', padding: '20px' }}>
+        <div className="estimate-modal-body estimate-preview-body">
           {/* Exact Excel Format Printable Sheet */}
           <div ref={printSheetRef} className="estimate-printable-sheet">
             {/* Header Brand with Logo on Left and Customer Info on Right */}
@@ -229,7 +260,7 @@ const EstimatePreviewModal = ({
             {/* Room-wise Tables (Matching Excel) */}
             {rooms.map((room, rIdx) => (
               <table key={rIdx} className="print-room-table">
-                <thead>
+                <thead className="print-room-thead" style={{ display: 'table-row-group' }}>
                   <tr className="print-room-title-row">
                     <td colSpan="8" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       {room.roomName}
@@ -325,69 +356,74 @@ const EstimatePreviewModal = ({
 
             {/* Note from Excel */}
             {estimate.notes && (
-              <div style={{ fontSize: '11px', fontWeight: '600', color: '#4A2C17', marginBottom: '14px', background: '#F8F5F1', padding: '8px 12px', borderRadius: '4px' }}>
+              <div className="print-note-section" style={{ fontSize: '11px', fontWeight: '600', color: '#4A2C17', marginBottom: '14px', background: '#F8F5F1', padding: '8px 12px', borderRadius: '4px' }}>
                 {estimate.notes}
               </div>
             )}
 
             {/* 1. Terms & Conditions: 4 & 4 split across left and right */}
-            <div style={{ marginTop: '16px', marginBottom: '16px', borderTop: '1px solid #E5D9C5', paddingTop: '14px' }}>
-              <h5 style={{ margin: '0 0 8px 0', fontSize: '11px', fontWeight: '700', color: '#4A2C17' }}>
+            <div className="print-terms-section">
+              <h5 className="print-section-h5">
                 Terms & Conditions:
               </h5>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '10px', color: '#333', lineHeight: '1.45' }}>
-                <div>
+              <div className="print-terms-grid">
+                <div className="print-terms-col">
                   {termsCol1.map((line, idx) => (
-                    <div key={idx} style={{ marginBottom: '4px' }}>{line}</div>
+                    <div key={idx}>{line}</div>
                   ))}
                 </div>
-                <div>
+                <div className="print-terms-col">
                   {termsCol2.map((line, idx) => (
-                    <div key={idx} style={{ marginBottom: '4px' }}>{line}</div>
+                    <div key={idx}>{line}</div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* 2. Bank Details at 1 side and Mode of Payment at 1 side */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '14px', marginBottom: '20px', paddingTop: '14px', borderTop: '1px solid #E5D9C5' }}>
-              {/* Bank Account Details */}
-              <div>
-                <h5 style={{ margin: '0 0 6px 0', fontSize: '11px', fontWeight: '700', color: '#4A2C17' }}>
-                  Bank Account Details for Payment:
-                </h5>
-                <div style={{ background: '#FAF8F5', border: '1px solid #E5D9C5', padding: '10px 14px', borderRadius: '6px', fontSize: '10px', lineHeight: '1.5' }}>
-                  <div><strong>Account Name:</strong> {bank.accountName || 'MODERN INTERIOR'}</div>
-                  <div style={{ marginTop: '2px' }}><strong>Bank Name:</strong> {bank.bankName || 'HDFC BANK'}</div>
-                  <div style={{ marginTop: '2px' }}><strong>Account No:</strong> {bank.accountNo || '50200088923412'}</div>
-                  <div style={{ marginTop: '2px' }}><strong>IFSC Code:</strong> {bank.ifscCode || 'HDFC0001824'}</div>
-                  <div style={{ marginTop: '2px' }}><strong>GST No:</strong> {bank.gstNo || '27AAOFM1234F1Z8'}</div>
+            {/* UNBREAKABLE CLOSING BLOCK:
+                Bank Details + Payment Terms + Signatures stay together.
+                If they don't fit at the page bottom, they push cleanly to the next page. */}
+            <div className="print-closing-block">
+              {/* 2. Bank Details at 1 side and Mode of Payment at 1 side */}
+              <div className="print-payment-section">
+                {/* Bank Account Details */}
+                <div className="print-payment-col">
+                  <h5 className="print-section-h5">
+                    Bank Account Details for Payment:
+                  </h5>
+                  <div className="print-bank-card">
+                    <div><strong>Account Name:</strong> {bank.accountName || 'MODERN INTERIOR'}</div>
+                    <div style={{ marginTop: '2px' }}><strong>Bank Name:</strong> {bank.bankName || 'HDFC BANK'}</div>
+                    <div style={{ marginTop: '2px' }}><strong>Account No:</strong> {bank.accountNo || '50200088923412'}</div>
+                    <div style={{ marginTop: '2px' }}><strong>IFSC Code:</strong> {bank.ifscCode || 'HDFC0001824'}</div>
+                    <div style={{ marginTop: '2px' }}><strong>GST No:</strong> {bank.gstNo || '27AAOFM1234F1Z8'}</div>
+                  </div>
+                </div>
+
+                {/* Mode of Payment */}
+                <div className="print-payment-col">
+                  <h5 className="print-section-h5">
+                    Mode Of Payment:
+                  </h5>
+                  <div className="print-bank-card">
+                    <pre style={{ margin: 0, fontFamily: 'inherit', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                      {estimate.payment_terms}
+                    </pre>
+                  </div>
                 </div>
               </div>
 
-              {/* Mode of Payment */}
-              <div>
-                <h5 style={{ margin: '0 0 6px 0', fontSize: '11px', fontWeight: '700', color: '#4A2C17' }}>
-                  Mode Of Payment:
-                </h5>
-                <div style={{ background: '#FAF8F5', border: '1px solid #E5D9C5', padding: '10px 14px', borderRadius: '6px', fontSize: '10px', lineHeight: '1.5' }}>
-                  <pre style={{ margin: 0, fontFamily: 'inherit', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
-                    {estimate.payment_terms}
-                  </pre>
+              {/* 3. Below that: Signatures */}
+              <div className="print-signature-section">
+                <div className="print-sig-col">
+                  <div className="print-sig-line">
+                    Customer Sign
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            {/* 3. Below that: Signatures */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '28px 40px 10px 40px', marginTop: '16px', borderTop: '1px dashed #E5D9C5' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ borderTop: '1px solid #555', width: '160px', paddingTop: '6px', fontSize: '11px', fontWeight: '600', color: '#444' }}>
-                  Customer Sign
-                </div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ borderTop: '1px solid #555', width: '160px', paddingTop: '6px', fontSize: '11px', fontWeight: '600', color: '#444' }}>
-                  For Modern Interior
+                <div className="print-sig-col">
+                  <div className="print-sig-line">
+                    For Modern Interior
+                  </div>
                 </div>
               </div>
             </div>

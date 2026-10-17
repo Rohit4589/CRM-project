@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../config/api';
+import { getTranslation } from '../utils/translations';
 
-const Attendance = () => {
+const Attendance = ({ lang = 'en' }) => {
+  const t = (key) => getTranslation(lang, key);
   // Main data state
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -31,6 +33,52 @@ const Attendance = () => {
     return dateStr;
   };
 
+  const formatDays = (val) => {
+    const d = Number(val) || 0;
+    return d % 1 === 0 ? d.toFixed(0) : String(parseFloat(d.toFixed(2)));
+  };
+
+  const calculateHoursAndDayValue = (inTimeStr, outTimeStr) => {
+    if (!inTimeStr || !outTimeStr || inTimeStr === '--:--' || outTimeStr === '--:--') {
+      return { hours: 0, dayValue: '1.0' };
+    }
+    try {
+      const parseToMin = (t) => {
+        t = String(t).trim().toUpperCase();
+        const isAm = t.includes('AM');
+        const isPm = t.includes('PM');
+        const clean = t.replace(/(AM|PM)/g, '').trim();
+        const [hStr, mStr] = clean.split(':');
+        let h = parseInt(hStr, 10);
+        const m = parseInt(mStr || '0', 10);
+        if (isPm && h < 12) h += 12;
+        if (isAm && h === 12) h = 0;
+        return h * 60 + m;
+      };
+
+      const inM = parseToMin(inTimeStr);
+      const outM = parseToMin(outTimeStr);
+      if (isNaN(inM) || isNaN(outM)) return { hours: 0, dayValue: '1.0' };
+
+      let diff = outM - inM;
+      if (diff < 0) diff += 24 * 60;
+      const hours = Number((diff / 60).toFixed(2));
+
+      let dVal = '0.0';
+      if (hours >= 11.0) dVal = '1.5';
+      else if (hours >= 9.5) dVal = '1.25';
+      else if (hours >= 8.0) dVal = '1.0';
+      else if (hours >= 6.0) dVal = '0.75';
+      else if (hours >= 4.0) dVal = '0.5';
+      else if (hours >= 2.0) dVal = '0.25';
+      else dVal = '0.0';
+
+      return { hours, dayValue: dVal };
+    } catch {
+      return { hours: 0, dayValue: '1.0' };
+    }
+  };
+
   const [dateFilter, setDateFilter] = useState(getTodayStr());
   const [showAllDates, setShowAllDates] = useState(false);
   const [siteFilter, setSiteFilter] = useState('All');
@@ -46,7 +94,14 @@ const Attendance = () => {
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  // Attendance Mode: 'single' | 'bulk'
+  const [attendanceMode, setAttendanceMode] = useState('single');
+  const [bulkDate, setBulkDate] = useState(getTodayStr());
+  const [bulkDefaultSite, setBulkDefaultSite] = useState('');
+  const [bulkRows, setBulkRows] = useState([]);
 
   // Add Attendance Form State
   const [formData, setFormData] = useState({
@@ -58,6 +113,14 @@ const Attendance = () => {
     siteSessions: [
       { siteId: '', inTime: '09:00', outTime: '18:00' }
     ]
+  });
+
+  // Gift / Bonus Attendance Form State
+  const [giftFormData, setGiftFormData] = useState({
+    userId: '',
+    bonusDays: '4',
+    date: getTodayStr(),
+    notes: '🎁 Month-End Performance Bonus (+4 Days)'
   });
 
   // Edit Attendance Form State
@@ -73,7 +136,8 @@ const Attendance = () => {
     dayValue: '1.0',
     dailyRate: 1000,
     status: 'Verified',
-    notes: ''
+    notes: '',
+    isBonus: false
   });
 
   // Fetch all initial data
@@ -109,11 +173,76 @@ const Attendance = () => {
     fetchData();
   }, [dateFilter, showAllDates]);
 
-  // Open Add Modal & Reset Form
-  const handleOpenAddModal = () => {
+  // Open Add Days in Unified Attendance Modal
+  const handleOpenGiftModal = (preselectedEmp = null) => {
+    const empId = preselectedEmp?.dbId || preselectedEmp?.userId || (employees.length > 0 ? employees[0].dbId : '');
+    setGiftFormData({
+      userId: empId,
+      bonusDays: '4',
+      date: dateFilter || getTodayStr(),
+      notes: `Extra Attendance (+4 Days)`
+    });
+    setAttendanceMode('days');
+    setApiError('');
+    setShowAddModal(true);
+  };
+
+  // Save Extra Attendance Days
+  const handleSaveGiftAttendance = async (e) => {
+    e.preventDefault();
+    if (!giftFormData.userId) {
+      setApiError('Please select an employee.');
+      return;
+    }
+
+    const days = parseFloat(giftFormData.bonusDays);
+    if (isNaN(days) || days <= 0) {
+      setApiError('Please enter a valid number of days (greater than 0).');
+      return;
+    }
+
+    setSaving(true);
+    setApiError('');
+
+    try {
+      const res = await fetch(`${API_BASE}/attendance/bonus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: Number(giftFormData.userId),
+          bonusDays: days,
+          date: giftFormData.date,
+          notes: giftFormData.notes
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setApiError(data.message || 'Failed to add attendance days.');
+        setSaving(false);
+        return;
+      }
+
+      setShowAddModal(false);
+      setShowGiftModal(false);
+      setSuccessMessage(data.message || `Successfully added +${days} attendance days!`);
+      setTimeout(() => setSuccessMessage(''), 7000);
+      fetchData(giftFormData.date, false);
+    } catch (err) {
+      console.error('Error adding attendance days:', err);
+      setApiError('Server error while adding attendance days.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Open Add Modal & Reset Form (supports 'single' or 'bulk' mode)
+  const handleOpenAddModal = (initialMode = 'single') => {
     const defaultEmp = employees.length > 0 ? employees[0].dbId : '';
     const defaultSite = sites.length > 0 ? (sites[0].dbId || sites[0].id) : '';
 
+    setAttendanceMode(initialMode);
     setFormData({
       userId: defaultEmp,
       date: dateFilter || getTodayStr(),
@@ -124,6 +253,25 @@ const Attendance = () => {
         { siteId: defaultSite, inTime: '09:00', outTime: '18:00' }
       ]
     });
+
+    const activeDate = dateFilter || getTodayStr();
+    setBulkDate(activeDate);
+    setBulkDefaultSite(defaultSite);
+
+    const emp = employees.find(e => String(e.dbId || e.id) === String(defaultEmp));
+    setBulkRows([
+      {
+        id: String(Date.now()),
+        userId: defaultEmp,
+        siteId: defaultSite,
+        dayValue: '1.0',
+        inTime: '09:00',
+        outTime: '18:00',
+        dailyRate: Number(emp?.dailySalary || 0),
+        notes: ''
+      }
+    ]);
+
     setApiError('');
     setShowAddModal(true);
   };
@@ -154,8 +302,78 @@ const Attendance = () => {
     setFormData(prev => {
       const updated = [...prev.siteSessions];
       updated[index] = { ...updated[index], [field]: value };
-      return { ...prev, siteSessions: updated };
+
+      let totalH = 0;
+      updated.forEach(sess => {
+        if (sess.inTime && sess.outTime) {
+          const { hours } = calculateHoursAndDayValue(sess.inTime, sess.outTime);
+          totalH += hours;
+        }
+      });
+
+      let dVal = '0.0';
+      if (totalH >= 11.0) dVal = '1.5';
+      else if (totalH >= 9.5) dVal = '1.25';
+      else if (totalH >= 8.0) dVal = '1.0';
+      else if (totalH >= 6.0) dVal = '0.75';
+      else if (totalH >= 4.0) dVal = '0.5';
+      else if (totalH >= 2.0) dVal = '0.25';
+
+      return { ...prev, siteSessions: updated, dayValue: dVal };
     });
+  };
+
+  // Default shift times for Hajeri / Day Values:
+  // 0.5 -> 9:00 AM to 1:00 PM (4 hrs)
+  // 1.0 -> 9:00 AM to 6:00 PM (9 hrs)
+  // 1.5 -> 9:00 AM to 9:00 PM (12 hrs)
+  const getTimeSlotForDayValue = (dValStr) => {
+    const val = parseFloat(dValStr);
+    if (val === 0.25) return { inTime: '09:00', outTime: '11:00' };
+    if (val === 0.5) return { inTime: '09:00', outTime: '13:00' };
+    if (val === 0.75) return { inTime: '09:00', outTime: '15:00' };
+    if (val === 1.0) return { inTime: '09:00', outTime: '18:00' };
+    if (val === 1.25) return { inTime: '09:00', outTime: '19:30' };
+    if (val === 1.5) return { inTime: '09:00', outTime: '21:00' };
+    if (val === 2.0) return { inTime: '09:00', outTime: '23:59' };
+    return null;
+  };
+
+  // When admin selects Day Value in Mark Attendance Modal, auto-convert shift timings
+  const handleAddDayValueChange = (newDayValue) => {
+    const slot = getTimeSlotForDayValue(newDayValue);
+    setFormData(prev => {
+      let updatedSessions = [...prev.siteSessions];
+      if (slot && updatedSessions.length > 0) {
+        if (updatedSessions.length === 1) {
+          updatedSessions[0] = {
+            ...updatedSessions[0],
+            inTime: slot.inTime,
+            outTime: slot.outTime
+          };
+        } else {
+          updatedSessions[updatedSessions.length - 1] = {
+            ...updatedSessions[updatedSessions.length - 1],
+            outTime: slot.outTime
+          };
+        }
+      }
+      return {
+        ...prev,
+        dayValue: newDayValue,
+        siteSessions: updatedSessions
+      };
+    });
+  };
+
+  // When admin selects Day Value in Edit Attendance Modal, auto-convert shift timings
+  const handleEditDayValueChange = (newDayValue) => {
+    const slot = getTimeSlotForDayValue(newDayValue);
+    setEditFormData(prev => ({
+      ...prev,
+      dayValue: newDayValue,
+      ...(slot ? { inTime: slot.inTime, outTime: slot.outTime } : {})
+    }));
   };
 
   // Save new attendance
@@ -234,11 +452,181 @@ const Attendance = () => {
     }
   };
 
+  // Add new empty worker row to bulk grid
+  const handleAddBulkRow = () => {
+    const defaultSite = bulkDefaultSite || (sites.length > 0 ? (sites[0].dbId || sites[0].id) : '');
+    const selectedIds = new Set(bulkRows.map(r => String(r.userId)));
+    const nextEmp = employees.find(e => !selectedIds.has(String(e.dbId || e.id))) || employees[0];
+    const empId = nextEmp ? (nextEmp.dbId || nextEmp.id) : '';
+    const rate = Number(nextEmp?.dailySalary || 0);
+
+    setBulkRows(prev => [
+      ...prev,
+      {
+        id: String(Date.now() + Math.random()),
+        userId: empId,
+        siteId: defaultSite,
+        dayValue: '1.0',
+        inTime: '09:00',
+        outTime: '18:00',
+        dailyRate: rate,
+        notes: ''
+      }
+    ]);
+  };
+
+  // Remove a worker row from bulk grid
+  const handleRemoveBulkRow = (rowId) => {
+    if (bulkRows.length <= 1) return;
+    setBulkRows(prev => prev.filter(r => r.id !== rowId));
+  };
+
+  // Pre-load all company employees into the bulk grid
+  const handleLoadAllWorkers = () => {
+    if (!employees || employees.length === 0) return;
+    const defaultSite = bulkDefaultSite || (sites.length > 0 ? (sites[0].dbId || sites[0].id) : '');
+    const newRows = employees.map((emp, i) => ({
+      id: String(Date.now() + i),
+      userId: emp.dbId || emp.id,
+      siteId: defaultSite,
+      dayValue: '1.0',
+      inTime: '09:00',
+      outTime: '18:00',
+      dailyRate: Number(emp.dailySalary || 0),
+      notes: ''
+    }));
+    setBulkRows(newRows);
+  };
+
+  // Update a single field in a bulk row with automatic dayValue <-> timings & salary sync
+  const handleBulkRowChange = (rowId, field, value) => {
+    setBulkRows(prev => prev.map(r => {
+      if (r.id !== rowId) return r;
+
+      if (field === 'userId') {
+        const emp = employees.find(e => String(e.dbId || e.id) === String(value));
+        const rate = Number(emp?.dailySalary || 0);
+        return { ...r, userId: value, dailyRate: rate };
+      }
+
+      if (field === 'dayValue') {
+        const slot = getTimeSlotForDayValue(value);
+        return {
+          ...r,
+          dayValue: value,
+          ...(slot ? { inTime: slot.inTime, outTime: slot.outTime } : {})
+        };
+      }
+
+      return { ...r, [field]: value };
+    }));
+  };
+
+  // Apply chosen site to all rows in bulk grid
+  const handleApplyDefaultSite = (siteId) => {
+    setBulkDefaultSite(siteId);
+    setBulkRows(prev => prev.map(r => ({ ...r, siteId })));
+  };
+
+  // Apply chosen day value to all rows in bulk grid (with auto-timings conversion)
+  const handleApplyDefaultDayValue = (dayVal) => {
+    const slot = getTimeSlotForDayValue(dayVal);
+    setBulkRows(prev => prev.map(r => ({
+      ...r,
+      dayValue: dayVal,
+      ...(slot ? { inTime: slot.inTime, outTime: slot.outTime } : {})
+    })));
+  };
+
+  // Save Bulk Attendance to backend API
+  const handleSaveBulkAttendance = async (e) => {
+    e.preventDefault();
+    if (!bulkDate) {
+      setApiError('Please select an attendance date.');
+      return;
+    }
+
+    if (!bulkRows || bulkRows.length === 0) {
+      setApiError('Please add at least one employee row.');
+      return;
+    }
+
+    const emptyEmp = bulkRows.find(r => !r.userId);
+    if (emptyEmp) {
+      setApiError('Please select an employee for every row, or remove unused rows.');
+      return;
+    }
+
+    setSaving(true);
+    setApiError('');
+
+    try {
+      const formatTimeAmPm = (tStr) => {
+        if (!tStr) return '--:--';
+        if (tStr.includes('AM') || tStr.includes('PM')) return tStr;
+        const [h, m] = tStr.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const displayH = h % 12 || 12;
+        return `${String(displayH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')} ${ampm}`;
+      };
+
+      const records = bulkRows.map(r => {
+        const inTimeStr = formatTimeAmPm(r.inTime || '09:00');
+        const outTimeStr = formatTimeAmPm(r.outTime || '18:00');
+        const dVal = parseFloat(r.dayValue) || 1.0;
+        const { hours } = calculateHoursAndDayValue(r.inTime || '09:00', r.outTime || '18:00');
+
+        let sId = r.siteId;
+        const matched = sites.find(s => s.id === sId || s.dbId === sId || s.siteRef === sId);
+        if (matched) sId = matched.dbId || matched.id;
+
+        return {
+          userId: Number(r.userId),
+          siteId: sId ? Number(sId) : null,
+          inTime: inTimeStr,
+          outTime: outTimeStr,
+          workHours: hours,
+          dayValue: dVal,
+          status: 'Verified',
+          notes: r.notes || ''
+        };
+      });
+
+      const res = await fetch(`${API_BASE}/attendance/bulk-mark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: bulkDate,
+          records
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setApiError(data.message || 'Failed to save bulk attendance.');
+        setSaving(false);
+        return;
+      }
+
+      setShowAddModal(false);
+      setDateFilter(bulkDate);
+      setShowAllDates(false);
+      setSuccessMessage(`Successfully saved attendance for ${data.count || records.length} worker(s) on ${bulkDate}!`);
+      setTimeout(() => setSuccessMessage(''), 6000);
+      fetchData(bulkDate, false);
+    } catch (err) {
+      console.error('Error in handleSaveBulkAttendance:', err);
+      setApiError('Server error while saving bulk attendance.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Open Edit Modal
   const handleOpenEditModal = (log) => {
     // Parse time to HH:MM format for <input type="time">
     const parseToTimeInput = (tStr) => {
-      if (!tStr || tStr === '--:--') return '09:00';
+      if (!tStr || tStr === '--:--' || tStr === 'GIFT' || tStr === 'BONUS') return '09:00';
       try {
         const isPm = tStr.toUpperCase().includes('PM');
         const clean = tStr.replace(/(AM|PM)/gi, '').trim();
@@ -253,6 +641,8 @@ const Attendance = () => {
       }
     };
 
+    const isBonusRecord = Boolean(log.isBonus || log.inTime === 'GIFT' || log.outTime === 'BONUS');
+
     setEditFormData({
       id: log.id,
       employeeName: log.name,
@@ -262,10 +652,11 @@ const Attendance = () => {
       siteId: log.siteId || (sites.length > 0 ? (sites[0].dbId || sites[0].id) : ''),
       inTime: parseToTimeInput(log.inTime),
       outTime: parseToTimeInput(log.outTime),
-      dayValue: String(log.dayValue || '1.0'),
+      dayValue: String(log.dayValue !== undefined && log.dayValue !== null ? log.dayValue : '1.0'),
       dailyRate: Number(log.dailyRate || 1000),
-      status: log.status || 'Verified',
-      notes: log.notes || ''
+      status: log.status || 'Approved',
+      notes: log.notes || '',
+      isBonus: isBonusRecord
     });
 
     setApiError('');
@@ -292,15 +683,18 @@ const Attendance = () => {
       const matched = sites.find(s => s.id === sId || s.dbId === sId || s.siteRef === sId);
       if (matched) sId = matched.dbId || matched.id;
 
+      const dVal = parseFloat(editFormData.dayValue);
+
       const res = await fetch(`${API_BASE}/attendance/${editFormData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          siteId: sId,
+          userId: editFormData.userId ? Number(editFormData.userId) : undefined,
+          siteId: editFormData.isBonus && !sId ? null : sId,
           attendanceDate: editFormData.date,
-          inTime: formatTimeAmPm(editFormData.inTime),
-          outTime: formatTimeAmPm(editFormData.outTime),
-          dayValue: parseFloat(editFormData.dayValue) || 1.0,
+          inTime: editFormData.isBonus ? 'GIFT' : formatTimeAmPm(editFormData.inTime),
+          outTime: editFormData.isBonus ? 'BONUS' : formatTimeAmPm(editFormData.outTime),
+          dayValue: !isNaN(dVal) ? dVal : 1.0,
           status: editFormData.status,
           notes: editFormData.notes
         })
@@ -352,6 +746,77 @@ const Attendance = () => {
     }
   };
 
+  // Approve Attendance (Accept shift & add to employee worked days and salary)
+  const handleApproveAttendance = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/attendance/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccessMessage(data.message || 'Attendance approved successfully! Added to employee worked days & salary.');
+        setTimeout(() => setSuccessMessage(''), 6000);
+        window.dispatchEvent(new Event('attendance-changed'));
+        fetchData();
+      } else {
+        alert(data.message || 'Failed to approve attendance');
+      }
+    } catch (err) {
+      console.error('Error approving attendance:', err);
+      alert('Network error while approving attendance.');
+    }
+  };
+
+  // Reject Attendance
+  const handleRejectAttendance = async (id) => {
+    const confirm = window.confirm('Are you sure you want to reject this attendance record?');
+    if (!confirm) return;
+    try {
+      const res = await fetch(`${API_BASE}/attendance/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccessMessage('Attendance rejected.');
+        setTimeout(() => setSuccessMessage(''), 5000);
+        window.dispatchEvent(new Event('attendance-changed'));
+        fetchData();
+      } else {
+        alert(data.message || 'Failed to reject attendance');
+      }
+    } catch (err) {
+      console.error('Error rejecting attendance:', err);
+      alert('Network error while rejecting attendance.');
+    }
+  };
+
+  // Bulk Approve all Pending Attendance
+  const handleBulkApprove = async () => {
+    const pendingIds = filteredLogs.filter(l => l.status === 'Pending Approval').map(l => l.id);
+    if (pendingIds.length === 0) return;
+    try {
+      const res = await fetch(`${API_BASE}/attendance/bulk-approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: pendingIds })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccessMessage(data.message || `Successfully approved ${pendingIds.length} attendance records!`);
+        setTimeout(() => setSuccessMessage(''), 6000);
+        window.dispatchEvent(new Event('attendance-changed'));
+        fetchData();
+      } else {
+        alert(data.message || 'Failed to bulk approve attendance');
+      }
+    } catch (err) {
+      console.error('Error in bulkApprove:', err);
+      alert('Network error while approving attendance.');
+    }
+  };
+
   // Filter logs locally by search and site filter
   const filteredLogs = attendanceLogs.filter(log => {
     const term = searchTerm.toLowerCase();
@@ -369,8 +834,13 @@ const Attendance = () => {
     return matchesSearch && matchesSite;
   });
 
-  // Calculate summary stats
-  const totalDaysLogged = filteredLogs.reduce((acc, log) => acc + (parseFloat(log.dayValue) || 1.0), 0);
+  // Pending approval counts
+  const pendingLogs = filteredLogs.filter(l => l.status === 'Pending Approval');
+  const pendingLogsCount = pendingLogs.length;
+
+  // Calculate summary stats - ONLY count Approved and Verified records in totalDaysLogged
+  const approvedLogs = filteredLogs.filter(l => l.status === 'Approved' || l.status === 'Verified');
+  const totalDaysLogged = approvedLogs.reduce((acc, log) => acc + (parseFloat(log.dayValue) || 0), 0);
   const uniqueSitesCount = new Set(filteredLogs.map(l => l.siteId).filter(Boolean)).size;
 
   return (
@@ -426,7 +896,7 @@ const Attendance = () => {
         marginBottom: '22px'
       }}>
         <div>
-          <h1 className="page-title" style={{ margin: 0, fontSize: '26px', fontWeight: '800', color: 'var(--navy, #111827)' }}>
+          <h1 className="page-title" style={{ margin: 0, fontSize: '26px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)' }}>
             Attendance
           </h1>
           <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#7D6C5E' }}>
@@ -503,7 +973,7 @@ const Attendance = () => {
           />
 
           <button
-            onClick={handleOpenAddModal}
+            onClick={() => handleOpenAddModal('single')}
             className="btn-primary"
             style={{
               padding: '9px 18px',
@@ -512,19 +982,79 @@ const Attendance = () => {
               fontWeight: '700',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              background: 'linear-gradient(135deg, #111827 0%, #1F2937 100%)',
-              color: '#fff',
+              gap: '7px',
+              background: 'var(--gold, #4A2C17)',
+              color: '#FFFFFF',
               border: 'none',
               cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              boxShadow: '0 2px 8px rgba(74, 44, 23, 0.28)'
             }}
           >
-            <i className="fa-solid fa-user-plus" style={{ color: 'var(--gold, #A56A30)' }}></i>
-            Mark Attendance
+            <i className="fa-solid fa-plus" style={{ color: '#FFFFFF', fontSize: '13px' }}></i>
+            Add Attendance
           </button>
         </div>
       </div>
+
+      {/* Pending Approval Alert Banner */}
+      {pendingLogsCount > 0 && (
+        <div style={{
+          background: '#FFFBEB',
+          border: '1.5px solid #FCD34D',
+          borderRadius: '10px',
+          padding: '14px 20px',
+          marginBottom: '22px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+          boxShadow: '0 2px 8px rgba(245, 158, 11, 0.08)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              background: '#FEF3C7',
+              color: '#D97706',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '17px'
+            }}>
+              <i className="fa-solid fa-bell"></i>
+            </div>
+            <div>
+              <div style={{ fontWeight: '800', color: '#92400E', fontSize: '14px' }}>
+                {pendingLogsCount} {t('pendingApprovalsCount') || 'Attendance Approval Requests Pending'}
+              </div>
+              <div style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>
+                Workers have punched OUT. Review below and approve to count into worked days and monthly salary.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleBulkApprove}
+            style={{
+              background: '#059669',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '9px 18px',
+              fontSize: '13px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)'
+            }}
+          >
+            <i className="fa-solid fa-check-double"></i> {t('approveAll') || 'Approve All'} ({pendingLogsCount})
+          </button>
+        </div>
+      )}
 
       {/* KPI Overview Cards */}
       <div style={{
@@ -533,6 +1063,7 @@ const Attendance = () => {
         gap: '14px',
         marginBottom: '22px'
       }}>
+        {/* Card 1: Logged */}
         <div style={{
           background: '#fff',
           padding: '16px 20px',
@@ -547,25 +1078,26 @@ const Attendance = () => {
             width: '44px',
             height: '44px',
             borderRadius: '10px',
-            background: 'rgba(165, 106, 48, 0.12)',
+            background: 'rgba(74, 44, 23, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#8C5521',
+            color: 'var(--gold, #4A2C17)',
             fontSize: '18px'
           }}>
             <i className="fa-solid fa-clipboard-user"></i>
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ fontSize: '11px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Logged
             </div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginTop: '2px' }}>
+            <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #4A2C17)', marginTop: '2px' }}>
               {filteredLogs.length}
             </div>
           </div>
         </div>
 
+        {/* Card 2: Total Days Approved */}
         <div style={{
           background: '#fff',
           padding: '16px 20px',
@@ -580,26 +1112,60 @@ const Attendance = () => {
             width: '44px',
             height: '44px',
             borderRadius: '10px',
-            background: 'rgba(5, 150, 105, 0.1)',
+            background: 'rgba(74, 44, 23, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#059669',
+            color: 'var(--gold, #4A2C17)',
             fontSize: '18px'
           }}>
             <i className="fa-solid fa-calendar-check"></i>
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Total Days
+            <div style={{ fontSize: '11px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Total Days (Approved)
             </div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: '#059669', marginTop: '2px' }}>
-              {totalDaysLogged.toFixed(1)} Days
+            <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #4A2C17)', marginTop: '2px' }}>
+              {formatDays(totalDaysLogged)} Days
             </div>
           </div>
         </div>
 
+        {/* Card 3: Pending Approvals */}
+        <div style={{
+          background: pendingLogsCount > 0 ? '#FFFBEB' : '#fff',
+          padding: '16px 20px',
+          borderRadius: '10px',
+          border: pendingLogsCount > 0 ? '1.5px solid #FCD34D' : '1px solid #D1C2AF',
+          boxShadow: '0 1px 3px rgba(100, 70, 40, 0.04)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px'
+        }}>
+          <div style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '10px',
+            background: pendingLogsCount > 0 ? '#FEF3C7' : 'rgba(74, 44, 23, 0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: pendingLogsCount > 0 ? '#D97706' : 'var(--gold, #4A2C17)',
+            fontSize: '18px'
+          }}>
+            <i className="fa-solid fa-clock"></i>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '11px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Pending Approval
+            </div>
+            <div style={{ fontSize: '22px', fontWeight: '800', color: pendingLogsCount > 0 ? '#D97706' : 'var(--gold, #4A2C17)', marginTop: '2px' }}>
+              {pendingLogsCount} Requests
+            </div>
+          </div>
+        </div>
 
+        {/* Card 4: Sites */}
         <div style={{
           background: '#fff',
           padding: '16px 20px',
@@ -614,20 +1180,20 @@ const Attendance = () => {
             width: '44px',
             height: '44px',
             borderRadius: '10px',
-            background: 'var(--gold-bg, rgba(165, 106, 48, 0.1))',
+            background: 'rgba(74, 44, 23, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'var(--gold, #A56A30)',
+            color: 'var(--gold, #4A2C17)',
             fontSize: '18px'
           }}>
             <i className="fa-solid fa-location-dot"></i>
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ fontSize: '11px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Sites
             </div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #A56A30)', marginTop: '2px' }}>
+            <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #4A2C17)', marginTop: '2px' }}>
               {uniqueSitesCount} Sites
             </div>
           </div>
@@ -709,15 +1275,14 @@ const Attendance = () => {
       </div>
 
       {/* Attendance Table */}
-      <div className="panel table-responsive" style={{
+      <div className="panel" style={{
         background: '#fff',
         borderRadius: '10px',
         border: '1.5px solid #D1C2AF',
         boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)',
-        overflowX: 'auto',
-        WebkitOverflowScrolling: 'touch'
+        overflow: 'hidden'
       }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '950px', tableLayout: 'fixed' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{
               background: '#F3EDE6',
@@ -728,27 +1293,53 @@ const Attendance = () => {
               textTransform: 'uppercase',
               letterSpacing: '0.6px'
             }}>
-              <th style={{ padding: '14px 18px', width: '18%' }}>Employee</th>
-              <th style={{ padding: '14px 18px', width: '11%' }}>Date</th>
-              <th style={{ padding: '14px 18px', width: '21%' }}>Site / Customer</th>
-              <th style={{ padding: '14px 18px', width: '17%' }}>Timings (IN / OUT)</th>
-              <th style={{ padding: '14px 18px', width: '9%' }}>Work Hours</th>
-              <th style={{ padding: '14px 18px', width: '8%' }}>Day Value</th>
-              <th style={{ padding: '14px 18px', width: '8%' }}>Day Salary</th>
-              <th style={{ padding: '14px 18px', width: '8%', textAlign: 'center' }}>Actions</th>
+              <th style={{ padding: '12px 10px', width: '16%' }}>{t('employees') || 'Employee'}</th>
+              <th style={{ padding: '12px 6px', width: '9%' }}>{t('dateCol') || 'Date'}</th>
+              <th style={{ padding: '12px 6px', width: '15%' }}>{t('siteCol') || 'Site'}</th>
+              <th style={{ padding: '12px 6px', width: '14%' }}>Timings</th>
+              <th style={{ padding: '12px 4px', width: '6%', textAlign: 'center' }}>Hours</th>
+              <th style={{ padding: '12px 4px', width: '8%', textAlign: 'center', whiteSpace: 'nowrap' }}>Day Value</th>
+              <th style={{ padding: '12px 4px', width: '8%', textAlign: 'center' }}>Status</th>
+              <th style={{ padding: '12px 4px', width: '9%', textAlign: 'center' }}>Day Salary</th>
+              <th style={{ padding: '12px 6px', width: '15%', textAlign: 'center' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <span>{t('actions') || 'Actions'}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenGiftModal()}
+                    title="Add Attendance Days (+4 Days, etc.)"
+                    style={{
+                      background: 'var(--gold, #A56A30)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '18px',
+                      height: '18px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '10px',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    <i className="fa-solid fa-plus"></i>
+                  </button>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: '#6B7280' }}>
+                <td colSpan="9" style={{ padding: '40px', textAlign: 'center', color: '#6B7280' }}>
                   <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '24px', color: 'var(--gold, #A56A30)', marginBottom: '10px' }}></i>
                   <div>Loading attendance records from database...</div>
                 </td>
               </tr>
             ) : filteredLogs.length === 0 ? (
               <tr>
-                <td colSpan="8" style={{ padding: '45px 20px', textAlign: 'center', color: '#9CA3AF' }}>
+                <td colSpan="9" style={{ padding: '45px 20px', textAlign: 'center', color: '#9CA3AF' }}>
                   <i className="fa-regular fa-calendar-xmark" style={{ fontSize: '32px', color: '#D1D5DB', marginBottom: '12px' }}></i>
                   <div style={{ fontSize: '15px', fontWeight: '600', color: '#4B5563' }}>No attendance records found</div>
                   <p style={{ margin: '4px 0 16px 0', fontSize: '13px' }}>
@@ -792,10 +1383,20 @@ const Attendance = () => {
                 </td>
               </tr>
             ) : (
-              filteredLogs.map((log) => (
-                <tr key={log.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
+              filteredLogs.map((log) => {
+                const isBonus = Boolean(log.isBonus || log.inTime === 'GIFT' || log.inTime === 'EXTRA' || log.outTime === 'BONUS' || log.outTime === 'ADDED');
+                const bonusDays = parseFloat(log.dayValue) || 0;
+                const bonusSalary = Math.round(bonusDays * Number(log.dailyRate || 1000));
+
+                return (
+                <tr key={log.id} style={{ 
+                  borderBottom: '1px solid #F3F4F6',
+                  background: isBonus 
+                    ? 'rgba(165, 106, 48, 0.03)' 
+                    : (log.status === 'Pending Approval' ? 'rgba(254, 243, 199, 0.25)' : 'transparent')
+                }}>
                   {/* Employee info */}
-                  <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
                     <div>
                       <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>{log.name}</div>
                       <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>
@@ -805,127 +1406,346 @@ const Attendance = () => {
                   </td>
 
                   {/* Attendance Date (DD-MM-YYYY) */}
-                  <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '14px 14px', verticalAlign: 'middle' }}>
                     <div style={{ fontSize: '13px', fontWeight: '700', color: '#111827', fontFamily: 'monospace' }}>
                       {formatToDMY(log.attendanceDate)}
                     </div>
                     {log.notes && (
-                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px', fontStyle: 'italic' }}>
-                        Note: {log.notes}
+                      <div style={{ fontSize: '11px', color: isBonus ? '#8C5521' : '#6B7280', marginTop: '2px', fontStyle: 'italic', fontWeight: isBonus ? '600' : 'normal' }}>
+                        {log.notes}
                       </div>
                     )}
                   </td>
 
                   {/* Site / Customer */}
-                  <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', fontSize: '12px' }}></i>
-                      <span>{log.siteRef}: {log.customerName}</span>
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px', paddingLeft: '18px' }}>
-                      {log.siteLocation || 'Assigned location'}
-                    </div>
+                  <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                    {isBonus ? (
+                      <div>
+                        <span style={{
+                          background: '#F3EDE6',
+                          color: '#8C5521',
+                          border: '1px solid #D1C2AF',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}>
+                          <i className="fa-solid fa-plus" style={{ fontSize: '10px' }}></i>
+                          Extra Attendance
+                        </span>
+                        <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
+                          Admin Added
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        style={{ 
+                          fontSize: '12.5px', 
+                          fontWeight: '600', 
+                          color: '#111827', 
+                          whiteSpace: 'nowrap', 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis' 
+                        }} 
+                        title={`${log.siteRef}: ${log.customerName}`}
+                      >
+                        <strong style={{ color: 'var(--gold, #A56A30)' }}>{log.siteRef}</strong>: {log.customerName}
+                      </div>
+                    )}
                   </td>
 
                   {/* Timings */}
-                  <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{
-                        background: '#ECFDF5',
-                        color: '#065F46',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        fontFamily: 'monospace'
-                      }}>
-                        IN: {log.inTime}
+                  <td style={{ padding: '12px 6px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                    {isBonus ? (
+                      <span style={{ color: '#9CA3AF', fontSize: '11.5px', fontStyle: 'italic' }}>
+                        Manual Entry
                       </span>
-                      <span style={{ color: '#9CA3AF', fontSize: '12px' }}>→</span>
-                      <span style={{
-                        background: log.outTime === '--:--' ? '#F3F4F6' : '#FEF2F2',
-                        color: log.outTime === '--:--' ? '#6B7280' : '#DC2626',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        fontFamily: 'monospace'
-                      }}>
-                        OUT: {log.outTime}
-                      </span>
-                    </div>
+                    ) : (
+                      <div style={{ fontSize: '12px', fontWeight: '600', color: '#1F2937' }}>
+                        {log.inTime || '--:--'} - {log.outTime === '--:--' ? 'Working...' : (log.outTime || '--:--')}
+                      </div>
+                    )}
                   </td>
 
                   {/* Hours */}
-                  <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#374151' }}>
-                      {log.workHours > 0 ? `${log.workHours} hrs` : '--'}
+                  <td style={{ padding: '14px 8px', verticalAlign: 'middle', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: isBonus ? '#059669' : '#374151' }}>
+                      {(() => {
+                        if (isBonus) return '--';
+                        let h = Number(log.workHours || 0);
+                        if (h <= 0 && log.inTime && log.outTime && log.inTime !== '--:--' && log.outTime !== '--:--') {
+                          h = calculateHoursAndDayValue(log.inTime, log.outTime).hours;
+                        }
+                        return h > 0 ? `${h % 1 === 0 ? h : h.toFixed(1)} hrs` : '--';
+                      })()}
                     </div>
                   </td>
 
                   {/* Day Value */}
-                  <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
-                    <span style={{
-                      background: log.dayValue >= 1.0 ? '#ECFDF5' : '#FEF3C7',
-                      color: log.dayValue >= 1.0 ? '#065F46' : '#92400E',
-                      padding: '4px 10px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '700'
-                    }}>
-                      {log.valueText}
-                    </span>
+                  <td style={{ padding: '14px 8px', verticalAlign: 'middle', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    {isBonus ? (
+                      <span style={{
+                        background: '#ECFDF5',
+                        color: '#065F46',
+                        border: '1px solid #A7F3D0',
+                        padding: '3px 8px',
+                        borderRadius: '10px',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <i className="fa-solid fa-plus" style={{ fontSize: '10px' }}></i>
+                        {bonusDays} Day{bonusDays !== 1 ? 's' : ''}
+                      </span>
+                    ) : (
+                      <span style={{
+                        background: log.dayValue >= 1.0 ? '#ECFDF5' : (log.dayValue > 0 ? '#FEF3C7' : '#F3F4F6'),
+                        color: log.dayValue >= 1.0 ? '#065F46' : (log.dayValue > 0 ? '#92400E' : '#6B7280'),
+                        padding: '3px 8px',
+                        borderRadius: '10px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        whiteSpace: 'nowrap',
+                        display: 'inline-block'
+                      }}>
+                        {log.valueText}
+                      </span>
+                    )}
                   </td>
 
-                  {/* Day Salary (Amount instead of Verified) */}
-                  <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
-                    <span style={{
-                      background: '#ECFDF5',
-                      color: '#065F46',
-                      border: '1px solid #A7F3D0',
-                      padding: '4px 12px',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontWeight: '800',
-                      letterSpacing: '0.3px',
-                      display: 'inline-block'
-                    }}>
-                      ₹{Math.round((parseFloat(log.dayValue) || 1.0) * Number(log.dailyRate || 1000)).toLocaleString('en-IN')}
-                    </span>
+                  {/* Status Badge */}
+                  <td style={{ padding: '14px 8px', verticalAlign: 'middle', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    {isBonus ? (
+                      <span style={{
+                        background: '#ECFDF5',
+                        color: '#065F46',
+                        border: '1px solid #A7F3D0',
+                        padding: '3px 8px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <i className="fa-solid fa-circle-check"></i> Approved
+                      </span>
+                    ) : log.status === 'Pending Approval' ? (
+                      <span style={{
+                        background: '#FEF3C7',
+                        color: '#92400E',
+                        border: '1px solid #FCD34D',
+                        padding: '3px 8px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <i className="fa-regular fa-clock"></i> Pending
+                      </span>
+                    ) : log.status === 'In Progress' ? (
+                      <span style={{
+                        background: '#EFF6FF',
+                        color: '#1E40AF',
+                        border: '1px solid #BFDBFE',
+                        padding: '3px 8px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <i className="fa-solid fa-spinner fa-spin"></i> Working
+                      </span>
+                    ) : log.status === 'Rejected' ? (
+                      <span style={{
+                        background: '#FEF2F2',
+                        color: '#991B1B',
+                        border: '1px solid #FECACA',
+                        padding: '3px 8px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <i className="fa-solid fa-xmark"></i> Rejected
+                      </span>
+                    ) : (
+                      <span style={{
+                        background: '#ECFDF5',
+                        color: '#065F46',
+                        border: '1px solid #A7F3D0',
+                        padding: '3px 8px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <i className="fa-solid fa-circle-check"></i> Approved
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Day Salary */}
+                  <td style={{ padding: '14px 8px', verticalAlign: 'middle', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    {isBonus ? (
+                      <span style={{
+                        background: '#ECFDF5',
+                        color: '#065F46',
+                        border: '1.5px solid #10B981',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '800',
+                        display: 'inline-block',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        +₹{bonusSalary.toLocaleString('en-IN')}
+                      </span>
+                    ) : (log.status === 'Approved' || log.status === 'Verified') ? (
+                      <span style={{
+                        background: '#ECFDF5',
+                        color: '#065F46',
+                        border: '1px solid #A7F3D0',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '800',
+                        display: 'inline-block',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        ₹{Math.round((parseFloat(log.dayValue) || 0) * Number(log.dailyRate || 1000)).toLocaleString('en-IN')}
+                      </span>
+                    ) : log.status === 'Pending Approval' ? (
+                      <span style={{
+                        background: '#FEF3C7',
+                        color: '#92400E',
+                        border: '1px dashed #FCD34D',
+                        padding: '3px 6px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
+                        fontWeight: '700',
+                        display: 'inline-block',
+                        whiteSpace: 'nowrap'
+                      }} title="Salary will be credited once Approved by Admin">
+                        ₹{Math.round((parseFloat(log.dayValue) || 0) * Number(log.dailyRate || 1000)).toLocaleString('en-IN')}
+                      </span>
+                    ) : log.status === 'In Progress' ? (
+                      <span style={{ color: '#6B7280', fontSize: '11px', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
+                        Working...
+                      </span>
+                    ) : (
+                      <span style={{ color: '#DC2626', fontSize: '11.5px', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                        ₹0
+                      </span>
+                    )}
                   </td>
 
                   {/* Actions */}
-                  <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                  <td style={{ padding: '12px 4px', verticalAlign: 'middle', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'inline-flex', gap: '3px', justifyContent: 'center', alignItems: 'center', flexWrap: 'nowrap' }}>
+                      {log.status === 'Pending Approval' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleApproveAttendance(log.id)}
+                            title="Approve Attendance (Add to salary)"
+                            style={{
+                              background: '#059669',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '5px',
+                              padding: '4px 7px',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              boxShadow: '0 1px 2px rgba(5,150,105,0.25)',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            <i className="fa-solid fa-check"></i> Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectAttendance(log.id)}
+                            title="Reject Attendance"
+                            style={{
+                              background: '#FEF2F2',
+                              color: '#DC2626',
+                              border: '1px solid #FECACA',
+                              borderRadius: '5px',
+                              padding: '4px 6px',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            <i className="fa-solid fa-xmark"></i>
+                          </button>
+                        </>
+                      )}
+
                       <button
+                        type="button"
                         onClick={() => handleOpenEditModal(log)}
                         title="Edit Attendance"
                         style={{
                           background: '#fff',
                           border: '1px solid #D1D5DB',
-                          borderRadius: '6px',
-                          padding: '6px 10px',
-                          fontSize: '12px',
+                          borderRadius: '5px',
+                          padding: '4px 6px',
+                          fontSize: '11px',
                           color: '#374151',
                           cursor: 'pointer',
-                          transition: 'all 0.15s ease'
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          whiteSpace: 'nowrap'
                         }}
                       >
-                        <i className="fa-solid fa-pen-to-square" style={{ color: 'var(--gold, #A56A30)' }}></i> Edit
+                        <i className="fa-solid fa-pen-to-square" style={{ color: 'var(--gold, #A56A30)' }}></i>
                       </button>
 
                       <button
+                        type="button"
                         onClick={() => setDeleteConfirmId(log.id)}
                         title="Delete Attendance"
                         style={{
                           background: '#fff',
                           border: '1px solid #FCA5A5',
-                          borderRadius: '6px',
-                          padding: '6px 10px',
-                          fontSize: '12px',
+                          borderRadius: '5px',
+                          padding: '4px 6px',
+                          fontSize: '11px',
                           color: '#DC2626',
                           cursor: 'pointer',
-                          transition: 'all 0.15s ease'
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          whiteSpace: 'nowrap'
                         }}
                       >
                         <i className="fa-solid fa-trash-can"></i>
@@ -933,7 +1753,8 @@ const Attendance = () => {
                     </div>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
@@ -961,45 +1782,189 @@ const Attendance = () => {
             background: '#fff',
             borderRadius: '12px',
             width: '100%',
-            maxWidth: '680px',
+            maxWidth: attendanceMode === 'bulk' ? '980px' : (attendanceMode === 'days' ? '480px' : '680px'),
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
             overflow: 'hidden',
             maxHeight: '90vh',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            transition: 'max-width 0.2s ease'
           }}>
             {/* Modal Header */}
             <div style={{
-              padding: '18px 24px',
+              padding: '18px 24px 14px 24px',
               borderBottom: '1px solid #E5E7EB',
+              background: '#FAF8F5',
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              background: '#F9FAFB'
+              flexDirection: 'column',
+              gap: '12px'
             }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--navy, #111827)' }}>
-                  Mark Daily Attendance
-                </h3>
-                <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#6B7280' }}>
-                  Select employee, date, and site shifts. Use <strong>[+]</strong> if the worker worked at multiple sites.
-                </p>
+              {/* Row 1: Title, Subtitle and Anchored Top-Right Close Button */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: '16px'
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1F1A17', letterSpacing: '-0.01em' }}>
+                    {attendanceMode === 'bulk' 
+                      ? 'Bulk Daily Attendance' 
+                      : (attendanceMode === 'days' ? 'Add Attendance Days' : 'Mark Daily Attendance')}
+                  </h3>
+                  <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#5C4E43', lineHeight: '1.4' }}>
+                    {attendanceMode === 'bulk'
+                      ? 'Mark attendance for multiple workers across sites with auto-calculated daily wages.'
+                      : (attendanceMode === 'days'
+                          ? 'Award extra or bonus attendance days (+1, +4 days) directly to worker salary.'
+                          : 'Select employee, date, and site shifts. Use [+] if the worker worked at multiple sites.')}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  aria-label="Close modal"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: '18px',
+                    lineHeight: '1',
+                    color: '#8C7B6D',
+                    cursor: 'pointer',
+                    padding: '6px 8px',
+                    borderRadius: '6px',
+                    flexShrink: 0,
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#1F1A17'; e.currentTarget.style.background = 'rgba(74, 44, 23, 0.08)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = '#8C7B6D'; e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
               </div>
-              <button
-                onClick={() => setShowAddModal(false)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '20px',
-                  color: '#9CA3AF',
-                  cursor: 'pointer'
-                }}
-              >
-                ✕
-              </button>
+
+              {/* Row 2: Mode Switcher Tabs (3 Switches: Single, Multiple, Add Days) */}
+              <div style={{
+                display: 'inline-flex',
+                alignSelf: 'flex-start',
+                background: '#EAE3DA',
+                borderRadius: '8px',
+                padding: '3px',
+                gap: '4px',
+                maxWidth: '100%',
+                overflowX: 'auto'
+              }}>
+                {/* Switch 1: Single Employee */}
+                <button
+                  type="button"
+                  onClick={() => setAttendanceMode('single')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    background: attendanceMode === 'single' ? 'var(--gold, #4A2C17)' : 'transparent',
+                    color: attendanceMode === 'single' ? '#FFFFFF' : '#5C4E43',
+                    boxShadow: attendanceMode === 'single' ? '0 2px 6px rgba(74, 44, 23, 0.25)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.15s ease',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <i className="fa-solid fa-user" style={{ color: attendanceMode === 'single' ? '#FFFFFF' : '#8C7B6D' }}></i>
+                  Single Employee
+                </button>
+
+                {/* Switch 2: Multiple Employees */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (bulkRows.length === 0) {
+                      const defaultEmp = formData.userId || (employees.length > 0 ? employees[0].dbId : '');
+                      const defaultSite = sites.length > 0 ? (sites[0].dbId || sites[0].id) : '';
+                      const emp = employees.find(e => String(e.dbId || e.id) === String(defaultEmp));
+                      setBulkRows([{
+                        id: String(Date.now()),
+                        userId: defaultEmp,
+                        siteId: defaultSite,
+                        dayValue: formData.dayValue || '1.0',
+                        inTime: '09:00',
+                        outTime: '18:00',
+                        dailyRate: Number(emp?.dailySalary || 0),
+                        notes: ''
+                      }]);
+                    }
+                    setAttendanceMode('bulk');
+                  }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    background: attendanceMode === 'bulk' ? 'var(--gold, #4A2C17)' : 'transparent',
+                    color: attendanceMode === 'bulk' ? '#FFFFFF' : '#5C4E43',
+                    boxShadow: attendanceMode === 'bulk' ? '0 2px 6px rgba(74, 44, 23, 0.25)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.15s ease',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <i className="fa-solid fa-users" style={{ color: attendanceMode === 'bulk' ? '#FFFFFF' : '#8C7B6D' }}></i>
+                  Multiple Employees
+                </button>
+
+                {/* Switch 3: Add Days */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!giftFormData.userId) {
+                      const defaultEmp = formData.userId || (employees.length > 0 ? employees[0].dbId : '');
+                      setGiftFormData({
+                        userId: defaultEmp,
+                        bonusDays: '4',
+                        date: dateFilter || getTodayStr(),
+                        notes: 'Extra Attendance (+4 Days)'
+                      });
+                    }
+                    setAttendanceMode('days');
+                  }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    background: attendanceMode === 'days' ? 'var(--gold, #4A2C17)' : 'transparent',
+                    color: attendanceMode === 'days' ? '#FFFFFF' : '#5C4E43',
+                    boxShadow: attendanceMode === 'days' ? '0 2px 6px rgba(74, 44, 23, 0.25)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.15s ease',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <i className="fa-solid fa-plus" style={{ color: attendanceMode === 'days' ? '#FFFFFF' : '#8C7B6D' }}></i>
+                  Add Days
+                </button>
+              </div>
             </div>
 
-            {/* Modal Form Body */}
+            {/* Modal Form Body - Single Employee Mode */}
+            {attendanceMode === 'single' && (
             <form onSubmit={handleSaveAttendance} style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
               {apiError && (
                 <div style={{
@@ -1235,7 +2200,7 @@ const Attendance = () => {
                   </label>
                   <select
                     value={formData.dayValue}
-                    onChange={(e) => setFormData({ ...formData, dayValue: e.target.value })}
+                    onChange={(e) => handleAddDayValueChange(e.target.value)}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -1246,12 +2211,14 @@ const Attendance = () => {
                       background: '#fff'
                     }}
                   >
-                    <option value="1.0">1.0 Full Day</option>
-                    <option value="0.5">0.5 Half Day</option>
-                    <option value="0.75">0.75 Day</option>
+                    <option value="1.0">1.0 Full Day (8 hrs)</option>
+                    <option value="0.25">0.25 Quarter Day (2 hrs)</option>
+                    <option value="0.5">0.5 Half Day (4 hrs)</option>
+                    <option value="0.75">0.75 Day (6 hrs)</option>
                     <option value="1.25">1.25 Day (Overtime)</option>
-                    <option value="1.5">1.5 Day (Overtime)</option>
+                    <option value="1.5">1.5 Day (Overtime 11-12 hrs)</option>
                     <option value="2.0">2.0 Double Day</option>
+                    <option value="0.0">0.0 Day (No Salary Credit)</option>
                   </select>
                 </div>
 
@@ -1276,7 +2243,8 @@ const Attendance = () => {
                     <span>₹{(() => {
                       const emp = employees.find(e => String(e.dbId || e.id) === String(formData.userId));
                       const rate = Number(emp?.dailySalary || 0);
-                      const salary = Math.round((parseFloat(formData.dayValue) || 1.0) * rate);
+                      const dVal = !isNaN(parseFloat(formData.dayValue)) ? parseFloat(formData.dayValue) : 1.0;
+                      const salary = Math.round(dVal * rate);
                       return salary.toLocaleString('en-IN');
                     })()}</span>
                     <span style={{ fontSize: '11px', color: '#047857', fontWeight: '600' }}>
@@ -1341,9 +2309,10 @@ const Attendance = () => {
                     fontSize: '13px',
                     fontWeight: '700',
                     cursor: saving ? 'not-allowed' : 'pointer',
-                    background: 'linear-gradient(135deg, #111827 0%, #1F2937 100%)',
+                    background: 'var(--gold, #4A2C17)',
                     color: '#fff',
-                    border: 'none'
+                    border: 'none',
+                    boxShadow: '0 2px 8px rgba(74, 44, 23, 0.25)'
                   }}
                 >
                   {saving ? (
@@ -1354,12 +2323,513 @@ const Attendance = () => {
                 </button>
               </div>
             </form>
+            )}
+
+            {/* Modal Form Body - Bulk Multiple Employees Mode */}
+            {attendanceMode === 'bulk' && (
+              <form onSubmit={handleSaveBulkAttendance} style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {apiError && (
+                  <div style={{
+                    background: '#FEF2F2',
+                    border: '1px solid #FECACA',
+                    color: '#991B1B',
+                    borderRadius: '6px',
+                    padding: '10px 14px',
+                    fontSize: '13px'
+                  }}>
+                    {apiError}
+                  </div>
+                )}
+
+                {/* Bulk Toolbar Strip */}
+                <div style={{
+                  background: '#F9FAFB',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  flexWrap: 'wrap'
+                }}>
+                  {/* Attendance Date */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#4B5563', textTransform: 'uppercase', marginBottom: '4px' }}>
+                      Attendance Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={bulkDate}
+                      onChange={(e) => setBulkDate(e.target.value)}
+                      required
+                      style={{
+                        padding: '7px 11px',
+                        borderRadius: '6px',
+                        border: '1.5px solid #D1D5DB',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        outline: 'none',
+                        color: '#111827',
+                        background: '#fff'
+                      }}
+                    />
+                  </div>
+
+                  {/* Action Button */}
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleAddBulkRow}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '7px',
+                        border: 'none',
+                        background: 'var(--gold, #4A2C17)',
+                        color: '#FFFFFF',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 6px rgba(74, 44, 23, 0.25)'
+                      }}
+                    >
+                      <i className="fa-solid fa-plus" style={{ color: '#FFFFFF' }}></i>
+                      Add Row
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bulk Employees Table */}
+                <div style={{
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  maxHeight: '440px',
+                  overflowY: 'auto'
+                }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
+                    <thead style={{ background: '#F9FAFB', position: 'sticky', top: 0, zIndex: 2, borderBottom: '1.5px solid #E5E7EB' }}>
+                      <tr>
+                        <th style={{ padding: '10px 10px', width: '38px', textAlign: 'center', color: '#6B7280', fontWeight: '700' }}>#</th>
+                        <th style={{ padding: '10px 12px', color: '#374151', fontWeight: '700' }}>Employee *</th>
+                        <th style={{ padding: '10px 12px', color: '#374151', fontWeight: '700' }}>Assigned Site *</th>
+                        <th style={{ padding: '10px 12px', width: '180px', color: '#374151', fontWeight: '700' }}>Day Value (Hajeri)</th>
+                        <th style={{ padding: '10px 12px', width: '120px', textAlign: 'right', color: '#374151', fontWeight: '700' }}>Day Salary</th>
+                        <th style={{ padding: '10px 8px', width: '42px', textAlign: 'center' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bulkRows.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" style={{ padding: '36px', textAlign: 'center', color: '#6B7280' }}>
+                            <i className="fa-solid fa-users" style={{ fontSize: '28px', color: '#D1D5DB', marginBottom: '8px', display: 'block' }}></i>
+                            No employees in list. Click <strong>"+ Add Row"</strong> above to add attendance.
+                          </td>
+                        </tr>
+                      ) : (
+                        bulkRows.map((row, idx) => {
+                          const estSalary = Math.round((parseFloat(row.dayValue) || 1.0) * (row.dailyRate || 0));
+                          return (
+                            <tr
+                              key={row.id}
+                              style={{
+                                borderBottom: '1px solid #F3F4F6',
+                                background: idx % 2 === 0 ? '#FFFFFF' : '#FAFAFA'
+                              }}
+                            >
+                              {/* Row Index */}
+                              <td style={{ padding: '8px 10px', textAlign: 'center', color: '#9CA3AF', fontWeight: '600' }}>
+                                {idx + 1}
+                              </td>
+
+                              {/* Employee Select */}
+                              <td style={{ padding: '8px 10px' }}>
+                                <select
+                                  value={row.userId}
+                                  onChange={(e) => handleBulkRowChange(row.id, 'userId', e.target.value)}
+                                  required
+                                  style={{
+                                    width: '100%',
+                                    padding: '7px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #D1D5DB',
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    color: '#111827',
+                                    outline: 'none',
+                                    background: '#fff'
+                                  }}
+                                >
+                                  <option value="">-- Select Worker --</option>
+                                  {employees.map(emp => (
+                                    <option key={emp.id || emp.dbId} value={emp.dbId || emp.id}>
+                                      {emp.name || emp.fullName} {emp.role ? `(${emp.role})` : ''} {emp.dailySalary ? `• ₹${emp.dailySalary}/d` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+
+                              {/* Site Select */}
+                              <td style={{ padding: '8px 10px' }}>
+                                <select
+                                  value={row.siteId}
+                                  onChange={(e) => handleBulkRowChange(row.id, 'siteId', e.target.value)}
+                                  required
+                                  style={{
+                                    width: '100%',
+                                    padding: '7px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #D1D5DB',
+                                    fontSize: '12px',
+                                    color: '#111827',
+                                    outline: 'none',
+                                    background: '#fff'
+                                  }}
+                                >
+                                  <option value="">-- Select Site --</option>
+                                  {sites.map(s => (
+                                    <option key={s.id || s.dbId} value={s.dbId || s.id}>
+                                      {s.siteRef ? `[${s.siteRef}] ` : ''}{s.customerName || s.name} {s.location ? `(${s.location})` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+
+                              {/* Day Value (Hajeri) with auto-conversion */}
+                              <td style={{ padding: '8px 10px' }}>
+                                <select
+                                  value={row.dayValue}
+                                  onChange={(e) => handleBulkRowChange(row.id, 'dayValue', e.target.value)}
+                                  style={{
+                                    width: '100%',
+                                    padding: '7px 8px',
+                                    borderRadius: '6px',
+                                    border: '1.5px solid #D1D5DB',
+                                    fontSize: '12px',
+                                    fontWeight: '700',
+                                    color: row.dayValue === '1.0' ? '#166534' : (row.dayValue === '0.5' ? '#854D0E' : '#1E40AF'),
+                                    background: row.dayValue === '1.0' ? '#F0FDF4' : (row.dayValue === '0.5' ? '#FEFCE8' : '#EFF6FF'),
+                                    outline: 'none'
+                                  }}
+                                >
+                                  <option value="1.0">1.0 Day (Full)</option>
+                                  <option value="0.5">0.5 Day (Half Day)</option>
+                                  <option value="1.25">1.25 Day (Full + 2h OT)</option>
+                                  <option value="1.5">1.5 Day (1.5 Day OT)</option>
+                                  <option value="1.75">1.75 Day (Full + 6h OT)</option>
+                                  <option value="2.0">2.0 Day (Double Day)</option>
+                                  <option value="0.25">0.25 Day (Quarter)</option>
+                                  <option value="0.75">0.75 Day (3/4 Day)</option>
+                                </select>
+                              </td>
+
+                              {/* Day Salary (Auto-calculated) */}
+                              <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '4px 8px',
+                                  borderRadius: '5px',
+                                  background: '#F3F4F6',
+                                  color: '#111827',
+                                  fontSize: '12px',
+                                  fontWeight: '700'
+                                }}>
+                                  ₹{estSalary.toLocaleString('en-IN')}
+                                </span>
+                              </td>
+
+                              {/* Delete Row Action */}
+                              <td style={{ padding: '8px 6px', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveBulkRow(row.id)}
+                                  disabled={bulkRows.length <= 1}
+                                  title={bulkRows.length <= 1 ? 'At least one row required' : 'Remove row'}
+                                  style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: bulkRows.length <= 1 ? '#D1D5DB' : '#EF4444',
+                                    cursor: bulkRows.length <= 1 ? 'not-allowed' : 'pointer',
+                                    fontSize: '14px',
+                                    padding: '4px 6px'
+                                  }}
+                                >
+                                  <i className="fa-regular fa-trash-can"></i>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Bulk Summary & Submit Bar */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '14px 18px',
+                  background: '#F9FAFB',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '10px',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  marginTop: '4px'
+                }}>
+                  {/* Summary Badges */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '12px', color: '#4B5563' }}>
+                      Workers: <strong style={{ color: '#111827', fontSize: '13px' }}>{bulkRows.length}</strong>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#4B5563' }}>
+                      Total Hajeri: <strong style={{ color: 'var(--gold, #A56A30)', fontSize: '13px' }}>
+                        {bulkRows.reduce((sum, r) => sum + (parseFloat(r.dayValue) || 0), 0).toFixed(1)} Days
+                      </strong>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#4B5563' }}>
+                      Total Est. Wages: <strong style={{ color: '#166534', fontSize: '13px' }}>
+                        ₹{bulkRows.reduce((sum, r) => sum + Math.round((parseFloat(r.dayValue) || 1.0) * (r.dailyRate || 0)), 0).toLocaleString('en-IN')}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddModal(false)}
+                      style={{
+                        padding: '9px 18px',
+                        borderRadius: '7px',
+                        border: '1px solid #D1D5DB',
+                        background: '#fff',
+                        color: '#374151',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={saving || bulkRows.length === 0}
+                      className="btn-primary"
+                      style={{
+                        padding: '9px 22px',
+                        borderRadius: '7px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        cursor: (saving || bulkRows.length === 0) ? 'not-allowed' : 'pointer',
+                        background: 'var(--gold, #4A2C17)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        boxShadow: '0 2px 8px rgba(74, 44, 23, 0.25)'
+                      }}
+                    >
+                      {saving ? (
+                        <span><i className="fa-solid fa-spinner fa-spin"></i> Saving...</span>
+                      ) : (
+                        <span><i className="fa-solid fa-check" style={{ color: '#FFFFFF' }}></i> Save All Attendance ({bulkRows.length} Workers)</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {/* Form 3: Add Extra Days (Bonus / Overtime Days) */}
+            {attendanceMode === 'days' && (
+              <form onSubmit={handleSaveGiftAttendance} style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+                {apiError && (
+                  <div style={{
+                    background: '#FEF2F2',
+                    border: '1px solid #FECACA',
+                    color: '#991B1B',
+                    borderRadius: '6px',
+                    padding: '10px 14px',
+                    marginBottom: '16px',
+                    fontSize: '13px'
+                  }}>
+                    {apiError}
+                  </div>
+                )}
+
+                {/* Employee Selection */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+                    Select Employee *
+                  </label>
+                  <select
+                    value={giftFormData.userId}
+                    onChange={(e) => setGiftFormData({ ...giftFormData, userId: e.target.value })}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '7px',
+                      border: '1px solid #D1D5DB',
+                      fontSize: '13px',
+                      outline: 'none',
+                      background: '#fff',
+                      fontWeight: '600',
+                      color: '#111827'
+                    }}
+                  >
+                    <option value="" disabled>-- Select Worker --</option>
+                    {employees.map(e => {
+                      const eId = e.dbId || e.id;
+                      return (
+                        <option key={eId} value={eId}>
+                          {e.name} ({e.id}) — ₹{e.dailySalary || 1000}/day
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Attendance Date */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+                    Attendance Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={giftFormData.date}
+                    onChange={(e) => setGiftFormData({ ...giftFormData, date: e.target.value })}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '7px',
+                      border: '1px solid #D1D5DB',
+                      fontSize: '13px',
+                      outline: 'none',
+                      background: '#fff',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Days to Add */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+                    Days to Add (+Days) *
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="number"
+                      step="0.25"
+                      min="0.25"
+                      placeholder="e.g. 4"
+                      value={giftFormData.bonusDays}
+                      onChange={(e) => setGiftFormData({ ...giftFormData, bonusDays: e.target.value })}
+                      required
+                      style={{
+                        flex: 1,
+                        padding: '9px 12px',
+                        borderRadius: '7px',
+                        border: '1.5px solid #D1D5DB',
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        outline: 'none'
+                      }}
+                    />
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#6B7280' }}>Days</span>
+                  </div>
+                  {(() => {
+                    const emp = employees.find(e => String(e.dbId || e.id) === String(giftFormData.userId));
+                    const rate = Number(emp?.dailySalary || 0);
+                    const days = parseFloat(giftFormData.bonusDays) || 0;
+                    if (rate > 0 && days > 0) {
+                      return (
+                        <div style={{ fontSize: '12.5px', color: 'var(--gold, #4A2C17)', fontWeight: '700', marginTop: '7px' }}>
+                          +{days} Days × ₹{rate}/day = +₹{Math.round(days * rate).toLocaleString('en-IN')} added salary
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+
+                {/* Notes / Reason */}
+                <div style={{ marginBottom: '22px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+                    Notes / Reason
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Extra performance incentive, Sunday work bonus, etc."
+                    value={giftFormData.notes}
+                    onChange={(e) => setGiftFormData({ ...giftFormData, notes: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '7px',
+                      border: '1px solid #D1D5DB',
+                      fontSize: '13px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Submit Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    style={{
+                      padding: '9px 18px',
+                      borderRadius: '7px',
+                      border: '1px solid #D1D5DB',
+                      background: '#fff',
+                      color: '#374151',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="btn-primary"
+                    style={{
+                      padding: '9px 22px',
+                      borderRadius: '7px',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      background: 'var(--gold, #4A2C17)',
+                      color: '#fff',
+                      border: 'none',
+                      boxShadow: '0 2px 8px rgba(74, 44, 23, 0.25)'
+                    }}
+                  >
+                    {saving ? (
+                      <span><i className="fa-solid fa-spinner fa-spin"></i> Saving...</span>
+                    ) : (
+                      <span><i className="fa-solid fa-plus"></i> Add +{giftFormData.bonusDays || 0} Days</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
 
       {/* ========================================================== */}
-      {/* EDIT ATTENDANCE MODAL */}
+      {/* EDIT ATTENDANCE MODAL (Full Admin Control) */}
       {/* ========================================================== */}
       {showEditModal && (
         <div style={{
@@ -1368,7 +2838,7 @@ const Attendance = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(15, 23, 42, 0.6)',
+          background: 'rgba(15, 23, 42, 0.65)',
           backdropFilter: 'blur(3px)',
           display: 'flex',
           alignItems: 'center',
@@ -1393,8 +2863,8 @@ const Attendance = () => {
               background: '#F9FAFB'
             }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--navy, #111827)' }}>
-                  Edit Attendance Record
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--text-primary, #1F1A17)' }}>
+                  {editFormData.isBonus ? 'Edit Extra Attendance Days' : 'Edit Attendance Record'}
                 </h3>
                 <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '3px' }}>
                   Worker: <strong>{editFormData.employeeName}</strong> ({editFormData.empId})
@@ -1429,6 +2899,45 @@ const Attendance = () => {
                 </div>
               )}
 
+              {/* Employee Selector (Reassign if needed) */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+                  Employee
+                </label>
+                <select
+                  value={editFormData.userId}
+                  onChange={(e) => {
+                    const uId = e.target.value;
+                    const emp = employees.find(empItem => String(empItem.dbId || empItem.id) === String(uId));
+                    setEditFormData({
+                      ...editFormData,
+                      userId: uId,
+                      employeeName: emp?.name || editFormData.employeeName,
+                      empId: emp?.id || editFormData.empId,
+                      dailyRate: Number(emp?.dailySalary || editFormData.dailyRate)
+                    });
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: '7px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '13px',
+                    outline: 'none',
+                    background: '#fff'
+                  }}
+                >
+                  {employees.map(e => {
+                    const eId = e.dbId || e.id;
+                    return (
+                      <option key={eId} value={eId}>
+                        {e.name} ({e.id}) - {e.role} (₹{e.dailySalary || 1000}/day)
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
               {/* Date & Site */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
                 <div>
@@ -1457,9 +2966,8 @@ const Attendance = () => {
                     Site / Customer
                   </label>
                   <select
-                    value={editFormData.siteId}
+                    value={editFormData.siteId || ''}
                     onChange={(e) => setEditFormData({ ...editFormData, siteId: e.target.value })}
-                    required
                     style={{
                       width: '100%',
                       padding: '9px 10px',
@@ -1470,6 +2978,9 @@ const Attendance = () => {
                       background: '#fff'
                     }}
                   >
+                    {editFormData.isBonus && (
+                      <option value="">🎁 Month-End Gift / Bonus Attendance</option>
+                    )}
                     {sites.map(s => {
                       const sId = s.dbId || s.id;
                       const sRef = s.siteRef || s.id;
@@ -1484,59 +2995,109 @@ const Attendance = () => {
               </div>
 
               {/* IN & OUT Time */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#16A34A', marginBottom: '6px' }}>
-                    IN Time
-                  </label>
-                  <input
-                    type="time"
-                    value={editFormData.inTime}
-                    onChange={(e) => setEditFormData({ ...editFormData, inTime: e.target.value })}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      borderRadius: '7px',
-                      border: '1px solid #D1D5DB',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
+              {!editFormData.isBonus && (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#16A34A', marginBottom: '6px' }}>
+                        IN Time
+                      </label>
+                      <input
+                        type="time"
+                        value={editFormData.inTime}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const calc = calculateHoursAndDayValue(val, editFormData.outTime);
+                          setEditFormData(prev => ({
+                            ...prev,
+                            inTime: val,
+                            dayValue: calc.dayValue
+                          }));
+                        }}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          borderRadius: '7px',
+                          border: '1px solid #D1D5DB',
+                          fontSize: '13px',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#DC2626', marginBottom: '6px' }}>
-                    OUT Time
-                  </label>
-                  <input
-                    type="time"
-                    value={editFormData.outTime}
-                    onChange={(e) => setEditFormData({ ...editFormData, outTime: e.target.value })}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#DC2626', marginBottom: '6px' }}>
+                        OUT Time
+                      </label>
+                      <input
+                        type="time"
+                        value={editFormData.outTime}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const calc = calculateHoursAndDayValue(editFormData.inTime, val);
+                          setEditFormData(prev => ({
+                            ...prev,
+                            outTime: val,
+                            dayValue: calc.dayValue
+                          }));
+                        }}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          borderRadius: '7px',
+                          border: '1px solid #D1D5DB',
+                          fontSize: '13px',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {editFormData.inTime && editFormData.outTime && (
+                    <div style={{
+                      margin: '0 0 14px 0',
+                      padding: '7px 12px',
+                      background: '#F0FDF4',
+                      border: '1px solid #BBF7D0',
                       borderRadius: '7px',
-                      border: '1px solid #D1D5DB',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-              </div>
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '12px',
+                      color: '#166534',
+                      fontWeight: '600'
+                    }}>
+                      <span>
+                        <i className="fa-regular fa-clock" style={{ marginRight: '5px' }}></i>
+                        Duration: <strong>{calculateHoursAndDayValue(editFormData.inTime, editFormData.outTime).hours} hrs</strong>
+                      </span>
+                      <span style={{
+                        background: '#DCFCE7',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        border: '1px solid #86EFAC',
+                        fontWeight: '700'
+                      }}>
+                        Auto-assigned: {calculateHoursAndDayValue(editFormData.inTime, editFormData.outTime).dayValue} Day
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
 
               {/* Day Value & Status */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                    Day Value
+                    Day Value (Working Unit)
                   </label>
                   <select
                     value={editFormData.dayValue}
-                    onChange={(e) => setEditFormData({ ...editFormData, dayValue: e.target.value })}
+                    onChange={(e) => handleEditDayValueChange(e.target.value)}
                     style={{
                       width: '100%',
                       padding: '9px 12px',
@@ -1547,45 +3108,79 @@ const Attendance = () => {
                       background: '#fff'
                     }}
                   >
-                    <option value="1.0">1.0 Full Day</option>
-                    <option value="0.5">0.5 Half Day</option>
-                    <option value="0.75">0.75 Day</option>
-                    <option value="1.25">1.25 Day</option>
-                    <option value="1.5">1.5 Day</option>
+                    <option value="1.0">1.0 Full Day (8 hrs)</option>
+                    <option value="0.25">0.25 Quarter Day (2 hrs)</option>
+                    <option value="0.5">0.5 Half Day (4 hrs)</option>
+                    <option value="0.75">0.75 Day (6 hrs)</option>
+                    <option value="1.25">1.25 Day (Overtime)</option>
+                    <option value="1.5">1.5 Day (Overtime 11-12 hrs)</option>
+                    <option value="2.0">2.0 Double Day</option>
+                    <option value="3.0">3.0 Days (Bonus)</option>
+                    <option value="4.0">4.0 Days (Bonus)</option>
+                    <option value="5.0">5.0 Days (Bonus)</option>
+                    <option value="0.0">0.0 Day (No Salary Credit)</option>
                   </select>
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                    Day Salary of that Day
+                    Approval Status
                   </label>
-                  <div style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '7px',
-                    border: '1px solid #A7F3D0',
-                    background: '#ECFDF5',
-                    fontSize: '14px',
-                    fontWeight: '800',
-                    color: '#065F46',
-                    boxSizing: 'border-box',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                  }}>
-                    <span>₹{(() => {
-                      const rate = Number(editFormData.dailyRate || 0) || Number(employees.find(e => String(e.dbId || e.id) === String(editFormData.userId))?.dailySalary || 1000);
-                      const salary = Math.round((parseFloat(editFormData.dayValue) || 1.0) * rate);
-                      return salary.toLocaleString('en-IN');
-                    })()}</span>
-                    <span style={{ fontSize: '11px', color: '#047857', fontWeight: '600' }}>
-                      ({editFormData.dayValue} Day × ₹{Number(editFormData.dailyRate || 0) || Number(employees.find(e => String(e.dbId || e.id) === String(editFormData.userId))?.dailySalary || 1000)})
-                    </span>
-                  </div>
+                  <select
+                    value={editFormData.status}
+                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '7px',
+                      border: '1px solid #D1D5DB',
+                      fontSize: '13px',
+                      outline: 'none',
+                      background: '#fff',
+                      fontWeight: '700',
+                      color: editFormData.status === 'Approved' ? '#065F46' : (editFormData.status === 'Pending Approval' ? '#92400E' : '#374151')
+                    }}
+                  >
+                    <option value="Approved">Approved (Counts in salary)</option>
+                    <option value="Pending Approval">Pending Approval</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Notes */}
+              {/* Day Salary Live Preview */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+                  Calculated Day Salary
+                </label>
+                <div style={{
+                  width: '100%',
+                  padding: '9px 14px',
+                  borderRadius: '7px',
+                  border: '1px solid #A7F3D0',
+                  background: '#ECFDF5',
+                  fontSize: '15px',
+                  fontWeight: '800',
+                  color: '#065F46',
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <span>₹{(() => {
+                    const rate = Number(editFormData.dailyRate || 0) || Number(employees.find(e => String(e.dbId || e.id) === String(editFormData.userId))?.dailySalary || 1000);
+                    const dVal = !isNaN(parseFloat(editFormData.dayValue)) ? parseFloat(editFormData.dayValue) : 1.0;
+                    const salary = Math.round(dVal * rate);
+                    return salary.toLocaleString('en-IN');
+                  })()}</span>
+                  <span style={{ fontSize: '11px', color: '#047857', fontWeight: '600' }}>
+                    ({editFormData.dayValue} Day × ₹{Number(editFormData.dailyRate || 0) || Number(employees.find(e => String(e.dbId || e.id) === String(editFormData.userId))?.dailySalary || 1000)})
+                  </span>
+                </div>
+              </div>
+
+              {/* Remarks / Notes */}
               <div style={{ marginBottom: '18px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
                   Remarks / Notes
@@ -1644,6 +3239,8 @@ const Attendance = () => {
           </div>
         </div>
       )}
+
+
 
       {/* ========================================================== */}
       {/* DELETE CONFIRMATION MODAL */}

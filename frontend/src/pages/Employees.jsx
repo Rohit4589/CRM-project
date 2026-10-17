@@ -12,14 +12,14 @@ const Employees = () => {
   const [showAddPassword, setShowAddPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // New employee form data
   const [formData, setFormData] = useState({
     empCode: '',
     name: '',
     phone: '',
     password: '',
-    role: 'Carpenter',
+    role: '',
     dailySalary: 1000,
     status: 'Active'
   });
@@ -32,7 +32,7 @@ const Employees = () => {
     name: '',
     phone: '',
     password: '',
-    role: 'Carpenter',
+    role: '',
     dailySalary: 1000,
     status: 'Active'
   });
@@ -72,6 +72,12 @@ const Employees = () => {
       return;
     }
 
+    if (formData.dailySalary === '' || formData.dailySalary === undefined || isNaN(Number(formData.dailySalary))) {
+      setApiError('Daily wage rate is required');
+      setSaving(false);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/employees`, {
         method: 'POST',
@@ -98,7 +104,7 @@ const Employees = () => {
         name: '',
         phone: '',
         password: '',
-        role: 'Carpenter',
+        role: '',
         dailySalary: 1000,
         status: 'Active'
       });
@@ -121,8 +127,8 @@ const Employees = () => {
       name: emp.name || '',
       phone: emp.rawPhone || emp.phone?.replace('+91 ', '') || '',
       password: emp.password || '',
-      role: emp.role || 'Carpenter',
-      dailySalary: emp.dailySalary || 1000,
+      role: emp.role || '',
+      dailySalary: emp.dailySalary !== undefined ? emp.dailySalary : 1000,
       status: emp.status || 'Active'
     });
     setShowEditModal(true);
@@ -136,6 +142,12 @@ const Employees = () => {
 
     if (editFormData.empCode && !/^\d{3,4}$/.test(editFormData.empCode.trim())) {
       setApiError('Employee ID must be 3 or 4 digits (e.g. 102 or 1002)');
+      setSaving(false);
+      return;
+    }
+
+    if (editFormData.dailySalary === '' || editFormData.dailySalary === undefined || isNaN(Number(editFormData.dailySalary))) {
+      setApiError('Daily wage rate is required');
       setSaving(false);
       return;
     }
@@ -206,7 +218,7 @@ const Employees = () => {
     }
   };
 
-  const filteredEmployees = (employees || []).filter(emp => 
+  const filteredEmployees = (employees || []).filter(emp =>
     emp && (
       (emp.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
       (emp.id || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
@@ -215,45 +227,45 @@ const Employees = () => {
   );
 
   return (
-    <main className="dashboard-content" style={{padding: '24px'}}>
-      
+    <main className="dashboard-content" style={{ padding: '24px' }}>
+
       {/* Page Header */}
-      <div className="page-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px'}}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
         <div>
-          <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-            <h1 className="page-title" style={{margin: 0, fontSize: '24px', fontWeight: '700', color: 'var(--navy, #111827)'}}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 className="page-title" style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: 'var(--navy, #111827)' }}>
               Employees
             </h1>
             <span style={{
-              background: 'rgba(165, 106, 48, 0.1)', color: 'var(--gold, #A56A30)', 
+              background: 'rgba(165, 106, 48, 0.1)', color: 'var(--gold, #A56A30)',
               fontSize: '12px', fontWeight: '700', padding: '3px 10px', borderRadius: '12px'
             }}>
               {employees.length}
             </span>
           </div>
-          <p style={{margin: '4px 0 0 0', fontSize: '13px', color: '#7D6C5E'}}>
+          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#7D6C5E' }}>
             Staff profiles & daily wages
           </p>
         </div>
 
-        <div className="header-actions" style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-          <div className="search-box" style={{position: 'relative'}}>
-            <input 
-              type="text" 
-              placeholder="Search..." 
+        <div className="header-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div className="search-box" style={{ position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{padding: '9px 14px 9px 36px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', outline: 'none'}}
+              style={{ padding: '9px 14px 9px 36px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', outline: 'none' }}
             />
-            <i className="fa-solid fa-search" style={{position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF'}}></i>
+            <i className="fa-solid fa-search" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}></i>
           </div>
-          <button 
-            className="btn-primary" 
+          <button
+            className="btn-primary"
             onClick={() => {
               setApiError('');
               setShowAddModal(true);
             }}
-            style={{padding: '9px 16px', borderRadius: '6px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px'}}
+            style={{ padding: '9px 16px', borderRadius: '6px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <i className="fa-solid fa-plus"></i> Add Employee
           </button>
@@ -267,7 +279,7 @@ const Employees = () => {
           borderRadius: '8px', padding: '12px 16px', marginBottom: '16px',
           display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '600'
         }}>
-          <i className="fa-solid fa-circle-check" style={{color: '#10B981', fontSize: '16px'}}></i>
+          <i className="fa-solid fa-circle-check" style={{ color: '#10B981', fontSize: '16px' }}></i>
           {successMessage}
         </div>
       )}
@@ -279,7 +291,7 @@ const Employees = () => {
           borderRadius: '8px', padding: '12px 16px', marginBottom: '16px',
           display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px'
         }}>
-          <i className="fa-solid fa-circle-exclamation" style={{color: '#EF4444', fontSize: '16px'}}></i>
+          <i className="fa-solid fa-circle-exclamation" style={{ color: '#EF4444', fontSize: '16px' }}></i>
           {apiError}
         </div>
       )}
@@ -294,12 +306,12 @@ const Employees = () => {
         WebkitOverflowScrolling: 'touch'
       }}>
         {loading ? (
-          <div style={{padding: '50px 20px', textAlign: 'center', color: '#6B7280'}}>
-            <i className="fa-solid fa-spinner fa-spin" style={{fontSize: '28px', color: 'var(--gold, #A56A30)', marginBottom: '12px'}}></i>
-            <div style={{fontSize: '14px', fontWeight: '600'}}>Loading employees...</div>
+          <div style={{ padding: '50px 20px', textAlign: 'center', color: '#6B7280' }}>
+            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '28px', color: 'var(--gold, #A56A30)', marginBottom: '12px' }}></i>
+            <div style={{ fontSize: '14px', fontWeight: '600' }}>Loading employees...</div>
           </div>
         ) : (
-          <table style={{width: '100%', borderCollapse: 'collapse', minWidth: '650px', tableLayout: 'fixed'}}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '650px', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{
                 background: '#F3EDE6',
@@ -310,32 +322,32 @@ const Employees = () => {
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px'
               }}>
-                <th style={{padding: '12px 16px', width: '22%'}}>Employee</th>
-                <th style={{padding: '12px 16px', width: '12%'}}>ID</th>
-                <th style={{padding: '12px 16px', width: '16%'}}>Role</th>
-                <th style={{padding: '12px 16px', width: '14%'}}>Daily Wage</th>
-                <th style={{padding: '12px 16px', width: '16%'}}>Login PIN</th>
-                <th style={{padding: '12px 16px', width: '10%'}}>Status</th>
-                <th style={{padding: '12px 16px', width: '10%', textAlign: 'center'}}>Actions</th>
+                <th style={{ padding: '12px 16px', width: '22%' }}>Employee</th>
+                <th style={{ padding: '12px 16px', width: '12%' }}>ID</th>
+                <th style={{ padding: '12px 16px', width: '16%' }}>Role</th>
+                <th style={{ padding: '12px 16px', width: '14%' }}>Daily Wage</th>
+                <th style={{ padding: '12px 16px', width: '16%' }}>Login PIN</th>
+                <th style={{ padding: '12px 16px', width: '10%' }}>Status</th>
+                <th style={{ padding: '12px 16px', width: '10%', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{padding: '40px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: '14px'}}>
-                    <i className="fa-regular fa-folder-open" style={{fontSize: '24px', display: 'block', marginBottom: '8px'}}></i>
+                  <td colSpan="7" style={{ padding: '40px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: '14px' }}>
+                    <i className="fa-regular fa-folder-open" style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}></i>
                     No employees found.
                   </td>
                 </tr>
               ) : (
                 filteredEmployees.map((emp) => (
-                  <tr key={emp.id} style={{borderBottom: '1px solid #F3F4F6'}}>
+                  <tr key={emp.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                     {/* Employee Info without image */}
-                    <td style={{padding: '14px 16px', verticalAlign: 'middle'}}>
-                      <div style={{fontWeight: '700', color: '#111827', fontSize: '13px'}}>{emp.name}</div>
-                      <div style={{fontSize: '12px', color: '#6B7280', marginTop: '2px'}}>{emp.phone}</div>
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                      <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>{emp.name}</div>
+                      <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>{emp.phone || '-'}</div>
                     </td>
-                    <td style={{padding: '14px 16px', verticalAlign: 'middle'}}>
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
                       <span style={{
                         background: 'rgba(165, 106, 48, 0.1)',
                         color: 'var(--gold, #A56A30)',
@@ -348,18 +360,18 @@ const Employees = () => {
                         alignItems: 'center',
                         gap: '6px'
                       }}>
-                        <i className="fa-regular fa-id-badge" style={{fontSize: '11px'}}></i>
+                        <i className="fa-regular fa-id-badge" style={{ fontSize: '11px' }}></i>
                         {emp.id}
                       </span>
                     </td>
-                    <td style={{padding: '14px 16px', verticalAlign: 'middle', color: '#374151', fontSize: '13px', fontWeight: '500'}}>
-                      {emp.role}
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', color: '#374151', fontSize: '13px', fontWeight: '500' }}>
+                      {emp.role || '-'}
                     </td>
-                    <td style={{padding: '14px 16px', verticalAlign: 'middle', fontWeight: '700', color: '#111827', fontSize: '13px'}}>
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', fontWeight: '700', color: '#111827', fontSize: '13px' }}>
                       ₹{emp.dailySalary?.toLocaleString()}
                     </td>
                     {/* Login Password / PIN */}
-                    <td style={{padding: '14px 16px', verticalAlign: 'middle'}}>
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
                       <span style={{
                         background: '#FFFBEB',
                         color: '#92400E',
@@ -373,14 +385,14 @@ const Employees = () => {
                         alignItems: 'center',
                         gap: '6px'
                       }} title="Login PIN created for this employee">
-                        <i className="fa-solid fa-key" style={{fontSize: '10px', color: '#D97706'}}></i>
+                        <i className="fa-solid fa-key" style={{ fontSize: '10px', color: '#D97706' }}></i>
                         {emp.password || '1234'}
                       </span>
                     </td>
-                    <td style={{padding: '14px 16px', verticalAlign: 'middle'}}>
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
                       <span style={{
-                        background: emp.status === 'Active' ? '#ECFDF5' : '#F3F4F6', 
-                        color: emp.status === 'Active' ? '#065F46' : '#6B7280', 
+                        background: emp.status === 'Active' ? '#ECFDF5' : '#F3F4F6',
+                        color: emp.status === 'Active' ? '#065F46' : '#6B7280',
                         padding: '4px 10px',
                         borderRadius: '14px', fontSize: '11px', fontWeight: '700'
                       }}>
@@ -388,7 +400,7 @@ const Employees = () => {
                       </span>
                     </td>
                     {/* Action Column with Edit Button */}
-                    <td style={{padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center'}}>
+                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
                       <button
                         onClick={() => openEditModal(emp)}
                         style={{
@@ -424,82 +436,87 @@ const Employees = () => {
          ======================================================== */}
       {showAddModal && (
         <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-          backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', 
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex',
           justifyContent: 'center', alignItems: 'center', zIndex: 1200,
           backdropFilter: 'blur(3px)', padding: '20px'
         }}>
           <div style={{
-            background: '#fff', padding: '28px', borderRadius: '14px', 
+            background: '#fff', padding: '28px', borderRadius: '14px',
             width: '100%', maxWidth: '500px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
             maxHeight: '90vh', overflowY: 'auto'
           }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
-              <h2 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827'}}>
-                <i className="fa-solid fa-user-plus" style={{color: 'var(--gold, #A56A30)', marginRight: '8px'}}></i>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>
+                <i className="fa-solid fa-user-plus" style={{ color: 'var(--gold, #A56A30)', marginRight: '8px' }}></i>
                 Add New Employee
               </h2>
               <button onClick={() => setShowAddModal(false)} style={{
                 background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6B7280', padding: 0
               }}>&times;</button>
             </div>
-            
+
             <form onSubmit={handleAddEmployee}>
 
               {/* Employee ID (3 or 4 digits) */}
-              <div style={{marginBottom: '14px'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
-                  <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                  <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>
                     Employee ID (3 or 4 digits)
                   </label>
-                  <span style={{color: '#6B7280', fontWeight: 'normal', fontSize: '11px'}}>
+                  <span style={{ color: '#6B7280', fontWeight: 'normal', fontSize: '11px' }}>
                     Optional (auto-assigned if blank)
                   </span>
                 </div>
-                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{
                     background: '#F3F4F6', border: '1px solid #D1D5DB', borderRadius: '6px',
                     padding: '10px 12px', fontSize: '13px', fontWeight: '700', color: '#6B7280'
                   }}>EMP-</span>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={formData.empCode}
-                    onChange={(e) => setFormData({...formData, empCode: e.target.value.replace(/[^0-9]/g, '')})}
+                    onChange={(e) => setFormData({ ...formData, empCode: e.target.value.replace(/[^0-9]/g, '') })}
                     placeholder="e.g. 105 or 1005"
                     maxLength={4}
                     style={{
                       flex: 1, padding: '10px 12px', borderRadius: '6px', border: '1px solid #D1D5DB',
                       boxSizing: 'border-box', outline: 'none', fontSize: '14px', fontWeight: '700',
                       letterSpacing: '1px', color: '#111827'
-                    }} 
+                    }}
                   />
                 </div>
-                <span style={{fontSize: '11px', color: '#6B7280', marginTop: '3px', display: 'block'}}>
+                <span style={{ fontSize: '11px', color: '#6B7280', marginTop: '3px', display: 'block' }}>
                   Set a 3-4 digit ID for worker login. If left blank, it will be automatically assigned.
                 </span>
               </div>
 
-              <div style={{marginBottom: '14px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px' }}>
                   Full Name *
                 </label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Rahul Patil" 
+                <input
+                  type="text"
+                  placeholder="e.g. Rahul Patil"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'}} 
-                  required 
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
+                  required
                 />
               </div>
 
-              <div style={{marginBottom: '14px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                  Mobile Number * (Worker Login ID)
-                </label>
-                <input 
-                  type="tel" 
-                  placeholder="e.g. 9876543210" 
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                  <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>
+                    Mobile Number
+                  </label>
+                  <span style={{ color: '#6B7280', fontWeight: 'normal', fontSize: '11px' }}>
+                    Optional
+                  </span>
+                </div>
+                <input
+                  type="tel"
+                  placeholder="e.g. 9876543210 (Optional)"
                   value={formData.phone}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -511,39 +528,38 @@ const Employees = () => {
                       password: prev.password ? prev.password : (digits.length >= 4 ? digits.slice(-4) : '')
                     }));
                   }}
-                  style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'}} 
-                  required 
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
                 />
               </div>
 
               {/* Password / PIN Field for Admin to Create */}
-              <div style={{marginBottom: '14px'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
-                  <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                  <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>
                     Login Password / PIN *
                   </label>
-                  <span style={{color: 'var(--gold, #A56A30)', fontWeight: '600', fontSize: '11px'}}>
+                  <span style={{ color: 'var(--gold, #A56A30)', fontWeight: '600', fontSize: '11px' }}>
                     Admin creates password
                   </span>
                 </div>
-                <div style={{position: 'relative'}}>
-                  <input 
-                    type={showAddPassword ? "text" : "password"} 
-                    placeholder="e.g. 1234 or 4-digit PIN" 
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showAddPassword ? "text" : "password"}
+                    placeholder="e.g. 1234 or 4-digit PIN"
                     value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     style={{
-                      width: '100%', 
-                      padding: '10px 42px 10px 12px', 
-                      borderRadius: '6px', 
-                      border: '1px solid #D1D5DB', 
-                      boxSizing: 'border-box', 
-                      outline: 'none', 
+                      width: '100%',
+                      padding: '10px 42px 10px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #D1D5DB',
+                      boxSizing: 'border-box',
+                      outline: 'none',
                       fontSize: '13px',
                       letterSpacing: showAddPassword ? '1px' : '2px',
                       fontWeight: '600'
-                    }} 
-                    required 
+                    }}
+                    required
                   />
                   <button
                     type="button"
@@ -557,29 +573,28 @@ const Employees = () => {
                     <i className={`fa-regular ${showAddPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                   </button>
                 </div>
-                <span style={{fontSize: '11px', color: '#6B7280', marginTop: '4px', display: 'block'}}>
-                  🔑 Give this password to the employee with their mobile number. They will log in with it, and can change it later.
-                </span>
               </div>
 
-              <div style={{display: 'flex', gap: '15px', marginBottom: '14px'}}>
-                <div style={{flex: 1}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>Trade / Role *</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Carpenter, Painter" 
+              <div style={{ display: 'flex', gap: '15px', marginBottom: '14px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                    <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>Trade / Role</label>
+                    <span style={{ color: '#6B7280', fontWeight: 'normal', fontSize: '11px' }}>Optional</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="e.g. Carpenter, Painter (Optional)"
                     value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
-                    style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'}} 
-                    required 
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
                   />
                 </div>
-                <div style={{flex: 1}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>Status</label>
-                  <select 
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px' }}>Status</label>
+                  <select
                     value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', backgroundColor: '#fff', fontSize: '13px'}}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', backgroundColor: '#fff', fontSize: '13px' }}
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
@@ -587,28 +602,30 @@ const Employees = () => {
                 </div>
               </div>
 
-              <div style={{marginBottom: '22px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                  Daily Wage Rate / Per Day Salary (₹) *
+              <div style={{ marginBottom: '22px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px' }}>
+                  Daily Wage Rate / Per Day Salary (₹) <span style={{ color: '#DC2626' }}>*</span>
                 </label>
-                <input 
-                  type="number" 
-                  placeholder="e.g. 1000" 
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="e.g. 1000"
                   value={formData.dailySalary}
-                  onChange={(e) => setFormData({...formData, dailySalary: Number(e.target.value)})}
-                  style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'}} 
-                  required 
+                  onChange={(e) => setFormData({ ...formData, dailySalary: e.target.value === '' ? '' : Number(e.target.value) })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
+                  required
                 />
               </div>
 
-              <div style={{display: 'flex', justifyContent: 'flex-end', gap: '12px'}}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                 <button type="button" onClick={() => setShowAddModal(false)} style={{
                   padding: '9px 18px', borderRadius: '6px', border: '1px solid #D1D5DB', background: '#fff', color: '#374151', cursor: 'pointer', fontWeight: '600', fontSize: '13px'
                 }}>Cancel</button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={saving}
-                  className="btn-primary" 
+                  className="btn-primary"
                   style={{
                     padding: '9px 20px', borderRadius: '6px', fontSize: '13px',
                     display: 'flex', alignItems: 'center', gap: '6px',
@@ -636,119 +653,124 @@ const Employees = () => {
          ======================================================== */}
       {showEditModal && (
         <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-          backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', 
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex',
           justifyContent: 'center', alignItems: 'center', zIndex: 1200,
           backdropFilter: 'blur(3px)', padding: '20px'
         }}>
           <div style={{
-            background: '#fff', padding: '28px', borderRadius: '14px', 
+            background: '#fff', padding: '28px', borderRadius: '14px',
             width: '100%', maxWidth: '520px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
             maxHeight: '90vh', overflowY: 'auto'
           }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <h2 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827'}}>
-                  <i className="fa-solid fa-user-pen" style={{color: 'var(--gold, #A56A30)', marginRight: '8px'}}></i>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>
+                  <i className="fa-solid fa-user-pen" style={{ color: 'var(--gold, #A56A30)', marginRight: '8px' }}></i>
                   Edit Employee ({editFormData.id})
                 </h2>
-                <div style={{fontSize: '12px', color: '#6B7280', marginTop: '2px'}}>Update details or delete employee from database</div>
+                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>Update details or delete employee from database</div>
               </div>
               <button onClick={() => setShowEditModal(false)} style={{
                 background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6B7280', padding: 0
               }}>&times;</button>
             </div>
-            
+
             <form onSubmit={handleUpdateEmployee}>
 
               {/* Editable Employee ID (3 or 4 digits) */}
-              <div style={{marginBottom: '14px'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
-                  <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                  <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>
                     Employee ID (3 or 4 digits) *
                   </label>
-                  <span style={{color: 'var(--gold, #A56A30)', fontWeight: '700', fontSize: '11px'}}>
+                  <span style={{ color: 'var(--gold, #A56A30)', fontWeight: '700', fontSize: '11px' }}>
                     Editable Worker Login ID
                   </span>
                 </div>
-                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{
                     background: '#F3F4F6', border: '1px solid #D1D5DB', borderRadius: '6px',
                     padding: '10px 12px', fontSize: '13px', fontWeight: '700', color: '#6B7280'
                   }}>EMP-</span>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={editFormData.empCode}
-                    onChange={(e) => setEditFormData({...editFormData, empCode: e.target.value.replace(/[^0-9]/g, '')})}
+                    onChange={(e) => setEditFormData({ ...editFormData, empCode: e.target.value.replace(/[^0-9]/g, '') })}
                     placeholder="e.g. 102 or 1002"
                     maxLength={4}
                     style={{
                       flex: 1, padding: '10px 12px', borderRadius: '6px', border: '1px solid #D1D5DB',
                       boxSizing: 'border-box', outline: 'none', fontSize: '14px', fontWeight: '700',
                       letterSpacing: '1px', color: '#111827'
-                    }} 
-                    required 
+                    }}
+                    required
                   />
                 </div>
-                <span style={{fontSize: '11px', color: '#6B7280', marginTop: '3px', display: 'block'}}>
+                <span style={{ fontSize: '11px', color: '#6B7280', marginTop: '3px', display: 'block' }}>
                   💡 Employee can use this 3-4 digit ID (<strong>{editFormData.empCode || '102'}</strong>) and their Password to log in directly.
                 </span>
               </div>
 
-              <div style={{marginBottom: '14px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px' }}>
                   Full Name *
                 </label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={editFormData.name}
-                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                  style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'}} 
-                  required 
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
+                  required
                 />
               </div>
 
-              <div style={{marginBottom: '14px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                  Mobile Number *
-                </label>
-                <input 
-                  type="tel" 
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                  <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>
+                    Mobile Number
+                  </label>
+                  <span style={{ color: '#6B7280', fontWeight: 'normal', fontSize: '11px' }}>
+                    Optional
+                  </span>
+                </div>
+                <input
+                  type="tel"
+                  placeholder="e.g. 9876543210 (Optional)"
                   value={editFormData.phone}
-                  onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
-                  style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'}} 
-                  required 
+                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
                 />
               </div>
 
               {/* Password / PIN in Edit Mode */}
-              <div style={{marginBottom: '14px'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
-                  <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                  <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>
                     Login Password / PIN *
                   </label>
-                  <span style={{color: '#059669', fontWeight: '600', fontSize: '11px'}}>
+                  <span style={{ color: '#059669', fontWeight: '600', fontSize: '11px' }}>
                     View or reset password
                   </span>
                 </div>
-                <div style={{position: 'relative'}}>
-                  <input 
-                    type={showEditPassword ? "text" : "password"} 
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showEditPassword ? "text" : "password"}
                     value={editFormData.password}
-                    onChange={(e) => setEditFormData({...editFormData, password: e.target.value})}
+                    onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
                     placeholder="Enter password"
                     style={{
-                      width: '100%', 
-                      padding: '10px 42px 10px 12px', 
-                      borderRadius: '6px', 
-                      border: '1px solid #D1D5DB', 
-                      boxSizing: 'border-box', 
-                      outline: 'none', 
+                      width: '100%',
+                      padding: '10px 42px 10px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #D1D5DB',
+                      boxSizing: 'border-box',
+                      outline: 'none',
                       fontSize: '13px',
                       letterSpacing: showEditPassword ? '1px' : '2px',
                       fontWeight: '600'
-                    }} 
-                    required 
+                    }}
+                    required
                   />
                   <button
                     type="button"
@@ -762,28 +784,31 @@ const Employees = () => {
                     <i className={`fa-regular ${showEditPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                   </button>
                 </div>
-                <span style={{fontSize: '11px', color: '#6B7280', marginTop: '4px', display: 'block'}}>
+                <span style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', display: 'block' }}>
                   ℹ️ You can view or reset this employee's password here if they forget it.
                 </span>
               </div>
 
-              <div style={{display: 'flex', gap: '15px', marginBottom: '14px'}}>
-                <div style={{flex: 1}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>Trade / Role *</label>
-                  <input 
-                    type="text" 
+              <div style={{ display: 'flex', gap: '15px', marginBottom: '14px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                    <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>Trade / Role</label>
+                    <span style={{ color: '#6B7280', fontWeight: 'normal', fontSize: '11px' }}>Optional</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="e.g. Carpenter, Painter (Optional)"
                     value={editFormData.role}
-                    onChange={(e) => setEditFormData({...editFormData, role: e.target.value})}
-                    style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'}} 
-                    required 
+                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
                   />
                 </div>
-                <div style={{flex: 1}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>Status</label>
-                  <select 
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px' }}>Status</label>
+                  <select
                     value={editFormData.status}
-                    onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
-                    style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', backgroundColor: '#fff', fontSize: '13px'}}
+                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', backgroundColor: '#fff', fontSize: '13px' }}
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
@@ -791,23 +816,25 @@ const Employees = () => {
                 </div>
               </div>
 
-              <div style={{marginBottom: '24px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                  Daily Wage Rate / Per Day Salary (₹) *
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px' }}>
+                  Daily Wage Rate / Per Day Salary (₹) <span style={{ color: '#DC2626' }}>*</span>
                 </label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
                   value={editFormData.dailySalary}
-                  onChange={(e) => setEditFormData({...editFormData, dailySalary: Number(e.target.value)})}
-                  style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'}} 
-                  required 
+                  onChange={(e) => setEditFormData({ ...editFormData, dailySalary: e.target.value === '' ? '' : Number(e.target.value) })}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
+                  required
                 />
               </div>
 
               {/* Bottom Buttons: Delete (Red) on left, Cancel & Save on right */}
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid #E5E7EB'}}>
-                <button 
-                  type="button" 
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid #E5E7EB' }}>
+                <button
+                  type="button"
                   onClick={handleDeleteEmployee}
                   disabled={saving}
                   style={{
@@ -820,14 +847,14 @@ const Employees = () => {
                   <i className="fa-solid fa-trash-can"></i> Delete Employee
                 </button>
 
-                <div style={{display: 'flex', gap: '10px'}}>
+                <div style={{ display: 'flex', gap: '10px' }}>
                   <button type="button" onClick={() => setShowEditModal(false)} style={{
                     padding: '9px 18px', borderRadius: '6px', border: '1px solid #D1D5DB', background: '#fff', color: '#374151', cursor: 'pointer', fontWeight: '600', fontSize: '13px'
                   }}>Cancel</button>
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={saving}
-                    className="btn-primary" 
+                    className="btn-primary"
                     style={{
                       padding: '9px 20px', borderRadius: '6px', fontSize: '13px',
                       display: 'flex', alignItems: 'center', gap: '6px',

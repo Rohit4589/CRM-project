@@ -141,7 +141,9 @@ exports.getEstimates = async (req, res) => {
   try {
     const { search, status, site_id, project_type } = req.query;
     let query = `
-      SELECT e.*, s.site_ref, s.customer_name as site_customer_name
+      SELECT e.*, s.site_ref, s.customer_name as site_customer_name, s.status as site_status,
+             s.location, s.location as site_location,
+             COALESCE(s.status, e.status, 'Running') as order_status
       FROM estimates e
       LEFT JOIN sites s ON e.site_id = s.id
       WHERE 1=1
@@ -150,12 +152,20 @@ exports.getEstimates = async (req, res) => {
 
     if (search) {
       params.push(`%${search}%`);
-      query += ` AND (e.customer_name ILIKE $${params.length} OR e.estimate_number ILIKE $${params.length} OR e.phone ILIKE $${params.length})`;
+      query += ` AND (e.customer_name ILIKE $${params.length} OR e.estimate_number ILIKE $${params.length} OR e.phone ILIKE $${params.length} OR s.site_ref ILIKE $${params.length})`;
     }
 
     if (status && status !== 'All') {
-      params.push(status);
-      query += ` AND e.status = $${params.length}`;
+      if (status === 'Running') {
+        query += ` AND (COALESCE(s.status, e.status, 'Running') = 'Running' OR COALESCE(s.status, e.status, 'Running') = 'Draft' OR COALESCE(s.status, e.status, 'Running') = 'Quotation')`;
+      } else if (status === 'Complete' || status === 'Completed') {
+        query += ` AND (COALESCE(s.status, e.status) = 'Completed' OR COALESCE(s.status, e.status) = 'Complete')`;
+      } else if (status === 'Hold / Cancelled' || status === 'On Hold') {
+        query += ` AND (COALESCE(s.status, e.status) = 'On Hold' OR COALESCE(s.status, e.status) = 'Cancelled' OR COALESCE(s.status, e.status) = 'Hold')`;
+      } else {
+        params.push(status);
+        query += ` AND (s.status = $${params.length} OR e.status = $${params.length})`;
+      }
     }
 
     if (site_id) {
@@ -237,9 +247,26 @@ exports.createEstimate = async (req, res) => {
       status = 'Draft'
     } = req.body;
 
-    if (!customer_name) {
-      return res.status(400).json({ success: false, message: 'Customer name is required' });
+    if (!site_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'A registered site/customer is required to create an estimate.'
+      });
     }
+
+    const siteRes = await pool.query('SELECT * FROM sites WHERE id = $1', [site_id]);
+    if (siteRes.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Selected site/customer not found.'
+      });
+    }
+    const site = siteRes.rows[0];
+    const finalCustomerName = customer_name ? customer_name.trim() : site.customer_name;
+    const finalPhone = phone ? phone.trim() : (site.phone || '');
+    const finalEmail = email ? email.trim() : (site.email || '');
+    const finalAddress = address ? address.trim() : (site.full_address || site.location || '');
+    const initialStatus = (status && status !== 'Draft') ? status : (site.status || 'Running');
 
     // Auto-compute all mathematical totals rigorously
     const calculations = recalculateEstimate(rooms_data, {
@@ -249,14 +276,7 @@ exports.createEstimate = async (req, res) => {
       roundOff: round_off
     });
 
-    let providedOrderNo = req.body.order_no || req.body.site_ref || null;
-    if (!providedOrderNo && site_id) {
-      const siteRes = await pool.query('SELECT site_ref FROM sites WHERE id = $1', [site_id]);
-      if (siteRes.rows.length > 0) {
-        providedOrderNo = siteRes.rows[0].site_ref;
-      }
-    }
-
+    let providedOrderNo = req.body.order_no || req.body.site_ref || site.site_ref || null;
     const estimateNumber = await generateEstimateNumber(providedOrderNo);
 
     const insertQuery = `
@@ -273,10 +293,10 @@ exports.createEstimate = async (req, res) => {
     const values = [
       estimateNumber,
       site_id ? parseInt(site_id, 10) : null,
-      customer_name,
-      phone || '',
-      email || '',
-      address || '',
+      finalCustomerName,
+      finalPhone,
+      finalEmail,
+      finalAddress,
       date || new Date().toISOString().split('T')[0],
       project_type,
       furniture_level,
@@ -292,7 +312,7 @@ exports.createEstimate = async (req, res) => {
       notes || DEFAULT_NOTE,
       terms_conditions || DEFAULT_TERMS_CONDITIONS,
       payment_terms || DEFAULT_PAYMENT_TERMS,
-      status
+      initialStatus
     ];
 
     const result = await pool.query(insertQuery, values);
@@ -401,6 +421,11 @@ exports.updateEstimate = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Estimate not found' });
     }
 
+    if (status && (site_id || result.rows[0].site_id)) {
+      const sId = site_id ? parseInt(site_id, 10) : result.rows[0].site_id;
+      await pool.query(`UPDATE sites SET status = $1 WHERE id = $2`, [status, sId]).catch(e => console.error('Error syncing site status:', e));
+    }
+
     res.json({
       success: true,
       message: 'Estimate updated successfully',
@@ -409,6 +434,49 @@ exports.updateEstimate = async (req, res) => {
   } catch (error) {
     console.error('Error updating estimate:', error);
     res.status(500).json({ success: false, message: 'Failed to update estimate', error: error.message });
+  }
+};
+
+/**
+ * PATCH or PUT /api/estimates/:id/status
+ * Update status of estimate and synchronize its linked site/order
+ */
+exports.updateEstimateStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ success: false, message: 'Status is required' });
+    }
+
+    const result = await pool.query(
+      `UPDATE estimates SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Estimate not found' });
+    }
+
+    const est = result.rows[0];
+
+    // If estimate is linked to a site, update site status so both tabs match!
+    if (est.site_id) {
+      await pool.query(
+        `UPDATE sites SET status = $1 WHERE id = $2`,
+        [status, est.site_id]
+      ).catch(e => console.error('Error syncing site status:', e));
+    }
+
+    res.json({
+      success: true,
+      message: `Estimate and Order moved to ${status}`,
+      estimate: est
+    });
+  } catch (error) {
+    console.error('Error updating estimate status:', error);
+    res.status(500).json({ success: false, message: 'Failed to update estimate status', error: error.message });
   }
 };
 

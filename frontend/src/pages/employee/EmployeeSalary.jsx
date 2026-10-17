@@ -72,9 +72,11 @@ const EmployeeSalary = ({ user, onNavigate, lang = 'hi' }) => {
     return r.monthYear === selectedMonth;
   });
 
-  const totalDays = filteredRecords.reduce((sum, r) => sum + (parseFloat(r.dayValue) || 1.0), 0);
-  const fullDays = filteredRecords.filter(r => (parseFloat(r.dayValue) || 0) >= 1.0).length;
-  const halfDays = filteredRecords.filter(r => (parseFloat(r.dayValue) || 0) === 0.5).length;
+  // Only count Approved/Verified records in salary
+  const approvedRecords = filteredRecords.filter(r => r.status === 'Approved' || r.status === 'Verified');
+  const totalDays = approvedRecords.reduce((sum, r) => sum + (parseFloat(r.dayValue) || 0), 0);
+  const fullDays = approvedRecords.filter(r => (parseFloat(r.dayValue) || 0) >= 1.0).length;
+  const halfDays = approvedRecords.filter(r => (parseFloat(r.dayValue) || 0) === 0.5).length;
   const grossEarnings = Math.round(totalDays * dailyRate);
   const advanceDeduction = 0;
   const netSalary = grossEarnings - advanceDeduction;
@@ -159,7 +161,7 @@ const EmployeeSalary = ({ user, onNavigate, lang = 'hi' }) => {
             <div style={{ fontSize: '10.5px', color: 'var(--text-muted, #8C7B6D)', textTransform: 'uppercase', fontWeight: '700' }}>{t.dailyWageRate}</div>
             <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)' }}>₹{dailyRate.toLocaleString('en-IN')} <span style={{fontSize: '11px', fontWeight: '600', color: '#7D6C5E'}}>{t.perDay}</span></div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted, #8C7B6D)', marginTop: '2px' }}>
-              {t.totalAttendance}: <strong style={{color: '#1F1A17'}}>{totalDays.toFixed(1)} {t.days}</strong>
+              {t.totalAttendance}: <strong style={{color: '#1F1A17'}}>{Number(totalDays.toFixed(2))} {t.days}</strong>
             </div>
           </div>
         </div>
@@ -185,7 +187,7 @@ const EmployeeSalary = ({ user, onNavigate, lang = 'hi' }) => {
               <div style={{ fontWeight: '700', color: '#1F1A17', fontSize: '13px' }}>{t.daysWorked}</div>
               <div style={{ fontSize: '11px', color: '#7D6C5E' }}>{fullDays} {t.fullDaysCount} + {halfDays} {t.halfDaysCount}</div>
             </div>
-            <div style={{ fontWeight: '800', fontSize: '14px', color: '#1F1A17' }}>{totalDays.toFixed(1)} {t.days}</div>
+            <div style={{ fontWeight: '800', fontSize: '14px', color: '#1F1A17' }}>{(totalDays % 1 === 0 ? totalDays.toFixed(0) : parseFloat(totalDays.toFixed(2)))} {t.days}</div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #F3EDE6' }}>
@@ -198,7 +200,7 @@ const EmployeeSalary = ({ user, onNavigate, lang = 'hi' }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', background: '#FAF8F5', borderBottom: '1px solid #F3EDE6' }}>
             <div>
               <div style={{ fontWeight: '700', color: '#1F1A17', fontSize: '13px' }}>{t.grossEarned}</div>
-              <div style={{ fontSize: '11px', color: '#7D6C5E' }}>{totalDays.toFixed(1)} {t.days} × ₹{dailyRate.toLocaleString('en-IN')}</div>
+              <div style={{ fontSize: '11px', color: '#7D6C5E' }}>{(totalDays % 1 === 0 ? totalDays.toFixed(0) : parseFloat(totalDays.toFixed(2)))} {t.days} × ₹{dailyRate.toLocaleString('en-IN')}</div>
             </div>
             <div style={{ fontWeight: '800', fontSize: '15px', color: 'var(--coffee-medium, #8C5521)' }}>₹{grossEarnings.toLocaleString('en-IN')}</div>
           </div>
