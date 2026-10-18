@@ -11,6 +11,7 @@ router.delete('/categories/:id', catalogController.deleteCategory);
 // Product Routes (Items & Rates)
 router.get('/products', catalogController.getProducts);
 router.post('/products', catalogController.createProduct);
+router.put('/products/reorder', catalogController.reorderProducts);
 router.put('/products/:id', catalogController.updateProduct);
 router.delete('/products/:id', catalogController.deleteProduct);
 

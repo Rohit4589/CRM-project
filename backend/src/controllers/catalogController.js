@@ -198,20 +198,45 @@ exports.getProducts = async (req, res) => {
   try {
     const { category_id, category_name, unit, search } = req.query;
     let query = `
-      SELECT DISTINCT p.*, c.name as resolved_category_name, c.project_type
+      SELECT 
+        p.*,
+        COALESCE(
+          (
+            SELECT json_agg(jsonb_build_object('id', ec.id, 'name', ec.name) ORDER BY ec.display_order ASC, ec.name ASC)
+            FROM estimate_category_products ecp
+            JOIN estimate_categories ec ON ecp.category_id = ec.id
+            WHERE ecp.product_id = p.id
+          ),
+          '[]'::json
+        ) AS room_categories,
+        COALESCE(
+          (
+            SELECT array_agg(ec.name ORDER BY ec.display_order ASC, ec.name ASC)
+            FROM estimate_category_products ecp
+            JOIN estimate_categories ec ON ecp.category_id = ec.id
+            WHERE ecp.product_id = p.id
+          ),
+          ARRAY[]::text[]
+        ) AS category_names
       FROM estimate_products p
-      LEFT JOIN estimate_category_products cp ON p.id = cp.product_id
-      LEFT JOIN estimate_categories c ON cp.category_id = c.id OR p.category_id = c.id
       WHERE 1=1
     `;
     const params = [];
 
     if (category_id && category_id !== 'All') {
       params.push(category_id);
-      query += ` AND (cp.category_id = $${params.length} OR p.category_id = $${params.length})`;
+      query += ` AND (p.id IN (SELECT product_id FROM estimate_category_products WHERE category_id = $${params.length}) OR p.category_id = $${params.length})`;
     } else if (category_name && category_name !== 'All') {
       params.push(category_name.toUpperCase());
-      query += ` AND (UPPER(c.name) = $${params.length} OR UPPER(p.category_name) = $${params.length})`;
+      query += ` AND (
+        p.id IN (
+          SELECT ecp.product_id 
+          FROM estimate_category_products ecp 
+          JOIN estimate_categories ec ON ecp.category_id = ec.id 
+          WHERE UPPER(ec.name) = $${params.length}
+        ) 
+        OR UPPER(p.category_name) = $${params.length}
+      )`;
     }
 
     if (unit && unit !== 'All') {
@@ -230,7 +255,7 @@ exports.getProducts = async (req, res) => {
       )`;
     }
 
-    query += ' ORDER BY p.name ASC';
+    query += ' ORDER BY COALESCE(p.display_order, 0) ASC, p.name ASC, p.id ASC';
     const result = await pool.query(query, params);
 
     res.json({
@@ -337,9 +362,19 @@ exports.createProduct = async (req, res) => {
       finalSignatureDesc || finalEssentialDesc || ''
     ]);
 
+    const createdProduct = result.rows[0];
+
+    // Link created product to category in junction table
+    if (finalCatId) {
+      await pool.query(
+        'INSERT INTO estimate_category_products (category_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [finalCatId, createdProduct.id]
+      );
+    }
+
     res.status(201).json({
       success: true,
-      product: result.rows[0],
+      product: createdProduct,
       message: 'Product created successfully'
     });
   } catch (error) {
@@ -450,6 +485,9 @@ exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Delete junction links first
+    await pool.query('DELETE FROM estimate_category_products WHERE product_id = $1', [id]);
+
     const result = await pool.query('DELETE FROM estimate_products WHERE id = $1 RETURNING name', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Product not found' });
@@ -462,5 +500,32 @@ exports.deleteProduct = async (req, res) => {
   } catch (error) {
     console.error('Error deleting product:', error);
     res.status(500).json({ success: false, message: 'Failed to delete product' });
+  }
+};
+
+/**
+ * PUT /api/catalog/products/reorder
+ * Reorder products sequence
+ */
+exports.reorderProducts = async (req, res) => {
+  try {
+    const { items } = req.body; // array of { id, display_order } or array of ids [id1, id2, ...]
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Items array is required' });
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (typeof it === 'object' && it !== null && it.id !== undefined) {
+        await pool.query('UPDATE estimate_products SET display_order = $1 WHERE id = $2', [it.display_order !== undefined ? it.display_order : (i + 1), it.id]);
+      } else {
+        await pool.query('UPDATE estimate_products SET display_order = $1 WHERE id = $2', [i + 1, it]);
+      }
+    }
+
+    res.json({ success: true, message: 'Products sequence updated successfully' });
+  } catch (error) {
+    console.error('Error reordering products:', error);
+    res.status(500).json({ success: false, message: 'Failed to reorder products' });
   }
 };
