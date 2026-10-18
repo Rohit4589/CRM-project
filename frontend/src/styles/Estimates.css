@@ -1979,3 +1979,73 @@
   }
 }
 
+/* ========================================================
+   Desktop Scaling for Estimates (<= 1440px / 1366px screens)
+   ======================================================== */
+@media screen and (max-width: 1440px) {
+  .estimates-container {
+    padding: 16px 20px;
+  }
+
+  .estimates-header {
+    margin-bottom: 14px;
+  }
+
+  .estimates-header h1 {
+    font-size: 20px;
+  }
+
+  .estimates-header p {
+    font-size: 12.5px;
+  }
+
+  .estimate-kpis {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .estimate-kpi-card {
+    padding: 6px 12px;
+    min-width: 150px;
+  }
+
+  .estimate-kpi-info h3 {
+    font-size: 14px;
+  }
+
+  .estimate-kpi-info p {
+    font-size: 10px;
+  }
+
+  .estimate-filter-bar {
+    padding: 10px 14px;
+    gap: 10px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+  }
+
+  .estimate-search-input {
+    min-width: 180px;
+  }
+}
+
+@media screen and (max-width: 1366px) {
+  .estimates-container {
+    padding: 14px 16px;
+  }
+
+  .estimates-header h1 {
+    font-size: 18px;
+  }
+
+  .estimate-kpi-card {
+    padding: 6px 10px;
+    min-width: 135px;
+  }
+
+  .estimate-filter-bar {
+    padding: 8px 12px;
+    margin-bottom: 14px;
+  }
+}
+

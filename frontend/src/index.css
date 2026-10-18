@@ -250,6 +250,99 @@ table tbody tr:hover {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ============================================
+   Desktop Scaling for Standard & 1366x768 Screens
+   ============================================ */
+@media (max-width: 1440px) and (min-width: 1025px) {
+  :root {
+    --sidebar-width: 220px;
+    --header-height: 56px;
+  }
+
+  html {
+    font-size: 13px;
+  }
+
+  .dashboard-content {
+    padding: 16px 20px !important;
+  }
+
+  .header {
+    padding: 0 20px !important;
+  }
+
+  .sidebar-menu {
+    padding: 10px 0 16px !important;
+  }
+
+  .menu-title {
+    padding: 10px 18px 4px !important;
+    font-size: 9.5px !important;
+  }
+
+  .menu-item {
+    padding: 8px 18px !important;
+    font-size: 12.5px !important;
+    gap: 10px !important;
+  }
+
+  .menu-item i {
+    font-size: 13px !important;
+  }
+
+  .sidebar-brand {
+    min-height: 80px !important;
+    padding: 12px 16px !important;
+  }
+
+  .sidebar-logo-img {
+    max-height: 40px !important;
+  }
+}
+
+@media (max-width: 1366px) and (min-width: 1025px) {
+  :root {
+    --sidebar-width: 205px;
+    --header-height: 52px;
+  }
+
+  html {
+    font-size: 12.5px;
+  }
+
+  .dashboard-content {
+    padding: 14px 16px !important;
+  }
+
+  .header {
+    padding: 0 16px !important;
+  }
+
+  .menu-title {
+    padding: 8px 14px 4px !important;
+    font-size: 9px !important;
+  }
+
+  .menu-item {
+    padding: 7px 14px !important;
+    font-size: 12px !important;
+    gap: 8px !important;
+  }
+
+  .menu-item i {
+    font-size: 12px !important;
+  }
+
+  .sidebar-brand {
+    min-height: 74px !important;
+    padding: 10px 14px !important;
+  }
+
+  .sidebar-logo-img {
+    max-height: 36px !important;
+  }
+}
+
 @media (max-width: 1024px) {
   .layout {
     position: relative;
