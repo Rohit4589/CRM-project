@@ -11,6 +11,7 @@ import Salary from './pages/Salary';
 import Reports from './pages/Reports';
 import Estimates from './pages/Estimates';
 import ProductsRates from './pages/ProductsRates';
+import TodoList from './pages/TodoList';
 
 // Employee Pages
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
@@ -129,6 +130,8 @@ function App() {
         return <Reports />;
       case 'estimates':
         return <Estimates onNavigate={handleTabChange} />;
+      case 'todo-list':
+        return <TodoList onNavigate={handleTabChange} />;
       case 'products-rates':
         return <ProductsRates onNavigate={handleTabChange} />;
       default:
