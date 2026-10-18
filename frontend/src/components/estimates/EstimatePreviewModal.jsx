@@ -29,11 +29,18 @@ const EstimatePreviewModal = ({
     : new Date().toLocaleDateString('en-GB');
 
   // Resolve collection-wise Material Specifications
-  const activeTier = estimate.collection_tier || (
-    estimate.furniture_level === 'Modern' ? 'Essential Collection' :
-    estimate.furniture_level === 'Luxury' ? 'Elite Collection' :
-    estimate.furniture_level || 'Signature Collection'
-  );
+  const resolveCollectionTier = (tier, level) => {
+    const raw = String(tier || level || '').trim();
+    if (raw === 'Modern' || raw.toLowerCase().includes('essential')) {
+      return 'Essential Collection';
+    }
+    if (raw === 'Luxury' || raw.toLowerCase().includes('elite')) {
+      return 'Elite Collection';
+    }
+    return 'Signature Collection';
+  };
+
+  const activeTier = resolveCollectionTier(estimate.collection_tier, estimate.furniture_level);
   const materialSpecs = getMaterialSpecsForCollection(activeTier);
 
   // Parse Terms & Conditions into structured clauses
@@ -331,14 +338,27 @@ const EstimatePreviewModal = ({
 
               {/* 4. Package Vertical Accent Strip */}
               <div className="print-unified-col print-col-package">
-                <i className="fa-solid fa-crown" style={{ fontSize: '14px', color: '#E8D5C4', marginBottom: '5px' }}></i>
-                <span className="print-pkg-title" style={{ fontSize: '11.5px', fontWeight: '800', letterSpacing: '0.5px', lineHeight: '1.3' }}>
-                  {estimate.collection_tier || (
-                    estimate.furniture_level === 'Modern' ? 'Essential Collection' :
-                    estimate.furniture_level === 'Luxury' ? 'Elite Collection' :
-                    estimate.furniture_level || 'Signature Collection'
-                  )}
-                </span>
+                <div className="print-pkg-title">
+                  {activeTier}
+                </div>
+                <div
+                  className="print-pkg-subtitle"
+                  style={{
+                    fontSize: '7px',
+                    fontWeight: '600',
+                    color: '#E8D5C4',
+                    letterSpacing: '0.2px',
+                    lineHeight: '1.2',
+                    marginTop: '4px',
+                    paddingTop: '3px',
+                    borderTop: '1px solid rgba(232, 213, 196, 0.4)',
+                    whiteSpace: 'nowrap',
+                    textAlign: 'center',
+                    width: '100%'
+                  }}
+                >
+                  Furniture &amp; Interior Quotation
+                </div>
               </div>
             </div>
 
@@ -347,7 +367,7 @@ const EstimatePreviewModal = ({
               <table key={rIdx} className="print-room-table">
                 <thead className="print-room-thead" style={{ display: 'table-row-group' }}>
                   <tr className="print-room-title-row">
-                    <td colSpan="8" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <td colSpan="8" style={{ textAlign: 'left', paddingLeft: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       {room.roomName}
                     </td>
                   </tr>
@@ -439,97 +459,93 @@ const EstimatePreviewModal = ({
               </tbody>
             </table>
 
-            {/* Material Specifications for Active Collection */}
-            {materialSpecs && (
-              <div className="print-material-specs-section">
-                <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '13px', marginTop: '14px', marginBottom: '6px' }}>
-                  {materialSpecs.title}:
+            {/* Side-by-side 50/50 Section: Material Specifications (Left) & Terms & Conditions (Right) */}
+            {/* 1. Dedicated Header Row (Both titles aligned to the same horizontal line) */}
+            <div className="print-specs-terms-header-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '6px', width: '100%', alignItems: 'end' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '12px', margin: 0, lineHeight: '1.35', letterSpacing: '0.2px' }}>
+                  {materialSpecs ? materialSpecs.title : 'Material Specifications'}:
                 </h5>
-                <div
-                  className="print-material-card"
-                  style={{
-                    background: '#FAF8F5',
-                    border: '1px solid #DCD4CA',
-                    borderRadius: '6px',
-                    padding: '10px 14px',
-                    marginBottom: '14px',
-                    fontSize: '10.5px',
-                    color: '#000000',
-                    lineHeight: '1.5'
-                  }}
-                >
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {materialSpecs.items.slice(0, Math.ceil(materialSpecs.items.length / 2)).map((it, idx) => (
-                        <div key={idx}>
-                          <strong style={{ color: '#000000', fontWeight: '800' }}>{it.label} </strong>
-                          <span style={{ color: '#000000', fontWeight: '600' }}>{it.text}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {materialSpecs.items.slice(Math.ceil(materialSpecs.items.length / 2)).map((it, idx) => (
-                        <div key={idx}>
-                          <strong style={{ color: '#000000', fontWeight: '800' }}>{it.label} </strong>
-                          <span style={{ color: '#000000', fontWeight: '600' }}>{it.text}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {materialSpecs.note && (
-                    <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #DCD4CA' }}>
-                      <strong style={{ color: '#000000', fontWeight: '800' }}>Note: </strong>
-                      <span style={{ color: '#000000', fontWeight: '600' }}>{materialSpecs.note}</span>
-                    </div>
-                  )}
-
-                  {materialSpecs.additionalCharges && (
-                    <div style={{ marginTop: '4px' }}>
-                      <strong style={{ color: '#000000', fontWeight: '800' }}>Additional Charges: </strong>
-                      <span style={{ color: '#000000', fontWeight: '600' }}>{materialSpecs.additionalCharges}</span>
-                    </div>
-                  )}
-                </div>
               </div>
-            )}
-
-            {/* Note from Excel */}
-            {estimate.notes && (
-              <div className="print-note-section" style={{ fontSize: '11px', fontWeight: '700', color: '#000000', marginBottom: '14px', background: '#F8F5F1', padding: '9px 14px', borderRadius: '4px', border: '1px solid #DCD4CA' }}>
-                {estimate.notes}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '12px', margin: 0, lineHeight: '1.35', letterSpacing: '0.2px' }}>
+                  Terms &amp; Conditions:
+                </h5>
               </div>
-            )}
+            </div>
 
-            {/* 1. Terms & Conditions */}
-            <div className="print-terms-section">
-              <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '13px', marginTop: '14px', marginBottom: '6px' }}>
-                Terms & Conditions:
-              </h5>
-              <div className="print-terms-grid" style={{ color: '#000000', fontWeight: '600', fontSize: '10.5px' }}>
-                <div className="print-terms-col">
-                  {termsCol1.map((item, idx) => (
-                    <div key={idx} style={{ marginBottom: idx < termsCol1.length - 1 ? '8px' : '0' }}>
-                      {item.title && (
-                        <div style={{ color: '#000000', fontWeight: '800', fontSize: '11px', marginBottom: '2px' }}>
-                          {item.title}
-                        </div>
-                      )}
-                      <div style={{ color: '#000000', fontWeight: '600', lineHeight: '1.5' }}>
-                        {item.desc}
+            {/* 2. Dedicated Cards Row (Both cards start at the exact same level & end at the exact same level) */}
+            <div className="print-specs-terms-cards-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', width: '100%', alignItems: 'stretch' }}>
+              {/* Left Card: Material Specifications */}
+              <div
+                className="print-bank-card print-specs-card"
+                style={{
+                  background: '#FAF8F5',
+                  border: '1px solid #DCD4CA',
+                  borderRadius: '6px',
+                  padding: '10px 12px',
+                  fontSize: '10px',
+                  color: '#000000',
+                  lineHeight: '1.45',
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  height: '100%'
+                }}
+              >
+                {materialSpecs && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    {materialSpecs.items.map((it, idx) => (
+                      <div key={idx}>
+                        <strong style={{ color: '#000000', fontWeight: '800' }}>{it.label} </strong>
+                        <span style={{ color: '#000000', fontWeight: '600' }}>{it.text}</span>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="print-terms-col">
-                  {termsCol2.map((item, idx) => (
-                    <div key={idx} style={{ marginBottom: idx < termsCol2.length - 1 ? '8px' : '0' }}>
+                    ))}
+
+                    {materialSpecs.note && (
+                      <div style={{ marginTop: '5px', paddingTop: '5px', borderTop: '1px dashed #DCD4CA' }}>
+                        <strong style={{ color: '#000000', fontWeight: '800' }}>Exclusions: </strong>
+                        <span style={{ color: '#000000', fontWeight: '600' }}>{materialSpecs.note}</span>
+                      </div>
+                    )}
+
+                    {materialSpecs.additionalCharges && (
+                      <div style={{ marginTop: '3px' }}>
+                        <strong style={{ color: '#000000', fontWeight: '800' }}>Note / Additional Charges: </strong>
+                        <span style={{ color: '#000000', fontWeight: '600' }}>{materialSpecs.additionalCharges}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Card: Terms & Conditions */}
+              <div
+                className="print-bank-card print-terms-card"
+                style={{
+                  background: '#FAF8F5',
+                  border: '1px solid #DCD4CA',
+                  borderRadius: '6px',
+                  padding: '10px 12px',
+                  fontSize: '10px',
+                  color: '#000000',
+                  lineHeight: '1.45',
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {termsClauses.map((item, idx) => (
+                    <div key={idx} style={{ marginBottom: idx < termsClauses.length - 1 ? '3px' : '0' }}>
                       {item.title && (
-                        <div style={{ color: '#000000', fontWeight: '800', fontSize: '11px', marginBottom: '2px' }}>
+                        <div style={{ color: '#000000', fontWeight: '800', fontSize: '10.5px', marginBottom: '1px' }}>
                           {item.title}
                         </div>
                       )}
-                      <div style={{ color: '#000000', fontWeight: '600', lineHeight: '1.5' }}>
+                      <div style={{ color: '#000000', fontWeight: '600' }}>
                         {item.desc}
                       </div>
                     </div>
@@ -542,101 +558,135 @@ const EstimatePreviewModal = ({
                 Bank Details + Payment Terms + Signatures stay together.
                 If they don't fit at the page bottom, they push cleanly to the next page. */}
             <div className="print-closing-block">
-              {/* 2. Bank Details at 1 side and Mode of Payment at 1 side */}
-              <div className="print-payment-section">
-                {/* Bank Account Details */}
-                <div className="print-payment-col">
-                  <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '13px' }}>
+              {/* 1. Header Row for Bank Details & Mode of Payment (Aligned Baseline) */}
+              <div className="print-payment-header-row" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '14px', marginBottom: '6px', width: '100%', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #E5D9C5', alignItems: 'end' }}>
+                <div>
+                  <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '12px', margin: 0, lineHeight: '1.35', letterSpacing: '0.2px' }}>
                     Bank Account Details for Payment:
                   </h5>
-                  <div className="print-bank-card" style={{ color: '#000000', fontWeight: '600' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '5px 14px', flex: 1, minWidth: 0, fontSize: '11px', lineHeight: '1.5' }}>
-                        {/* First 4 lines */}
-                        <div style={{ whiteSpace: 'nowrap' }}>
-                          <div><strong style={{ color: '#000000', fontWeight: '800' }}>Bank Name:</strong> {bankName}</div>
-                          <div style={{ marginTop: '4px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account Name:</strong> {accountName}</div>
-                          <div style={{ marginTop: '4px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account No.:</strong> {accountNo}</div>
-                          <div style={{ marginTop: '4px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Branch:</strong> {branch}</div>
-                        </div>
+                </div>
+                <div>
+                  <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '12px', margin: 0, lineHeight: '1.35', letterSpacing: '0.2px' }}>
+                    Mode Of Payment:
+                  </h5>
+                </div>
+              </div>
 
-                        {/* Next 4 lines */}
-                        <div style={{ whiteSpace: 'nowrap' }}>
-                          <div><strong style={{ color: '#000000', fontWeight: '800' }}>IFSC Code:</strong> {ifscCode}</div>
-                          <div style={{ marginTop: '4px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account Type:</strong> {accountType}</div>
-                          <div style={{ marginTop: '4px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>G-Pay:</strong> {gpay}</div>
-                          <div style={{ marginTop: '4px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>GSTIN:</strong> {gstNo}</div>
-                        </div>
+              {/* 2. Cards Row (Both cards start at the same level & end at the same level) */}
+              <div className="print-payment-cards-row" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '14px', width: '100%', alignItems: 'stretch' }}>
+                {/* Bank Account Details Card */}
+                <div
+                  className="print-bank-card print-bank-details-card"
+                  style={{
+                    background: '#FAF8F5',
+                    border: '1px solid #DCD4CA',
+                    borderRadius: '6px',
+                    padding: '9px 12px',
+                    color: '#000000',
+                    fontWeight: '600',
+                    boxSizing: 'border-box',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 8px', flex: 1, minWidth: 0, fontSize: '10.5px', lineHeight: '1.45' }}>
+                      {/* First 4 lines */}
+                      <div>
+                        <div><strong style={{ color: '#000000', fontWeight: '800' }}>Bank Name:</strong> {bankName}</div>
+                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account Name:</strong> {accountName}</div>
+                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account No.:</strong> {accountNo}</div>
+                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Branch:</strong> {branch}</div>
                       </div>
 
-                      {/* Bigger Scanner */}
-                      <div
+                      {/* Next 4 lines */}
+                      <div>
+                        <div><strong style={{ color: '#000000', fontWeight: '800' }}>IFSC Code:</strong> {ifscCode}</div>
+                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account Type:</strong> {accountType}</div>
+                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>G-Pay:</strong> {gpay}</div>
+                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>GSTIN:</strong> {gstNo}</div>
+                      </div>
+                    </div>
+
+                    {/* Clean UPI QR Scanner (No Overlap) */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        flexShrink: 0,
+                        textAlign: 'center',
+                        padding: '4px',
+                        background: '#FFFFFF',
+                        border: '1.5px solid #000000',
+                        borderRadius: '6px'
+                      }}
+                    >
+                      <img
+                        src={scannerImg}
+                        alt="UPI QR Scanner"
                         style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          flexShrink: 0,
-                          textAlign: 'center',
-                          padding: '5px',
-                          background: '#FFFFFF',
-                          border: '1.5px solid #000000',
-                          borderRadius: '6px'
+                          width: '80px',
+                          height: '80px',
+                          objectFit: 'contain',
+                          display: 'block'
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.src = '/scanner.jpg';
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: '8px',
+                          fontWeight: '800',
+                          color: '#000000',
+                          marginTop: '2px',
+                          letterSpacing: '0.4px',
+                          textTransform: 'uppercase'
                         }}
                       >
-                        <img
-                          src={scannerImg}
-                          alt="UPI QR Scanner"
-                          style={{
-                            width: '100px',
-                            height: '100px',
-                            objectFit: 'contain',
-                            display: 'block'
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.src = '/scanner.jpg';
-                          }}
-                        />
-                        <span
-                          style={{
-                            fontSize: '8.5px',
-                            fontWeight: '800',
-                            color: '#000000',
-                            marginTop: '3px',
-                            letterSpacing: '0.4px',
-                            textTransform: 'uppercase'
-                          }}
-                        >
-                          Scan &amp; Pay (UPI)
-                        </span>
-                      </div>
+                        Scan &amp; Pay (UPI)
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Mode of Payment */}
-                <div className="print-payment-col">
-                  <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '13px' }}>
-                    Mode Of Payment:
-                  </h5>
-                  <div className="print-bank-card" style={{ color: '#000000', fontWeight: '600' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', fontSize: '11.5px', lineHeight: '1.5' }}>
-                      {paymentTermsList.map((term, idx) => (
-                        <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-                          <span style={{ color: '#000000', fontWeight: '800', flexShrink: 0 }}>
-                            {term.num}
-                          </span>
-                          <span style={{ color: '#000000', fontWeight: '600' }}>
-                            {term.text}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                {/* Mode of Payment Card */}
+                <div
+                  className="print-bank-card print-payment-terms-card"
+                  style={{
+                    background: '#FAF8F5',
+                    border: '1px solid #DCD4CA',
+                    borderRadius: '6px',
+                    padding: '9px 12px',
+                    color: '#000000',
+                    fontWeight: '600',
+                    boxSizing: 'border-box',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11.5px', lineHeight: '1.5' }}>
+                    {paymentTermsList.map((term, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                        <span style={{ color: '#000000', fontWeight: '800', flexShrink: 0 }}>
+                          {term.num}
+                        </span>
+                        <span style={{ color: '#000000', fontWeight: '600' }}>
+                          {term.text}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
 
               {/* 3. Below that: Signatures */}
-              <div className="print-signature-section">
+              <div className="print-signature-section" style={{ paddingTop: '38px', marginTop: '16px' }}>
                 <div className="print-sig-col">
                   <div className="print-sig-line">
                     Customer Sign

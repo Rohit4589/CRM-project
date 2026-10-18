@@ -599,11 +599,11 @@ body[data-lang="hi"] textarea {
    ============================================ */
 @page {
   size: A4 portrait;
-  margin: 20mm 14mm 20mm 14mm;
-  margin-top: 20mm;
-  margin-bottom: 20mm;
-  margin-left: 14mm;
-  margin-right: 14mm;
+  margin: 12mm 12mm 12mm 12mm;
+  margin-top: 12mm;
+  margin-bottom: 12mm;
+  margin-left: 12mm;
+  margin-right: 12mm;
 }
 
 @media print {

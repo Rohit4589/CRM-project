@@ -44,12 +44,6 @@ const EstimateSummaryFooter = ({
               <span>Fixed Company Policy (Applied to Every Estimate)</span>
             </div>
             
-            <div style={{ marginBottom: '10px' }}>
-              <strong style={{ color: '#2B2520' }}>Special Note:</strong>
-              <div style={{ color: '#4A2C17', marginTop: '2px', fontStyle: 'italic', background: '#F8F5F1', padding: '6px 10px', borderRadius: '4px' }}>
-                {notes || 'Note : Any Changes In The Model, Design And Material Specification Made After The Work Is In Process, Will Be Charged Accordingly.'}
-              </div>
-            </div>
 
             {/* Material Specifications for Active Collection */}
             <div style={{ marginBottom: '10px' }}>

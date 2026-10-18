@@ -51,7 +51,7 @@ const EstimateShareModal = ({
   };
 
   return (
-    <div className="estimate-modal-overlay">
+    <div className="estimate-modal-overlay estimate-share-modal-overlay" style={{ zIndex: 1300 }}>
       <div className="estimate-modal" style={{ maxWidth: '520px' }}>
         <div className="estimate-modal-header">
           <h2>

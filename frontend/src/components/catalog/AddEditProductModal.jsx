@@ -254,13 +254,11 @@ const AddEditProductModal = ({
       return;
     }
 
-    const selectedCat = categories.find(c => String(c.id) === String(categoryId));
-
     onSave({
       ...(product ? { id: product.id } : {}),
       name: name.trim().toUpperCase(),
-      category_id: selectedCat?.id || null,
-      category_name: selectedCat?.name || 'LIVING ROOM',
+      category_id: product?.category_id || null,
+      category_name: product?.category_name || '',
       unit: unit || 'Sq.Ft.',
       default_width: Number(defaultWidth) > 0 ? Number(defaultWidth) : null,
       default_height: Number(defaultHeight) > 0 ? Number(defaultHeight) : null,
@@ -322,7 +320,7 @@ const AddEditProductModal = ({
               {product ? 'Edit Product' : 'Add Furniture Product'}
             </h3>
             <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#8C827A' }}>
-              Set room, dimensions, and collection rates.
+              Set dimensions and collection rates &amp; specifications.
             </p>
           </div>
           <button
@@ -361,195 +359,88 @@ const AddEditProductModal = ({
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Row 1: Product Name & Room Category */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            {/* Product Name (Dropdown + Custom option) */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#4A3E36' }}>
-                  Product Name *
-                </label>
-                {isCustomProductName && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomProductName(false);
-                      setName(allProductOptions[0] || 'BED');
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#4A2C17',
-                      fontSize: '11px',
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                      fontWeight: '600',
-                      padding: 0
-                    }}
-                  >
-                    ← List
-                  </button>
-                )}
-              </div>
+          {/* Row 1: Product Name */}
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#4A3E36' }}>
+                Product Name *
+              </label>
+              {isCustomProductName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomProductName(false);
+                    setName(allProductOptions[0] || 'BED');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#4A2C17',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    fontWeight: '600',
+                    padding: 0
+                  }}
+                >
+                  ← List
+                </button>
+              )}
+            </div>
 
-              {isCustomProductName ? (
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <input
-                    type="text"
-                    required
-                    autoFocus
-                    placeholder="TYPE PRODUCT NAME..."
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '1.5px solid #4A2C17',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      color: '#2B2520',
-                      textTransform: 'uppercase',
-                      outline: 'none',
-                      background: '#FFFDF9',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-              ) : (
-                <select
+            {isCustomProductName ? (
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="TYPE PRODUCT NAME..."
                   value={name}
-                  onChange={(e) => handleProductSelectChange(e.target.value)}
+                  onChange={(e) => setName(e.target.value)}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
-                    border: '1px solid #DCD4CA',
+                    border: '1.5px solid #4A2C17',
                     borderRadius: '8px',
                     fontSize: '13px',
                     fontWeight: '700',
                     color: '#2B2520',
-                    background: '#FFFFFF',
+                    textTransform: 'uppercase',
                     outline: 'none',
+                    background: '#FFFDF9',
                     boxSizing: 'border-box'
                   }}
-                >
-                  <optgroup label="Standard Products">
-                    {allProductOptions.map((pName) => (
-                      <option key={pName} value={pName}>
-                        {pName}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <option value="__CUSTOM_NEW__" style={{ fontWeight: '700', color: '#4A2C17' }}>
-                    + Add Custom Name...
-                  </option>
-                </select>
-              )}
-            </div>
-
-            {/* Room / Category (Dropdown + Add Room) */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: '#4A3E36' }}>
-                  Room *
-                </label>
-                {!showAddRoomInput && onAddCategory && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAddRoomInput(true)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#4A2C17',
-                      fontSize: '11px',
-                      cursor: 'pointer',
-                      fontWeight: '700',
-                      padding: 0
-                    }}
-                  >
-                    <i className="fa-solid fa-plus"></i> New Room
-                  </button>
-                )}
+                />
               </div>
-
-              {showAddRoomInput ? (
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  <input
-                    type="text"
-                    autoFocus
-                    placeholder="ROOM NAME..."
-                    value={newRoomName}
-                    onChange={(e) => setNewRoomName(e.target.value)}
-                    style={{
-                      padding: '7px 8px',
-                      border: '1.5px solid #4A2C17',
-                      borderRadius: '6px',
-                      fontSize: '11.5px',
-                      textTransform: 'uppercase',
-                      flex: 1,
-                      outline: 'none'
-                    }}
-                  />
-                  <button
-                    type="button"
-                    disabled={addingRoom || !newRoomName.trim()}
-                    onClick={handleCreateNewRoom}
-                    style={{
-                      background: '#4A2C17',
-                      color: '#FFF',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '6px 10px',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      cursor: (addingRoom || !newRoomName.trim()) ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    {addingRoom ? '...' : 'Add'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAddRoomInput(false);
-                      setNewRoomName('');
-                    }}
-                    style={{
-                      background: '#EAE4DD',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '6px 8px',
-                      fontSize: '11px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <i className="fa-solid fa-xmark"></i>
-                  </button>
-                </div>
-              ) : (
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #DCD4CA',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#2B2520',
-                    background: '#FFFFFF',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
+            ) : (
+              <select
+                value={name}
+                onChange={(e) => handleProductSelectChange(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #DCD4CA',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  color: '#2B2520',
+                  background: '#FFFFFF',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <optgroup label="Standard Products">
+                  {allProductOptions.map((pName) => (
+                    <option key={pName} value={pName}>
+                      {pName}
                     </option>
                   ))}
-                </select>
-              )}
-            </div>
+                </optgroup>
+                <option value="__CUSTOM_NEW__" style={{ fontWeight: '700', color: '#4A2C17' }}>
+                  + Add Custom Name...
+                </option>
+              </select>
+            )}
           </div>
 
           {/* Row 2: Unit Type & Default Dimensions */}

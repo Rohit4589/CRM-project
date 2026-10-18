@@ -83,7 +83,17 @@ exports.getCatalog = async (req, res) => {
     let dbCategories = [];
 
     try {
-      const catRes = await pool.query('SELECT * FROM estimate_categories ORDER BY display_order ASC, id ASC');
+      const catRes = await pool.query(`
+        SELECT c.*,
+          COALESCE(
+            json_agg(cp.product_id) FILTER (WHERE cp.product_id IS NOT NULL), 
+            '[]'
+          ) AS product_ids
+        FROM estimate_categories c
+        LEFT JOIN estimate_category_products cp ON c.id = cp.category_id
+        GROUP BY c.id
+        ORDER BY c.display_order ASC, c.id ASC
+      `);
       dbCategories = catRes.rows;
 
       const prodRes = await pool.query(`

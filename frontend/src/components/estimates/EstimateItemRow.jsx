@@ -35,25 +35,51 @@ const EstimateItemRow = ({
   });
 
   // When a catalog product is selected
-  // Handle description change and store in active collection memory
-  const handleDescriptionChange = (newDesc) => {
-    const isEssential = furnitureTier === 'Essential Collection' || furnitureTier === 'Modern';
-    const isElite = furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury';
+  // Matched catalog product lookup
+  const matchedProd = catalogProducts.find(
+    p => p.name.toUpperCase() === (item.productName || '').trim().toUpperCase()
+  );
 
-    const updated = {
-      ...item,
-      description: newDesc
-    };
+  const essDesc = (item.essentialDesc || matchedProd?.essentialDesc || '').trim();
+  const sigDesc = (item.signatureDesc || matchedProd?.signatureDesc || '').trim();
+  const eliDesc = (item.eliteDesc || matchedProd?.eliteDesc || '').trim();
 
-    if (isEssential) {
-      updated.essentialDesc = newDesc;
-    } else if (isElite) {
-      updated.eliteDesc = newDesc;
-    } else {
-      updated.signatureDesc = newDesc;
+  const essRate = Number(item.essentialRate || matchedProd?.essentialRate || matchedProd?.modern) || 0;
+  const sigRate = Number(item.signatureRate || matchedProd?.signatureRate || matchedProd?.luxuryModern) || 0;
+  const eliRate = Number(item.eliteRate || matchedProd?.eliteRate || matchedProd?.luxury) || 0;
+
+  // Handle description change and auto-switch rate based on selected collection description
+  const handleDescriptionSelect = (newDesc) => {
+    if (newDesc === '__CUSTOM__') {
+      setIsCustomDesc(true);
+      return;
     }
 
-    onChange(updated);
+    let updatedRate = Number(item.rate) || 0;
+
+    // Check which collection description matches the selection
+    if (essDesc && newDesc.trim() === essDesc && essRate > 0) {
+      updatedRate = essRate;
+    } else if (sigDesc && newDesc.trim() === sigDesc && sigRate > 0) {
+      updatedRate = sigRate;
+    } else if (eliDesc && newDesc.trim() === eliDesc && eliRate > 0) {
+      updatedRate = eliRate;
+    }
+
+    const newAmount = Math.round((Number(item.totalArea) || 1) * updatedRate);
+
+    onChange({
+      ...item,
+      description: newDesc,
+      rate: updatedRate,
+      amount: newAmount,
+      essentialDesc: essDesc,
+      signatureDesc: sigDesc,
+      eliteDesc: eliDesc,
+      essentialRate: essRate,
+      signatureRate: sigRate,
+      eliteRate: eliRate
+    });
   };
 
   // When a catalog product is selected
@@ -70,6 +96,10 @@ const EstimateItemRow = ({
     let signatureDesc = item.signatureDesc || '';
     let eliteDesc = item.eliteDesc || '';
 
+    let essentialRate = item.essentialRate || 0;
+    let signatureRate = item.signatureRate || 0;
+    let eliteRate = item.eliteRate || 0;
+
     let newRate = item.rate;
     let newDesc = item.description;
     let newUnit = item.unit || 'Sq.Ft.';
@@ -81,17 +111,21 @@ const EstimateItemRow = ({
       signatureDesc = found.signatureDesc || found.defaultDesc || catalogDescriptions[0] || '';
       eliteDesc = found.eliteDesc || found.defaultDesc || catalogDescriptions[0] || '';
 
+      essentialRate = found.essentialRate || found.modern || 1200;
+      signatureRate = found.signatureRate || found.luxuryModern || 1600;
+      eliteRate = found.eliteRate || found.luxury || 2200;
+
       const isEssential = furnitureTier === 'Essential Collection' || furnitureTier === 'Modern';
       const isElite = furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury';
 
       if (isEssential) {
-        newRate = found.essentialRate || found.modern || 1200;
+        newRate = essentialRate;
         newDesc = essentialDesc;
       } else if (isElite) {
-        newRate = found.eliteRate || found.luxury || 2200;
+        newRate = eliteRate;
         newDesc = eliteDesc;
       } else {
-        newRate = found.signatureRate || found.luxuryModern || 1600;
+        newRate = signatureRate;
         newDesc = signatureDesc;
       }
 
@@ -118,6 +152,9 @@ const EstimateItemRow = ({
       essentialDesc,
       signatureDesc,
       eliteDesc,
+      essentialRate,
+      signatureRate,
+      eliteRate,
       unit: newUnit,
       widthMm: newW,
       heightMm: newH,
@@ -230,7 +267,7 @@ const EstimateItemRow = ({
               rows={2}
               value={item.description || ''}
               placeholder="Enter custom description..."
-              onChange={(e) => handleDescriptionChange(e.target.value)}
+              onChange={(e) => onChange({ ...item, description: e.target.value })}
               style={{
                 fontSize: '10.5px',
                 color: '#000000',
@@ -313,10 +350,10 @@ const EstimateItemRow = ({
                 if (e.target.value === '__CUSTOM__') {
                   setIsCustomDesc(true);
                 } else {
-                  handleDescriptionChange(e.target.value);
+                  handleDescriptionSelect(e.target.value);
                 }
               }}
-              title="Click directly to change description specification"
+              title="Click to change description specification (rate updates automatically)"
               style={{
                 position: 'absolute',
                 top: 0,
@@ -330,14 +367,32 @@ const EstimateItemRow = ({
                 zIndex: 2
               }}
             >
-              <option value="" disabled>-- Select Description --</option>
-              {catalogDescriptions.map((desc, i) => (
-                <option key={i} value={desc}>
-                  {desc}
+              <option value="" disabled>-- Select Collection Description --</option>
+              {essDesc && (
+                <option value={essDesc}>
+                  🥉 Essential Collection {essRate ? `(₹${essRate})` : ''}: {essDesc}
                 </option>
+              )}
+              {sigDesc && (
+                <option value={sigDesc}>
+                  🥈 Signature Collection {sigRate ? `(₹${sigRate})` : ''}: {sigDesc}
+                </option>
+              )}
+              {eliDesc && (
+                <option value={eliDesc}>
+                  🥇 Elite Collection {eliRate ? `(₹${eliRate})` : ''}: {eliDesc}
+                </option>
+              )}
+              {!essDesc && !sigDesc && !eliDesc && catalogDescriptions.map((desc, i) => (
+                <option key={i} value={desc}>{desc}</option>
               ))}
-              {Boolean(item.description) && !catalogDescriptions.includes(item.description) && (
-                <option value={item.description}>{item.description}</option>
+              {Boolean(item.description) && 
+                item.description !== essDesc && 
+                item.description !== sigDesc && 
+                item.description !== eliDesc && (
+                <option value={item.description}>
+                  📝 Custom: {item.description}
+                </option>
               )}
               <option value="__CUSTOM__">✏️ Custom / Edit Description...</option>
             </select>
