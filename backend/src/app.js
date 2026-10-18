@@ -8,6 +8,7 @@ const geocodeRoutes = require('./routes/geocodeRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const estimateRoutes = require('./routes/estimateRoutes');
 const catalogRoutes = require('./routes/catalogRoutes');
+const siteTaskRoutes = require('./routes/siteTaskRoutes');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/sites', siteRoutes);
+app.use('/api/site-tasks', siteTaskRoutes);
 app.use('/api/geocode', geocodeRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/estimates', estimateRoutes);

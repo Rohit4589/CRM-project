@@ -22,6 +22,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lan
     employees: getTranslation(lang, 'employees'),
     reports: getTranslation(lang, 'reports'),
     estimates: getTranslation(lang, 'estimates'),
+    todoList: getTranslation(lang, 'todoList'),
     productsRates: getTranslation(lang, 'productsRates'),
   };
 
@@ -173,6 +174,13 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lan
                   onClick={(e) => handleItemClick(e, 'estimates')}
                 >
                   <i className="fa-solid fa-file-invoice-dollar"></i> {t.estimates}
+                </a>
+                <a 
+                  href="#" 
+                  className={`menu-item ${activeTab === 'todo-list' ? 'active' : ''}`} 
+                  onClick={(e) => handleItemClick(e, 'todo-list')}
+                >
+                  <i className="fa-solid fa-list-check"></i> {t.todoList || 'To-Do List'}
                 </a>
                 <a 
                   href="#" 
