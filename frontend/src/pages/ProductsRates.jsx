@@ -78,8 +78,12 @@ const ProductsRates = ({ onNavigate }) => {
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase();
         const matchesName = (prod.name || '').toLowerCase().includes(q);
-        const matchesDesc = (prod.default_description || '').toLowerCase().includes(q);
-        const matchesCat = (prod.category_name || '').toLowerCase().includes(q);
+        const matchesDesc = (prod.essential_description || '').toLowerCase().includes(q) ||
+          (prod.signature_description || '').toLowerCase().includes(q) ||
+          (prod.elite_description || '').toLowerCase().includes(q) ||
+          (prod.default_description || '').toLowerCase().includes(q);
+        const matchesCat = (prod.category_name || '').toLowerCase().includes(q) ||
+          (prod.resolved_category_name || '').toLowerCase().includes(q);
         if (!matchesName && !matchesDesc && !matchesCat) return false;
       }
 
@@ -124,12 +128,15 @@ const ProductsRates = ({ onNavigate }) => {
         await fetchData();
         setShowRoomModal(false);
         setEditingRoom(null);
+        return data.category;
       } else {
         alert(data.message || 'Failed to save room category');
+        return null;
       }
     } catch (err) {
       console.error('Error saving room:', err);
       alert('Error saving room category');
+      return null;
     } finally {
       setSaving(false);
     }
@@ -394,9 +401,9 @@ const ProductsRates = ({ onNavigate }) => {
                 <th style={{ width: '15%' }}>Room Category</th>
                 <th style={{ width: '10%' }}>Unit</th>
                 <th style={{ width: '13%' }}>Dimensions (W × H)</th>
-                <th style={{ width: '10%' }}>Modern (₹)</th>
-                <th style={{ width: '10%' }}>Lux-Mod (₹)</th>
-                <th style={{ width: '10%' }}>Luxury (₹)</th>
+                <th style={{ width: '10%' }}>Essential (₹)</th>
+                <th style={{ width: '10%' }}>Signature (₹)</th>
+                <th style={{ width: '10%' }}>Elite (₹)</th>
                 <th style={{ width: '10%', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
@@ -423,20 +430,28 @@ const ProductsRates = ({ onNavigate }) => {
 
                   const unitClass = prod.unit === 'Sq.Ft.' ? 'SqFt' : (prod.unit === 'SET' ? 'SET' : (prod.unit === 'RFT.' ? 'RFT' : 'APPROX'));
 
+                  const essRate = Number(prod.essential_rate !== undefined ? prod.essential_rate : prod.modern_rate) || 0;
+                  const sigRate = Number(prod.signature_rate !== undefined ? prod.signature_rate : prod.luxury_modern_rate) || 0;
+                  const eliRate = Number(prod.elite_rate !== undefined ? prod.elite_rate : prod.luxury_rate) || 0;
+
+                  const mainDesc = prod.signature_description || prod.essential_description || prod.default_description;
+
                   return (
                     <tr key={prod.id}>
                       {/* Name & Specification */}
                       <td>
                         <strong style={{ color: '#2B2520', fontSize: '13.5px' }}>{prod.name}</strong>
-                        {prod.default_description && (
+                        {mainDesc && (
                           <div style={{
                             fontSize: '11px',
                             color: '#8C827A',
                             marginTop: '3px',
                             lineHeight: '1.3',
                             wordBreak: 'break-word'
-                          }}>
-                            {prod.default_description}
+                          }}
+                          title={`Essential: ${prod.essential_description || '-'}\nSignature: ${prod.signature_description || '-'}\nElite: ${prod.elite_description || '-'}`}
+                          >
+                            {mainDesc}
                           </div>
                         )}
                       </td>
@@ -468,24 +483,36 @@ const ProductsRates = ({ onNavigate }) => {
                         {dimStr}
                       </td>
 
-                      {/* Modern Rate */}
+                      {/* Essential Rate */}
                       <td>
-                        <span className="rate-badge modern">
-                          ₹{Number(prod.modern_rate || 0).toLocaleString('en-IN')}
+                        <span
+                          className="rate-badge modern"
+                          title={`Essential Spec:\n${prod.essential_description || 'Standard'}`}
+                          style={{ cursor: 'help' }}
+                        >
+                          ₹{essRate.toLocaleString('en-IN')}
                         </span>
                       </td>
 
-                      {/* Luxury-Modern Rate */}
+                      {/* Signature Rate */}
                       <td>
-                        <span className="rate-badge luxury-modern">
-                          ₹{Number(prod.luxury_modern_rate || 0).toLocaleString('en-IN')}
+                        <span
+                          className="rate-badge luxury-modern"
+                          title={`Signature Spec:\n${prod.signature_description || 'Standard'}`}
+                          style={{ cursor: 'help' }}
+                        >
+                          ₹{sigRate.toLocaleString('en-IN')}
                         </span>
                       </td>
 
-                      {/* Luxury Rate */}
+                      {/* Elite Rate */}
                       <td>
-                        <span className="rate-badge luxury">
-                          ₹{Number(prod.luxury_rate || 0).toLocaleString('en-IN')}
+                        <span
+                          className="rate-badge luxury"
+                          title={`Elite Spec:\n${prod.elite_description || 'Standard'}`}
+                          style={{ cursor: 'help' }}
+                        >
+                          ₹{eliRate.toLocaleString('en-IN')}
                         </span>
                       </td>
 
@@ -546,6 +573,7 @@ const ProductsRates = ({ onNavigate }) => {
         <AddEditProductModal
           product={editingProduct}
           categories={categories}
+          existingProducts={products}
           defaultCategory={selectedCategory !== 'All' ? selectedCategory : ''}
           saving={saving}
           onClose={() => {
@@ -553,6 +581,7 @@ const ProductsRates = ({ onNavigate }) => {
             setEditingProduct(null);
           }}
           onSave={handleSaveProduct}
+          onAddCategory={handleSaveRoom}
         />
       )}
 

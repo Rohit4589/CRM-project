@@ -6,6 +6,9 @@
 const PROJECT_TYPES = ['Residential', 'Commercial'];
 
 const FURNITURE_TIERS = {
+  ESSENTIAL: 'Essential Collection',
+  SIGNATURE: 'Signature Collection',
+  ELITE: 'Elite Collection',
   MODERN: 'Modern',
   LUXURY_MODERN: 'Luxury-Modern',
   LUXURY: 'Luxury'
@@ -14,11 +17,10 @@ const FURNITURE_TIERS = {
 const UNITS = ['Sq.Ft.', 'SET', 'RFT.', 'APPROX'];
 
 const READYMADE_DESCRIPTIONS = [
-  'Providing Alternate Ply, Inside Egg white Laminate & External Regular Colour laminate, With Premium Quality Hardware.',
-  'Providing BWR Ply, Inside Egg white Laminate & External ACRYLIC Shutter, With Premium Quality Hardware.',
-  'Providing BWR Ply, Inside Egg white Laminate & External ACRYLIC Shutter/ Profile shutter, With Premium Quality Hardware.',
+  'Providing Alternate Commercial Ply, Inside Egg white Laminate & External Regular Colour laminate, With Standard Quality Hardware.',
+  'Providing BWR Ply, Inside Egg white Laminate & External ACRYLIC Shutter / Profile shutter, With Premium Soft-Close Quality Hardware.',
+  'Providing Marine HDHMR / BWP Ply, Inside Egg white Laminate & External Veneer Polish / PU Finish, With German Soft-Close Fittings (Hettich/Hafele).',
   'Hettich/Hafele Brand Tandem with base, back sheet and verticle support',
-  'Providing Commercial Ply with veneer polish finish & soft-close German hardware.',
   'ALL SET',
   'APPROX'
 ];
@@ -77,14 +79,17 @@ const PRODUCT_CATALOG = [
   { name: 'PAINTING WORK', category: 'Contractor Work', defaultUnit: 'APPROX', modern: 70000, luxuryModern: 100000, luxury: 150000, defaultW: null, defaultH: null, defaultDesc: 'APPROX' }
 ];
 
-const DEFAULT_TERMS_CONDITIONS = `1) Laminate Used In Medium Range i.e. 1500-2000 Per Sheet.
-2) GST 18% Extra.
-3) Maintenance Will Be Given Only For 12 Months From The Date Of Completion.
-4) After 12 Months For Any Kind Of Service Charges Will Be Taken As Actuals.
-5) Estimation Is Calculated As Per Given Specification.
-6) Estimation Is Done On A Thumb Rule Calculation, Hence May Vary Up To (+ Or -) 5 To 10%.
-7) Transport, Loading Unloading, Taxes, Local charges extra as actual.
-8) Images shown in the estimate are only for reference.`;
+const DEFAULT_TERMS_CONDITIONS = `1. Taxes & Additional Charges
+GST @ 18%, transportation, loading/unloading and applicable local charges (including Mathadi) shall be charged extra at actuals.
+
+2. Maintenance & Service
+Complimentary maintenance for 12 months from work completion, covering workmanship-related issues only. Physical damage, misuse, water damage and normal wear and tear are excluded. Thereafter, service charges shall apply at actuals. Hardware and accessories are subject to their respective manufacturers' warranties.
+
+3. Estimation & Price Variation
+This quotation is based on approximate measurements and specified materials. Final billing may vary by ±5–10% depending on actual site measurements, material requirements and work executed.
+
+4. Quotation Validity & Price Revision
+This quotation is valid for 7 days from the date of issue. Prices are subject to revision after the validity period due to fluctuations in market rates, material costs or other applicable charges. Revised rates shall be confirmed before order acceptance.`;
 
 const DEFAULT_PAYMENT_TERMS = `1) 50% Advance Before Starting The Project.
 2) 40% While The Project Is In Process.
@@ -94,11 +99,14 @@ const DEFAULT_PAYMENT_TERMS = `1) 50% Advance Before Starting The Project.
 const DEFAULT_NOTE = 'Note : Any Changes In The Model, Design And Material Specification Made After The Work Is In Process, Will Be Charged Accordingly.';
 
 const DEFAULT_BANK_DETAILS = {
-  accountName: 'MODERN INTERIOR',
-  bankName: 'HDFC BANK',
-  accountNo: '50200088923412',
-  ifscCode: 'HDFC0001824',
-  gstNo: '27AAOFM1234F1Z8'
+  accountName: 'Modern Interior',
+  bankName: 'IndusInd Bank',
+  accountNo: '251000000789',
+  branch: 'Katraj Pune',
+  ifscCode: 'INDB0001665',
+  accountType: 'Current A/C',
+  gpay: '9552527801',
+  gstNo: '27BIPPS2002G1ZA'
 };
 
 // Preset default rooms for template generation
@@ -225,6 +233,47 @@ const COMMERCIAL_PRESETS = [
   }
 ];
 
+const COLLECTION_MATERIAL_SPECS = {
+  'Elite Collection': {
+    title: 'MATERIAL SPECIFICATIONS – ELITE COLLECTION',
+    items: [
+      { label: '1. Board:', text: 'Standard Brand BWR Grade Full Core Plywood / HDHMR (18mm & 6mm, as applicable).' },
+      { label: '2. External Finish:', text: 'Merino / Royale Touche / Greenlam or equivalent premium brand, with Laminate, Acrylic or Veneer finishes (SF/HGL/MR+ as applicable). Selected finishes shall be applied to visible surfaces only; remaining surfaces shall have a standard white finish unless otherwise specified.' },
+      { label: '3. Internal Finish:', text: 'Regular Egg White, Fabric Texture or Selected Colour Laminate with Suede Finish, as specified in the quotation.' },
+      { label: '4. Edge Banding:', text: 'Best possible colour-matched edge banding, subject to availability and compatibility with the selected finish.' },
+      { label: '5. Hinges:', text: 'Onyx / Hettich / Häfele or equivalent premium brand, Soft-Close Hinges.' },
+      { label: '6. Scope of Work:', text: 'The quotation includes only the specified items, materials, finishes, hardware and work. Any additional work, design modifications, special accessories or site requirements shall be charged separately, subject to customer approval.' }
+    ],
+    note: 'Handles, decorative items, special hardware and accessories are excluded unless specifically mentioned. Soft-close hinges are included as specified above.',
+    additionalCharges: 'Special colours, premium finishes, veneer polishing, customized designs or material upgrades beyond the quoted specifications shall be charged extra at the actual cost difference.'
+  },
+  'Essential Collection': {
+    title: 'MATERIAL SPECIFICATIONS – ESSENTIAL COLLECTION',
+    items: [
+      { label: '1. Board:', text: 'Standard Brand Pre-Laminated Particle Board (18mm & 6mm, as applicable).' },
+      { label: '2. External Finish:', text: 'Prism / Action Tesa or equivalent brand, SF/HGL finish. Selected colour will be applied to visible surfaces only; remaining surfaces will be in standard white finish.' },
+      { label: '3. Internal Finish:', text: 'Regular Egg White Pre-Laminated Board with Suede Finish.' },
+      { label: '4. Edge Banding:', text: 'Best possible colour-matched edge banding, subject to availability.' },
+      { label: '5. Hinges:', text: 'Onyx or equivalent brand, Regular (Non-Soft-Close) Hinges.' },
+      { label: '6. Scope of Work:', text: 'Quotation includes only the items, materials, specifications and work explicitly mentioned. Any additional work, design changes, modifications, accessories or site requirements shall be charged separately upon customer approval.' }
+    ],
+    note: 'Handles, decorative items, soft-close hinges, special hardware and accessories are excluded unless specifically mentioned in the quotation.',
+    additionalCharges: 'Special colours, finishes or material upgrades beyond the standard range shall be charged extra at the actual cost difference.'
+  },
+  'Signature Collection': {
+    title: 'MATERIAL SPECIFICATIONS – SIGNATURE COLLECTION',
+    items: [
+      { label: '1. Plywood:', text: 'Standard Brand Alternate Plywood (Standard Thickness).' },
+      { label: '2. External Laminate:', text: 'Merino / Greenlam or equivalent brand, SF/HGL finish (₹1,500–₹2,000 per sheet), applied to visible surfaces only.' },
+      { label: '3. Internal Laminate:', text: 'Regular Egg White Laminate with Suede Finish.' },
+      { label: '4. Edge Banding:', text: 'Best possible colour-matched edge banding, subject to availability.' },
+      { label: '5. Hinges:', text: 'Onyx Brand Regular (Non-Soft-Close) Hinges.' }
+    ],
+    note: 'Handles, decorative items, soft-close hinges, special hardware and accessories are excluded unless specifically mentioned in the quotation.',
+    additionalCharges: 'Any laminate selection exceeding the specified price range or requiring a special finish shall be charged extra at the actual cost difference.'
+  }
+};
+
 module.exports = {
   PROJECT_TYPES,
   FURNITURE_TIERS,
@@ -236,5 +285,6 @@ module.exports = {
   DEFAULT_NOTE,
   DEFAULT_BANK_DETAILS,
   RESIDENTIAL_PRESETS,
-  COMMERCIAL_PRESETS
+  COMMERCIAL_PRESETS,
+  COLLECTION_MATERIAL_SPECS
 };

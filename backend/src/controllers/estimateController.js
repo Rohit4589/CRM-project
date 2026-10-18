@@ -10,7 +10,8 @@ const {
   DEFAULT_NOTE,
   DEFAULT_BANK_DETAILS,
   RESIDENTIAL_PRESETS,
-  COMMERCIAL_PRESETS
+  COMMERCIAL_PRESETS,
+  COLLECTION_MATERIAL_SPECS
 } = require('../constants/estimateCatalog');
 
 const { recalculateEstimate } = require('../utils/estimateCalculations');
@@ -97,13 +98,20 @@ exports.getCatalog = async (req, res) => {
           id: p.id,
           name: p.name,
           category: p.cat_name || p.category_name,
+          category_id: p.category_id,
           defaultUnit: p.unit || 'Sq.Ft.',
-          modern: Number(p.modern_rate) || 0,
-          luxuryModern: Number(p.luxury_modern_rate) || 0,
-          luxury: Number(p.luxury_rate) || 0,
+          modern: Number(p.essential_rate || p.modern_rate) || 0,
+          luxuryModern: Number(p.signature_rate || p.luxury_modern_rate) || 0,
+          luxury: Number(p.elite_rate || p.luxury_rate) || 0,
+          essentialRate: Number(p.essential_rate || p.modern_rate) || 0,
+          signatureRate: Number(p.signature_rate || p.luxury_modern_rate) || 0,
+          eliteRate: Number(p.elite_rate || p.luxury_rate) || 0,
+          essentialDesc: p.essential_description || p.default_description || '',
+          signatureDesc: p.signature_description || p.default_description || '',
+          eliteDesc: p.elite_description || p.default_description || '',
           defaultW: p.default_width ? Number(p.default_width) : null,
           defaultH: p.default_height ? Number(p.default_height) : null,
-          defaultDesc: p.default_description || ''
+          defaultDesc: p.signature_description || p.essential_description || p.default_description || ''
         }));
       }
     } catch (dbErr) {
@@ -124,7 +132,8 @@ exports.getCatalog = async (req, res) => {
         defaultNote: DEFAULT_NOTE,
         defaultBankDetails: DEFAULT_BANK_DETAILS,
         residentialPresets: RESIDENTIAL_PRESETS,
-        commercialPresets: COMMERCIAL_PRESETS
+        commercialPresets: COMMERCIAL_PRESETS,
+        materialSpecs: COLLECTION_MATERIAL_SPECS
       }
     });
   } catch (error) {
@@ -279,14 +288,18 @@ exports.createEstimate = async (req, res) => {
     let providedOrderNo = req.body.order_no || req.body.site_ref || site.site_ref || null;
     const estimateNumber = await generateEstimateNumber(providedOrderNo);
 
+    const resolvedCollection = req.body.collection_tier ||
+      (furniture_level === 'Modern' || furniture_level === 'Essential Collection' ? 'Essential Collection' :
+       furniture_level === 'Luxury' || furniture_level === 'Elite Collection' ? 'Elite Collection' : 'Signature Collection');
+
     const insertQuery = `
       INSERT INTO estimates (
         estimate_number, site_id, customer_name, phone, email, address, date,
-        project_type, furniture_level, rooms_data, sub_total, design_fee_pct,
+        project_type, furniture_level, collection_tier, rooms_data, sub_total, design_fee_pct,
         design_fee_amount, gst_pct, gst_amount, round_off, final_total,
         bank_details, notes, terms_conditions, payment_terms, status
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
       ) RETURNING *
     `;
 
@@ -300,6 +313,7 @@ exports.createEstimate = async (req, res) => {
       date || new Date().toISOString().split('T')[0],
       project_type,
       furniture_level,
+      resolvedCollection,
       JSON.stringify(calculations.roomsData),
       calculations.subTotal,
       calculations.designFeePct,
@@ -362,6 +376,10 @@ exports.updateEstimate = async (req, res) => {
       roundOff: round_off
     });
 
+    const resolvedCollection = req.body.collection_tier ||
+      (furniture_level === 'Modern' || furniture_level === 'Essential Collection' ? 'Essential Collection' :
+       furniture_level === 'Luxury' || furniture_level === 'Elite Collection' ? 'Elite Collection' : 'Signature Collection');
+
     const updateQuery = `
       UPDATE estimates SET
         site_id = $1,
@@ -372,21 +390,22 @@ exports.updateEstimate = async (req, res) => {
         date = $6,
         project_type = $7,
         furniture_level = $8,
-        rooms_data = $9,
-        sub_total = $10,
-        design_fee_pct = $11,
-        design_fee_amount = $12,
-        gst_pct = $13,
-        gst_amount = $14,
-        round_off = $15,
-        final_total = $16,
-        bank_details = $17,
-        notes = $18,
-        terms_conditions = $19,
-        payment_terms = $20,
-        status = $21,
+        collection_tier = $9,
+        rooms_data = $10,
+        sub_total = $11,
+        design_fee_pct = $12,
+        design_fee_amount = $13,
+        gst_pct = $14,
+        gst_amount = $15,
+        round_off = $16,
+        final_total = $17,
+        bank_details = $18,
+        notes = $19,
+        terms_conditions = $20,
+        payment_terms = $21,
+        status = $22,
         updated_at = NOW()
-      WHERE id = $22
+      WHERE id = $23
       RETURNING *
     `;
 
@@ -399,6 +418,7 @@ exports.updateEstimate = async (req, res) => {
       date,
       project_type,
       furniture_level,
+      resolvedCollection,
       JSON.stringify(calculations.roomsData),
       calculations.subTotal,
       calculations.designFeePct,

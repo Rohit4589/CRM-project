@@ -203,6 +203,12 @@ exports.createProduct = async (req, res) => {
       category_id,
       category_name,
       unit = 'Sq.Ft.',
+      essential_rate,
+      signature_rate,
+      elite_rate,
+      essential_description,
+      signature_description,
+      elite_description,
       modern_rate = 0,
       luxury_modern_rate = 0,
       luxury_rate = 0,
@@ -234,6 +240,12 @@ exports.createProduct = async (req, res) => {
     }
 
     const cleanName = name.trim().toUpperCase();
+    const finalEssentialRate = Number(essential_rate !== undefined ? essential_rate : modern_rate) || 0;
+    const finalSignatureRate = Number(signature_rate !== undefined ? signature_rate : luxury_modern_rate) || 0;
+    const finalEliteRate = Number(elite_rate !== undefined ? elite_rate : luxury_rate) || 0;
+    const finalEssentialDesc = essential_description !== undefined ? essential_description : (default_description || '');
+    const finalSignatureDesc = signature_description !== undefined ? signature_description : (default_description || '');
+    const finalEliteDesc = elite_description !== undefined ? elite_description : (default_description || '');
 
     const result = await pool.query(`
       INSERT INTO estimate_products (
@@ -244,22 +256,34 @@ exports.createProduct = async (req, res) => {
         modern_rate,
         luxury_modern_rate,
         luxury_rate,
+        essential_rate,
+        signature_rate,
+        elite_rate,
+        essential_description,
+        signature_description,
+        elite_description,
         default_width,
         default_height,
         default_description
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *
     `, [
       finalCatId,
       finalCatName || 'LIVING ROOM',
       cleanName,
       unit,
-      Number(modern_rate) || 0,
-      Number(luxury_modern_rate) || 0,
-      Number(luxury_rate) || 0,
+      finalEssentialRate,
+      finalSignatureRate,
+      finalEliteRate,
+      finalEssentialRate,
+      finalSignatureRate,
+      finalEliteRate,
+      finalEssentialDesc,
+      finalSignatureDesc,
+      finalEliteDesc,
       default_width ? Number(default_width) : null,
       default_height ? Number(default_height) : null,
-      default_description || ''
+      finalSignatureDesc || finalEssentialDesc || ''
     ]);
 
     res.status(201).json({
@@ -285,6 +309,12 @@ exports.updateProduct = async (req, res) => {
       category_id,
       category_name,
       unit,
+      essential_rate,
+      signature_rate,
+      elite_rate,
+      essential_description,
+      signature_description,
+      elite_description,
       modern_rate,
       luxury_modern_rate,
       luxury_rate,
@@ -303,6 +333,10 @@ exports.updateProduct = async (req, res) => {
       }
     }
 
+    const calcEssentialRate = essential_rate !== undefined ? Number(essential_rate) : (modern_rate !== undefined ? Number(modern_rate) : null);
+    const calcSignatureRate = signature_rate !== undefined ? Number(signature_rate) : (luxury_modern_rate !== undefined ? Number(luxury_modern_rate) : null);
+    const calcEliteRate = elite_rate !== undefined ? Number(elite_rate) : (luxury_rate !== undefined ? Number(luxury_rate) : null);
+
     const result = await pool.query(`
       UPDATE estimate_products
       SET 
@@ -310,23 +344,32 @@ exports.updateProduct = async (req, res) => {
         category_id = COALESCE($2, category_id),
         category_name = COALESCE($3, category_name),
         unit = COALESCE($4, unit),
+        essential_rate = COALESCE($5, essential_rate),
+        signature_rate = COALESCE($6, signature_rate),
+        elite_rate = COALESCE($7, elite_rate),
+        essential_description = COALESCE($8, essential_description),
+        signature_description = COALESCE($9, signature_description),
+        elite_description = COALESCE($10, elite_description),
         modern_rate = COALESCE($5, modern_rate),
         luxury_modern_rate = COALESCE($6, luxury_modern_rate),
         luxury_rate = COALESCE($7, luxury_rate),
-        default_width = $8,
-        default_height = $9,
-        default_description = COALESCE($10, default_description),
+        default_width = $11,
+        default_height = $12,
+        default_description = COALESCE($9, COALESCE($13, default_description)),
         updated_at = NOW()
-      WHERE id = $11
+      WHERE id = $14
       RETURNING *
     `, [
       name ? name.trim().toUpperCase() : null,
       finalCatId,
       finalCatName,
       unit,
-      modern_rate !== undefined ? Number(modern_rate) : null,
-      luxury_modern_rate !== undefined ? Number(luxury_modern_rate) : null,
-      luxury_rate !== undefined ? Number(luxury_rate) : null,
+      calcEssentialRate,
+      calcSignatureRate,
+      calcEliteRate,
+      essential_description !== undefined ? essential_description : null,
+      signature_description !== undefined ? signature_description : null,
+      elite_description !== undefined ? elite_description : null,
       default_width !== undefined ? (default_width ? Number(default_width) : null) : null,
       default_height !== undefined ? (default_height ? Number(default_height) : null) : null,
       default_description !== undefined ? default_description : null,

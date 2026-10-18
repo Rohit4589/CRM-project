@@ -214,58 +214,154 @@ const Estimates = ({ onNavigate }) => {
       ? (catalog?.commercialPresets || [])
       : (catalog?.residentialPresets || []);
 
-    // Filter and build rooms data
+    // Filter and build rooms data by pulling products assigned to that room in catalog
     const generatedRooms = activeRooms.map((roomName, rIdx) => {
-      const foundPreset = presets.find(p => p.roomName.toUpperCase() === roomName.toUpperCase());
-      const presetItems = foundPreset ? foundPreset.items : [];
+      const cleanRoomUpper = roomName.trim().toUpperCase();
 
-      const items = presetItems.map((pi, iIdx) => {
-        const catalogProd = (catalog?.products || []).find(
-          p => p.name.toUpperCase() === pi.productName.toUpperCase()
-        );
-
-        let rate = catalogProd ? catalogProd.luxuryModern : 1500;
-        if (furniture_level === 'Modern' && catalogProd) rate = catalogProd.modern;
-        if (furniture_level === 'Luxury' && catalogProd) rate = catalogProd.luxury;
-
-        const unit = pi.unit || catalogProd?.defaultUnit || 'Sq.Ft.';
-        let totalArea = pi.totalArea || 1;
-        if (unit === 'Sq.Ft.' && pi.widthMm && pi.heightMm) {
-          totalArea = Math.ceil((pi.widthMm * pi.heightMm) / 92903);
-        }
-
-        const amount = Math.round(totalArea * rate);
-
-        return {
-          id: `item_${rIdx}_${iIdx}_${Date.now()}`,
-          productName: pi.productName,
-          description: catalogProd?.defaultDesc || catalog?.readymadeDescriptions?.[0] || '',
-          widthMm: pi.widthMm || null,
-          heightMm: pi.heightMm || null,
-          totalArea,
-          unit,
-          rate,
-          amount
-        };
+      // Find all products in catalog assigned to this room
+      const matchingCatalogProds = (catalog?.products || []).filter(p => {
+        const pCat = (p.category || '').toUpperCase();
+        return pCat === cleanRoomUpper ||
+          (cleanRoomUpper.includes('BEDROOM') && pCat.includes('BEDROOM')) ||
+          (cleanRoomUpper.includes('MASTER') && pCat.includes('BEDROOM')) ||
+          (cleanRoomUpper.includes('KID') && pCat.includes('BEDROOM'));
       });
 
-      // If it's a custom room with no preset items, add a starter item
-      if (items.length === 0) {
+      // Also check fallback presets if no dynamic products found
+      const foundPreset = presets.find(p => p.roomName.toUpperCase() === cleanRoomUpper);
+      const presetItems = foundPreset ? foundPreset.items : [];
+
+      let items = [];
+
+      if (matchingCatalogProds.length > 0) {
+        items = matchingCatalogProds.map((p, iIdx) => {
+          const essentialDesc = p.essentialDesc || p.defaultDesc || '';
+          const signatureDesc = p.signatureDesc || p.defaultDesc || '';
+          const eliteDesc = p.eliteDesc || p.defaultDesc || '';
+
+          let rate = p.signatureRate || p.luxuryModern || 1600;
+          let description = signatureDesc;
+
+          if (furniture_level === 'Essential Collection' || furniture_level === 'Modern') {
+            rate = p.essentialRate || p.modern || 1200;
+            description = essentialDesc;
+          } else if (furniture_level === 'Elite Collection' || furniture_level === 'Luxury') {
+            rate = p.eliteRate || p.luxury || 2200;
+            description = eliteDesc;
+          }
+
+          const unit = p.defaultUnit || 'Sq.Ft.';
+          const w = (p.defaultW !== null && p.defaultW !== undefined && p.defaultW !== '') ? Number(p.defaultW) : '';
+          const h = (p.defaultH !== null && p.defaultH !== undefined && p.defaultH !== '') ? Number(p.defaultH) : '';
+          let totalArea = 1;
+          if (unit === 'Sq.Ft.' && w && h && Number(w) > 0 && Number(h) > 0) {
+            const rawSqFt = (Number(w) * Number(h)) / 92903;
+            totalArea = Math.ceil(rawSqFt * 2) / 2;
+          }
+
+          const amount = Math.round(totalArea * rate);
+
+          return {
+            id: `item_${rIdx}_${iIdx}_${Date.now()}`,
+            productName: p.name,
+            description,
+            essentialDesc,
+            signatureDesc,
+            eliteDesc,
+            widthMm: w,
+            heightMm: h,
+            totalArea,
+            unit,
+            rate,
+            amount
+          };
+        });
+      } else if (presetItems.length > 0) {
+        items = presetItems.map((pi, iIdx) => {
+          const catalogProd = (catalog?.products || []).find(
+            p => p.name.toUpperCase() === pi.productName.toUpperCase()
+          );
+
+          const essentialDesc = catalogProd?.essentialDesc || catalogProd?.defaultDesc || catalog?.readymadeDescriptions?.[0] || '';
+          const signatureDesc = catalogProd?.signatureDesc || catalogProd?.defaultDesc || catalog?.readymadeDescriptions?.[1] || '';
+          const eliteDesc = catalogProd?.eliteDesc || catalogProd?.defaultDesc || catalog?.readymadeDescriptions?.[2] || '';
+
+          let rate = catalogProd ? (catalogProd.signatureRate || catalogProd.luxuryModern) : 1500;
+          let description = signatureDesc;
+
+          if (furniture_level === 'Essential Collection' || furniture_level === 'Modern') {
+            rate = catalogProd ? (catalogProd.essentialRate || catalogProd.modern) : 1200;
+            description = essentialDesc;
+          } else if (furniture_level === 'Elite Collection' || furniture_level === 'Luxury') {
+            rate = catalogProd ? (catalogProd.eliteRate || catalogProd.luxury) : 2200;
+            description = eliteDesc;
+          }
+
+          const unit = pi.unit || catalogProd?.defaultUnit || 'Sq.Ft.';
+          const w = (pi.widthMm !== null && pi.widthMm !== undefined && pi.widthMm !== '') ? Number(pi.widthMm) : '';
+          const h = (pi.heightMm !== null && pi.heightMm !== undefined && pi.heightMm !== '') ? Number(pi.heightMm) : '';
+          let totalArea = pi.totalArea || 1;
+          if (unit === 'Sq.Ft.' && w && h && Number(w) > 0 && Number(h) > 0) {
+            const rawSqFt = (Number(w) * Number(h)) / 92903;
+            totalArea = Math.ceil(rawSqFt * 2) / 2;
+          }
+
+          const amount = Math.round(totalArea * rate);
+
+          return {
+            id: `item_${rIdx}_${iIdx}_${Date.now()}`,
+            productName: pi.productName,
+            description,
+            essentialDesc,
+            signatureDesc,
+            eliteDesc,
+            widthMm: w,
+            heightMm: h,
+            totalArea,
+            unit,
+            rate,
+            amount
+          };
+        });
+      } else {
+        // Fallback custom starter item
         const defaultProd = catalog?.products?.[0] || { name: 'FURNITURE ITEM', luxuryModern: 1500 };
-        let rate = defaultProd.luxuryModern || 1500;
-        if (furniture_level === 'Modern') rate = defaultProd.modern || 1200;
-        if (furniture_level === 'Luxury') rate = defaultProd.luxury || 2200;
+        const essentialDesc = defaultProd.essentialDesc || defaultProd.defaultDesc || catalog?.readymadeDescriptions?.[0] || '';
+        const signatureDesc = defaultProd.signatureDesc || defaultProd.defaultDesc || catalog?.readymadeDescriptions?.[1] || '';
+        const eliteDesc = defaultProd.eliteDesc || defaultProd.defaultDesc || catalog?.readymadeDescriptions?.[2] || '';
+
+        let rate = defaultProd.signatureRate || defaultProd.luxuryModern || 1500;
+        let description = signatureDesc;
+
+        if (furniture_level === 'Essential Collection' || furniture_level === 'Modern') {
+          rate = defaultProd.essentialRate || defaultProd.modern || 1200;
+          description = essentialDesc;
+        } else if (furniture_level === 'Elite Collection' || furniture_level === 'Luxury') {
+          rate = defaultProd.eliteRate || defaultProd.luxury || 2200;
+          description = eliteDesc;
+        }
+
+        const defaultW = (defaultProd.defaultW !== null && defaultProd.defaultW !== undefined && defaultProd.defaultW !== '') ? Number(defaultProd.defaultW) : '';
+        const defaultH = (defaultProd.defaultH !== null && defaultProd.defaultH !== undefined && defaultProd.defaultH !== '') ? Number(defaultProd.defaultH) : '';
+        let totalArea = 1;
+        if (defaultW && defaultH && Number(defaultW) > 0 && Number(defaultH) > 0) {
+          const rawSqFt = (Number(defaultW) * Number(defaultH)) / 92903;
+          totalArea = Math.ceil(rawSqFt * 2) / 2;
+        }
 
         items.push({
           id: `item_${rIdx}_0_${Date.now()}`,
-          productName: 'FURNITURE / UNIT',
-          description: catalog?.readymadeDescriptions?.[0] || '',
-          widthMm: 1200,
-          heightMm: 2100,
-          totalArea: 28,
-          unit: 'Sq.Ft.',
+          productName: defaultProd.name || 'FURNITURE / UNIT',
+          description,
+          essentialDesc,
+          signatureDesc,
+          eliteDesc,
+          widthMm: defaultW,
+          heightMm: defaultH,
+          totalArea,
+          unit: defaultProd.defaultUnit || 'Sq.Ft.',
           rate,
-          amount: Math.round(28 * rate)
+          amount: Math.round(totalArea * rate)
         });
       }
 
