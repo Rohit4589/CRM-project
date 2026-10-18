@@ -8,6 +8,19 @@ const AddEditRoomModal = ({ room, allProducts = [], onClose, onSave, saving = fa
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
 
+  // Deduplicate products defensively by ID
+  const uniqueMasterProducts = useMemo(() => {
+    const seen = new Set();
+    const list = [];
+    (allProducts || []).forEach(p => {
+      if (p && p.id && !seen.has(p.id)) {
+        seen.add(p.id);
+        list.push(p);
+      }
+    });
+    return list;
+  }, [allProducts]);
+
   useEffect(() => {
     if (room) {
       setName(room.name || '');
@@ -16,12 +29,17 @@ const AddEditRoomModal = ({ room, allProducts = [], onClose, onSave, saving = fa
 
       // Initialize selected product IDs from room.product_ids or find by category name
       if (Array.isArray(room.product_ids) && room.product_ids.length > 0) {
-        setSelectedProductIds(room.product_ids);
+        setSelectedProductIds(Array.from(new Set(room.product_ids)));
       } else {
-        const matchingIds = allProducts
-          .filter(p => (p.category_name || p.resolved_category_name || '').toUpperCase() === (room.name || '').toUpperCase())
+        const matchingIds = uniqueMasterProducts
+          .filter(p => {
+            const names = Array.isArray(p.category_names) && p.category_names.length > 0
+              ? p.category_names
+              : [(p.category_name || '')];
+            return names.some(n => (n || '').toUpperCase() === (room.name || '').toUpperCase());
+          })
           .map(p => p.id);
-        setSelectedProductIds(matchingIds);
+        setSelectedProductIds(Array.from(new Set(matchingIds)));
       }
     } else {
       setName('');
@@ -31,7 +49,7 @@ const AddEditRoomModal = ({ room, allProducts = [], onClose, onSave, saving = fa
     }
     setSearchQuery('');
     setError('');
-  }, [room, allProducts]);
+  }, [room, uniqueMasterProducts]);
 
   // Toggle product selection
   const handleToggleProduct = (prodId) => {
@@ -47,19 +65,19 @@ const AddEditRoomModal = ({ room, allProducts = [], onClose, onSave, saving = fa
 
   // Filter products by search query
   const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return allProducts;
+    if (!searchQuery.trim()) return uniqueMasterProducts;
     const q = searchQuery.toLowerCase();
-    return allProducts.filter(p => 
+    return uniqueMasterProducts.filter(p => 
       (p.name || '').toLowerCase().includes(q) ||
       (p.unit || '').toLowerCase().includes(q)
     );
-  }, [allProducts, searchQuery]);
+  }, [uniqueMasterProducts, searchQuery]);
 
   // Separate into selected and unselected lists
   const selectedProductsList = useMemo(() => {
     const idSet = new Set(selectedProductIds);
-    return allProducts.filter(p => idSet.has(p.id));
-  }, [allProducts, selectedProductIds]);
+    return uniqueMasterProducts.filter(p => idSet.has(p.id));
+  }, [uniqueMasterProducts, selectedProductIds]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

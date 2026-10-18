@@ -374,5 +374,35 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
+}
+
+.catalog-actions .btn-action-icon {
+  width: 25px;
+  height: 25px;
+  min-width: 25px;
+  min-height: 25px;
+  border-radius: 5px;
+  font-size: 11px;
+  padding: 0;
+  border: 1px solid #E5DED5;
+  background: #FAF8F5;
+  color: #4A2C17;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.catalog-actions .btn-action-icon:hover:not(:disabled) {
+  background: #EAE3D9;
+  color: #2B2520;
+  border-color: #D6C8B8;
+}
+
+.catalog-actions .btn-action-icon.delete:hover:not(:disabled) {
+  background: #FEE2E2;
+  color: #DC2626;
+  border-color: #FCA5A5;
 }

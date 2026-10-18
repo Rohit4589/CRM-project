@@ -65,8 +65,10 @@ const ProductsRates = ({ onNavigate }) => {
         if (catObj && Array.isArray(catObj.product_ids) && catObj.product_ids.length > 0) {
           if (!catObj.product_ids.includes(prod.id)) return false;
         } else {
-          const prodCat = (prod.resolved_category_name || prod.category_name || '').toUpperCase();
-          if (prodCat !== selectedCategory.toUpperCase()) return false;
+          const roomCats = Array.isArray(prod.category_names) && prod.category_names.length > 0
+            ? prod.category_names.map(c => c.toUpperCase())
+            : [(prod.category_name || '').toUpperCase()];
+          if (!roomCats.includes(selectedCategory.toUpperCase())) return false;
         }
       }
 
@@ -88,7 +90,7 @@ const ProductsRates = ({ onNavigate }) => {
           (prod.elite_description || '').toLowerCase().includes(q) ||
           (prod.default_description || '').toLowerCase().includes(q);
         const matchesCat = (prod.category_name || '').toLowerCase().includes(q) ||
-          (prod.resolved_category_name || '').toLowerCase().includes(q);
+          (Array.isArray(prod.category_names) && prod.category_names.some(c => c.toLowerCase().includes(q)));
         if (!matchesName && !matchesDesc && !matchesCat) return false;
       }
 
@@ -103,7 +105,12 @@ const ProductsRates = ({ onNavigate }) => {
       if (Array.isArray(cat.product_ids) && cat.product_ids.length > 0) {
         map[cat.name.toUpperCase()] = cat.product_ids.length;
       } else {
-        const count = products.filter(p => (p.resolved_category_name || p.category_name || '').toUpperCase() === cat.name.toUpperCase()).length;
+        const count = products.filter(p => {
+          if (Array.isArray(p.category_names) && p.category_names.length > 0) {
+            return p.category_names.map(c => c.toUpperCase()).includes(cat.name.toUpperCase());
+          }
+          return (p.category_name || '').toUpperCase() === cat.name.toUpperCase();
+        }).length;
         map[cat.name.toUpperCase()] = count;
       }
     });
@@ -210,6 +217,45 @@ const ProductsRates = ({ onNavigate }) => {
       alert('Error deleting item');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // Move Product Sequence (Up / Down)
+  const handleMoveProduct = async (prodIndex, direction) => {
+    const targetIndex = direction === 'up' ? prodIndex - 1 : prodIndex + 1;
+    if (targetIndex < 0 || targetIndex >= filteredProducts.length) return;
+
+    // Swap within the visible list
+    const reorderedFiltered = [...filteredProducts];
+    const [movedItem] = reorderedFiltered.splice(prodIndex, 1);
+    reorderedFiltered.splice(targetIndex, 0, movedItem);
+
+    // Build sequential display_orders
+    const updatedItems = reorderedFiltered.map((p, idx) => ({
+      id: p.id,
+      display_order: idx + 1
+    }));
+
+    const orderMap = new Map(updatedItems.map(it => [it.id, it.display_order]));
+    const updatedProducts = products.map(p => {
+      if (orderMap.has(p.id)) {
+        return { ...p, display_order: orderMap.get(p.id) };
+      }
+      return p;
+    }).sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+
+    // Instant UI update
+    setProducts(updatedProducts);
+
+    // Persist to backend
+    try {
+      await fetch(`${API_BASE}/catalog/products/reorder`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: updatedItems })
+      });
+    } catch (err) {
+      console.error('Failed to save product sequence:', err);
     }
   };
 
@@ -406,14 +452,14 @@ const ProductsRates = ({ onNavigate }) => {
           <table className="catalog-table">
             <thead>
               <tr>
-                <th style={{ width: '22%' }}>Product Name</th>
-                <th style={{ width: '15%' }}>Room Category</th>
-                <th style={{ width: '10%' }}>Unit</th>
-                <th style={{ width: '13%' }}>Dimensions (W × H)</th>
-                <th style={{ width: '10%' }}>Essential (₹)</th>
-                <th style={{ width: '10%' }}>Signature (₹)</th>
-                <th style={{ width: '10%' }}>Elite (₹)</th>
-                <th style={{ width: '10%', textAlign: 'right' }}>Actions</th>
+                <th style={{ width: '20%', textAlign: 'left' }}>Product Name</th>
+                <th style={{ width: '15%', textAlign: 'center' }}>Room Category</th>
+                <th style={{ width: '9%', textAlign: 'center' }}>Unit</th>
+                <th style={{ width: '12%', textAlign: 'center' }}>W × H</th>
+                <th style={{ width: '10%', textAlign: 'center' }}>Essential (₹)</th>
+                <th style={{ width: '10%', textAlign: 'center' }}>Signature (₹)</th>
+                <th style={{ width: '10%', textAlign: 'center' }}>Elite (₹)</th>
+                <th style={{ width: '14%', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -432,9 +478,9 @@ const ProductsRates = ({ onNavigate }) => {
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((prod) => {
+                filteredProducts.map((prod, idx) => {
                   const dimStr = (prod.default_width && prod.default_height)
-                    ? `${prod.default_width} × ${prod.default_height} mm`
+                    ? `${parseFloat(prod.default_width)} × ${parseFloat(prod.default_height)}`
                     : '-';
 
                   const unitClass = prod.unit === 'Sq.Ft.' ? 'SqFt' : (prod.unit === 'SET' ? 'SET' : (prod.unit === 'RFT.' ? 'RFT' : 'APPROX'));
@@ -447,8 +493,8 @@ const ProductsRates = ({ onNavigate }) => {
 
                   return (
                     <tr key={prod.id}>
-                      {/* Name & Specification */}
-                      <td>
+                      {/* Name & Specification (Left Aligned) */}
+                      <td style={{ textAlign: 'left' }}>
                         <strong style={{ color: '#2B2520', fontSize: '13.5px' }}>{prod.name}</strong>
                         {mainDesc && (
                           <div style={{
@@ -458,42 +504,70 @@ const ProductsRates = ({ onNavigate }) => {
                             lineHeight: '1.3',
                             wordBreak: 'break-word'
                           }}
-                          title={`Essential: ${prod.essential_description || '-'}\nSignature: ${prod.signature_description || '-'}\nElite: ${prod.elite_description || '-'}`}
+                            title={`Essential: ${prod.essential_description || '-'}\nSignature: ${prod.signature_description || '-'}\nElite: ${prod.elite_description || '-'}`}
                           >
                             {mainDesc}
                           </div>
                         )}
                       </td>
 
-                      {/* Room Category */}
-                      <td>
-                        <span style={{
-                          fontSize: '11.5px',
-                          color: '#4A2C17',
-                          fontWeight: '600',
-                          background: '#F6EFE9',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          display: 'inline-block'
-                        }}>
-                          {prod.resolved_category_name || prod.category_name}
-                        </span>
+                      {/* Room Category (Center Aligned) */}
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '240px', justifyContent: 'center', margin: '0 auto' }}>
+                          {Array.isArray(prod.room_categories) && prod.room_categories.length > 0 ? (
+                            prod.room_categories.map((rc, idx) => {
+                              const isCurrentFilter = selectedCategory !== 'All' &&
+                                (rc.name || '').toUpperCase() === selectedCategory.toUpperCase();
+                              return (
+                                <span
+                                  key={rc.id || idx}
+                                  style={{
+                                    fontSize: '11px',
+                                    color: isCurrentFilter ? '#3B2110' : '#4A2C17',
+                                    fontWeight: isCurrentFilter ? '700' : '600',
+                                    background: isCurrentFilter ? '#EBE1D7' : '#F6EFE9',
+                                    border: isCurrentFilter ? '1px solid #D5C5B5' : '1px solid #EFE8E1',
+                                    padding: '2.5px 7px',
+                                    borderRadius: '5px',
+                                    display: 'inline-block',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {rc.name}
+                                </span>
+                              );
+                            })
+                          ) : (
+                            <span style={{
+                              fontSize: '11px',
+                              color: '#4A2C17',
+                              fontWeight: '600',
+                              background: '#F6EFE9',
+                              border: '1px solid #EFE8E1',
+                              padding: '2.5px 7px',
+                              borderRadius: '5px',
+                              display: 'inline-block'
+                            }}>
+                              {prod.category_name || 'GENERAL'}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
-                      {/* Unit */}
-                      <td>
+                      {/* Unit (Center Aligned) */}
+                      <td style={{ textAlign: 'center' }}>
                         <span className={`badge-unit ${unitClass}`}>
                           {prod.unit}
                         </span>
                       </td>
 
-                      {/* Dimensions */}
-                      <td style={{ fontSize: '12px', color: '#5C5248', fontFamily: 'monospace' }}>
+                      {/* Dimensions (Center Aligned) */}
+                      <td style={{ fontSize: '12px', color: '#5C5248', fontFamily: 'monospace', textAlign: 'center', whiteSpace: 'nowrap' }}>
                         {dimStr}
                       </td>
 
-                      {/* Essential Rate */}
-                      <td>
+                      {/* Essential Rate (Center Aligned) */}
+                      <td style={{ textAlign: 'center' }}>
                         <span
                           className="rate-badge modern"
                           title={`Essential Spec:\n${prod.essential_description || 'Standard'}`}
@@ -503,8 +577,8 @@ const ProductsRates = ({ onNavigate }) => {
                         </span>
                       </td>
 
-                      {/* Signature Rate */}
-                      <td>
+                      {/* Signature Rate (Center Aligned) */}
+                      <td style={{ textAlign: 'center' }}>
                         <span
                           className="rate-badge luxury-modern"
                           title={`Signature Spec:\n${prod.signature_description || 'Standard'}`}
@@ -514,8 +588,8 @@ const ProductsRates = ({ onNavigate }) => {
                         </span>
                       </td>
 
-                      {/* Elite Rate */}
-                      <td>
+                      {/* Elite Rate (Center Aligned) */}
+                      <td style={{ textAlign: 'center' }}>
                         <span
                           className="rate-badge luxury"
                           title={`Elite Spec:\n${prod.elite_description || 'Standard'}`}
@@ -525,9 +599,35 @@ const ProductsRates = ({ onNavigate }) => {
                         </span>
                       </td>
 
-                      {/* Actions */}
-                      <td>
+                      {/* Actions (Right Aligned) */}
+                      <td style={{ textAlign: 'right' }}>
                         <div className="catalog-actions">
+                          <button
+                            className="btn-action-icon"
+                            title="Move Up"
+                            disabled={idx === 0}
+                            onClick={() => handleMoveProduct(idx, 'up')}
+                            style={{
+                              opacity: idx === 0 ? 0.3 : 1,
+                              cursor: idx === 0 ? 'not-allowed' : 'pointer'
+                            }}
+                          >
+                            <i className="fa-solid fa-arrow-up"></i>
+                          </button>
+
+                          <button
+                            className="btn-action-icon"
+                            title="Move Down"
+                            disabled={idx === filteredProducts.length - 1}
+                            onClick={() => handleMoveProduct(idx, 'down')}
+                            style={{
+                              opacity: idx === filteredProducts.length - 1 ? 0.3 : 1,
+                              cursor: idx === filteredProducts.length - 1 ? 'not-allowed' : 'pointer'
+                            }}
+                          >
+                            <i className="fa-solid fa-arrow-down"></i>
+                          </button>
+
                           <button
                             className="btn-action-icon"
                             title="Edit Product & Rates"

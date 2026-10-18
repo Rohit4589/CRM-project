@@ -483,10 +483,10 @@ const EstimatePreviewModal = ({
                   background: '#FAF8F5',
                   border: '1px solid #DCD4CA',
                   borderRadius: '6px',
-                  padding: '10px 12px',
+                  padding: '8px 10px',
                   fontSize: '10px',
                   color: '#000000',
-                  lineHeight: '1.45',
+                  lineHeight: '1.28',
                   boxSizing: 'border-box',
                   display: 'flex',
                   flexDirection: 'column',
@@ -495,23 +495,23 @@ const EstimatePreviewModal = ({
                 }}
               >
                 {materialSpecs && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                     {materialSpecs.items.map((it, idx) => (
-                      <div key={idx}>
+                      <div key={idx} style={{ lineHeight: '1.28' }}>
                         <strong style={{ color: '#000000', fontWeight: '800' }}>{it.label} </strong>
                         <span style={{ color: '#000000', fontWeight: '600' }}>{it.text}</span>
                       </div>
                     ))}
 
                     {materialSpecs.note && (
-                      <div style={{ marginTop: '5px', paddingTop: '5px', borderTop: '1px dashed #DCD4CA' }}>
+                      <div style={{ marginTop: '3px', paddingTop: '3px', borderTop: '1px dashed #DCD4CA', lineHeight: '1.28' }}>
                         <strong style={{ color: '#000000', fontWeight: '800' }}>Exclusions: </strong>
                         <span style={{ color: '#000000', fontWeight: '600' }}>{materialSpecs.note}</span>
                       </div>
                     )}
 
                     {materialSpecs.additionalCharges && (
-                      <div style={{ marginTop: '3px' }}>
+                      <div style={{ marginTop: '2px', lineHeight: '1.28' }}>
                         <strong style={{ color: '#000000', fontWeight: '800' }}>Note / Additional Charges: </strong>
                         <span style={{ color: '#000000', fontWeight: '600' }}>{materialSpecs.additionalCharges}</span>
                       </div>
@@ -527,25 +527,25 @@ const EstimatePreviewModal = ({
                   background: '#FAF8F5',
                   border: '1px solid #DCD4CA',
                   borderRadius: '6px',
-                  padding: '10px 12px',
+                  padding: '8px 10px',
                   fontSize: '10px',
                   color: '#000000',
-                  lineHeight: '1.45',
+                  lineHeight: '1.28',
                   boxSizing: 'border-box',
                   display: 'flex',
                   flexDirection: 'column',
                   height: '100%'
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3.5px' }}>
                   {termsClauses.map((item, idx) => (
-                    <div key={idx} style={{ marginBottom: idx < termsClauses.length - 1 ? '3px' : '0' }}>
+                    <div key={idx} style={{ marginBottom: '0px', lineHeight: '1.28' }}>
                       {item.title && (
-                        <div style={{ color: '#000000', fontWeight: '800', fontSize: '10.5px', marginBottom: '1px' }}>
+                        <div style={{ color: '#000000', fontWeight: '800', fontSize: '10px', marginBottom: '1px', lineHeight: '1.25' }}>
                           {item.title}
                         </div>
                       )}
-                      <div style={{ color: '#000000', fontWeight: '600' }}>
+                      <div style={{ color: '#000000', fontWeight: '600', lineHeight: '1.28' }}>
                         {item.desc}
                       </div>
                     </div>
@@ -559,7 +559,7 @@ const EstimatePreviewModal = ({
                 If they don't fit at the page bottom, they push cleanly to the next page. */}
             <div className="print-closing-block">
               {/* 1. Header Row for Bank Details & Mode of Payment (Aligned Baseline) */}
-              <div className="print-payment-header-row" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '14px', marginBottom: '6px', width: '100%', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #E5D9C5', alignItems: 'end' }}>
+              <div className="print-payment-header-row" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '14px', marginBottom: '6px', width: '100%', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #E5D9C5', alignItems: 'end' }}>
                 <div>
                   <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '12px', margin: 0, lineHeight: '1.35', letterSpacing: '0.2px' }}>
                     Bank Account Details for Payment:
@@ -581,9 +581,10 @@ const EstimatePreviewModal = ({
                     background: '#FAF8F5',
                     border: '1px solid #DCD4CA',
                     borderRadius: '6px',
-                    padding: '9px 12px',
+                    padding: '8px 10px',
                     color: '#000000',
                     fontWeight: '600',
+                    fontSize: '10px',
                     boxSizing: 'border-box',
                     height: '100%',
                     display: 'flex',
@@ -592,21 +593,20 @@ const EstimatePreviewModal = ({
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 8px', flex: 1, minWidth: 0, fontSize: '10.5px', lineHeight: '1.45' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 8px', flex: 1, minWidth: 0, fontSize: '10px', lineHeight: '1.28' }}>
                       {/* First 4 lines */}
                       <div>
                         <div><strong style={{ color: '#000000', fontWeight: '800' }}>Bank Name:</strong> {bankName}</div>
-                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account Name:</strong> {accountName}</div>
-                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account No.:</strong> {accountNo}</div>
-                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Branch:</strong> {branch}</div>
+                        <div style={{ marginTop: '2px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account Name:</strong> {accountName}</div>
+                        <div style={{ marginTop: '2px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account No.:</strong> {accountNo}</div>
+                        <div style={{ marginTop: '2px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Branch:</strong> {branch}</div>
                       </div>
 
-                      {/* Next 4 lines */}
+                      {/* Next lines */}
                       <div>
                         <div><strong style={{ color: '#000000', fontWeight: '800' }}>IFSC Code:</strong> {ifscCode}</div>
-                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account Type:</strong> {accountType}</div>
-                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>G-Pay:</strong> {gpay}</div>
-                        <div style={{ marginTop: '3px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>GSTIN:</strong> {gstNo}</div>
+                        <div style={{ marginTop: '2px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>Account Type:</strong> {accountType}</div>
+                        <div style={{ marginTop: '2px' }}><strong style={{ color: '#000000', fontWeight: '800' }}>G-Pay:</strong> {gpay}</div>
                       </div>
                     </div>
 
@@ -628,8 +628,8 @@ const EstimatePreviewModal = ({
                         src={scannerImg}
                         alt="UPI QR Scanner"
                         style={{
-                          width: '80px',
-                          height: '80px',
+                          width: '74px',
+                          height: '74px',
                           objectFit: 'contain',
                           display: 'block'
                         }}
@@ -660,9 +660,10 @@ const EstimatePreviewModal = ({
                     background: '#FAF8F5',
                     border: '1px solid #DCD4CA',
                     borderRadius: '6px',
-                    padding: '9px 12px',
+                    padding: '8px 10px',
                     color: '#000000',
                     fontWeight: '600',
+                    fontSize: '10px',
                     boxSizing: 'border-box',
                     height: '100%',
                     display: 'flex',
@@ -670,9 +671,9 @@ const EstimatePreviewModal = ({
                     justifyContent: 'center'
                   }}
                 >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11.5px', lineHeight: '1.5' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3.5px', fontSize: '10px', lineHeight: '1.28' }}>
                     {paymentTermsList.map((term, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                      <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
                         <span style={{ color: '#000000', fontWeight: '800', flexShrink: 0 }}>
                           {term.num}
                         </span>
