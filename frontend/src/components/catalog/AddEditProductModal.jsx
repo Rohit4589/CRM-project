@@ -1,72 +1,256 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
-const SUGGESTED_DESCRIPTIONS = [
-  'Providing Alternate Ply, Inside Egg white Laminate & External Regular Colour laminate, With Premium Quality Hardware.',
-  'Providing BWR Ply, Inside Egg white Laminate & External ACRYLIC Shutter, With Premium Quality Hardware.',
-  'Providing BWR Ply, Inside Egg white Laminate & External ACRYLIC Shutter/ Profile shutter, With Premium Quality Hardware.',
-  'Hettich/Hafele Brand Tandem with base, back sheet and verticle support',
-  'Providing Commercial Ply with veneer polish finish & soft-close German hardware.',
-  'ALL SET',
-  'APPROX'
+const STANDARD_PRODUCT_NAMES = [
+  'BED',
+  'WARDROBE',
+  'T V UNIT',
+  'SHOES RACK',
+  'TEMPLE',
+  'SAFETY DOOR',
+  'SWING',
+  'LOFT ABOVE WARDROBE',
+  'MATTRESS',
+  'STUDY TABLE WITH BOOKS STORAGE',
+  'BED WALL PANNELING',
+  'SIDE TABLE',
+  'SIDE TABLE WITH DRESSING',
+  'TANDEM DRAWERS',
+  'OTTA SHUTTER',
+  'OVERHEAD UNIT',
+  'LOFT ABOVE OVERHEAD UNIT',
+  'TALL UNIT',
+  'ACCESSORIES',
+  'CROCKARY UNIT',
+  'DECORATIVE PARTITION',
+  'FRAME COVERING',
+  'RECEPTION DESK',
+  'BACKDROP LOGO WALL',
+  'CONFERENCE TABLE',
+  'EXECUTIVE CABIN TABLE',
+  'CABIN BACK CREDENZA',
+  'WORKSTATION PARTITION',
+  'GLASS PARTITION WITH FILM',
+  'FLOOR COVERING',
+  'DEBRIS',
+  'PASSAGE JAALI',
+  'BASIN SHUTTER',
+  'TEMPLE JAALI',
+  'CURTAIN FITTING',
+  'MISCELLANEOUS EXP.',
+  'GYPSUM FALSE CEILING',
+  'ELECTRIC WORK',
+  'PAINTING WORK'
 ];
+
+const COLLECTION_PRESETS = {
+  essential: [
+    {
+      label: 'Commercial Ply + Liner',
+      text: 'Providing Alternate Commercial Ply, Inside Egg white Laminate & External Regular Colour laminate, With Standard Quality Hardware.'
+    },
+    {
+      label: 'High-Gloss Laminate',
+      text: 'Providing Commercial Ply with 0.8mm inside liner & 1mm external high-gloss laminate.'
+    },
+    { label: 'ALL SET', text: 'ALL SET' },
+    { label: 'APPROX', text: 'APPROX' }
+  ],
+  signature: [
+    {
+      label: 'BWR Ply + Acrylic',
+      text: 'Providing BWR Ply, Inside Egg white Laminate & External ACRYLIC Shutter / Profile shutter, With Premium Soft-Close Quality Hardware.'
+    },
+    {
+      label: 'Hettich/Hafele Tandem',
+      text: 'Hettich/Hafele Brand Tandem with base, back sheet and vertical support.'
+    },
+    { label: 'ALL SET', text: 'ALL SET' },
+    { label: 'APPROX', text: 'APPROX' }
+  ],
+  elite: [
+    {
+      label: 'Veneer Polish / PU',
+      text: 'Providing Marine HDHMR / BWP Ply, Inside Egg white Laminate & External Veneer Polish / PU Finish, With German Soft-Close Fittings (Hettich/Hafele).'
+    },
+    {
+      label: 'German Concealed Fittings',
+      text: 'Providing Commercial/Marine Ply with natural veneer polish finish & soft-close German concealed hardware.'
+    },
+    { label: 'ALL SET', text: 'ALL SET' },
+    { label: 'APPROX', text: 'APPROX' }
+  ]
+};
 
 const AddEditProductModal = ({
   product,
   categories = [],
+  existingProducts = [],
   defaultCategory = '',
   onClose,
   onSave,
+  onAddCategory,
   saving = false
 }) => {
   const [name, setName] = useState('');
+  const [isCustomProductName, setIsCustomProductName] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [unit, setUnit] = useState('Sq.Ft.');
-  const [modernRate, setModernRate] = useState('');
-  const [luxuryModernRate, setLuxuryModernRate] = useState('');
-  const [luxuryRate, setLuxuryRate] = useState('');
   const [defaultWidth, setDefaultWidth] = useState('');
   const [defaultHeight, setDefaultHeight] = useState('');
-  const [defaultDescription, setDefaultDescription] = useState('');
+
+  // Inline Quick Add Room state
+  const [showAddRoomInput, setShowAddRoomInput] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+  const [addingRoom, setAddingRoom] = useState(false);
+
+  // 3-Collection Rates
+  const [essentialRate, setEssentialRate] = useState('');
+  const [signatureRate, setSignatureRate] = useState('');
+  const [eliteRate, setEliteRate] = useState('');
+
+  // 3-Collection Descriptions
+  const [essentialDesc, setEssentialDesc] = useState('');
+  const [signatureDesc, setSignatureDesc] = useState('');
+  const [eliteDesc, setEliteDesc] = useState('');
+
+  // Active collection tab in modal: 'essential' | 'signature' | 'elite' | 'all'
+  const [activeTab, setActiveTab] = useState('signature');
   const [error, setError] = useState('');
+
+  // Combine standard and existing product names without duplicates
+  const allProductOptions = useMemo(() => {
+    const set = new Set(STANDARD_PRODUCT_NAMES);
+    (existingProducts || []).forEach(p => {
+      if (p.name && p.name.trim()) set.add(p.name.trim().toUpperCase());
+    });
+    return Array.from(set).sort();
+  }, [existingProducts]);
 
   useEffect(() => {
     if (product) {
-      setName(product.name || '');
+      const pName = (product.name || '').trim().toUpperCase();
+      setName(pName);
+      setIsCustomProductName(!allProductOptions.includes(pName));
+
       setCategoryId(product.category_id || (categories.find(c => c.name.toUpperCase() === (product.category_name || '').toUpperCase())?.id || ''));
       setUnit(product.unit || 'Sq.Ft.');
-      setModernRate(product.modern_rate !== undefined ? String(product.modern_rate) : '');
-      setLuxuryModernRate(product.luxury_modern_rate !== undefined ? String(product.luxury_modern_rate) : '');
-      setLuxuryRate(product.luxury_rate !== undefined ? String(product.luxury_rate) : '');
       setDefaultWidth(product.default_width ? String(product.default_width) : '');
       setDefaultHeight(product.default_height ? String(product.default_height) : '');
-      setDefaultDescription(product.default_description || '');
+
+      setEssentialRate(
+        product.essential_rate !== undefined ? String(product.essential_rate) :
+        product.modern_rate !== undefined ? String(product.modern_rate) : ''
+      );
+      setSignatureRate(
+        product.signature_rate !== undefined ? String(product.signature_rate) :
+        product.luxury_modern_rate !== undefined ? String(product.luxury_modern_rate) : ''
+      );
+      setEliteRate(
+        product.elite_rate !== undefined ? String(product.elite_rate) :
+        product.luxury_rate !== undefined ? String(product.luxury_rate) : ''
+      );
+
+      setEssentialDesc(
+        product.essential_description ||
+        product.default_description ||
+        COLLECTION_PRESETS.essential[0].text
+      );
+      setSignatureDesc(
+        product.signature_description ||
+        product.default_description ||
+        COLLECTION_PRESETS.signature[0].text
+      );
+      setEliteDesc(
+        product.elite_description ||
+        product.default_description ||
+        COLLECTION_PRESETS.elite[0].text
+      );
     } else {
-      setName('');
-      // Default to passed category or first in list
+      const defaultProd = allProductOptions[0] || 'BED';
+      setName(defaultProd);
+      setIsCustomProductName(false);
+
       const initialCat = defaultCategory
         ? categories.find(c => c.name.toUpperCase() === defaultCategory.toUpperCase())
         : categories[0];
       setCategoryId(initialCat?.id || '');
       setUnit('Sq.Ft.');
-      setModernRate('');
-      setLuxuryModernRate('');
-      setLuxuryRate('');
       setDefaultWidth('');
       setDefaultHeight('');
-      setDefaultDescription(SUGGESTED_DESCRIPTIONS[0]);
+      setEssentialRate('');
+      setSignatureRate('');
+      setEliteRate('');
+      setEssentialDesc(COLLECTION_PRESETS.essential[0].text);
+      setSignatureDesc(COLLECTION_PRESETS.signature[0].text);
+      setEliteDesc(COLLECTION_PRESETS.elite[0].text);
     }
     setError('');
-  }, [product, defaultCategory, categories]);
+  }, [product, defaultCategory, categories, allProductOptions]);
 
-  // Preview area calculation in sq.ft from mm
+  // When user selects a product from the dropdown
+  const handleProductSelectChange = (val) => {
+    if (val === '__CUSTOM_NEW__') {
+      setIsCustomProductName(true);
+      setName('');
+      return;
+    }
+    setIsCustomProductName(false);
+    setName(val);
+
+    // Auto-match default dimensions and unit from existing product if available
+    const existing = (existingProducts || []).find(p => (p.name || '').toUpperCase() === val.toUpperCase());
+    if (existing) {
+      if (existing.unit) setUnit(existing.unit);
+      if (existing.default_width) setDefaultWidth(String(existing.default_width));
+      if (existing.default_height) setDefaultHeight(String(existing.default_height));
+      if (existing.essential_rate && !essentialRate) setEssentialRate(String(existing.essential_rate));
+      if (existing.signature_rate && !signatureRate) setSignatureRate(String(existing.signature_rate));
+      if (existing.elite_rate && !eliteRate) setEliteRate(String(existing.elite_rate));
+      if (existing.essential_description && !essentialDesc) setEssentialDesc(existing.essential_description);
+      if (existing.signature_description && !signatureDesc) setSignatureDesc(existing.signature_description);
+      if (existing.elite_description && !eliteDesc) setEliteDesc(existing.elite_description);
+    }
+  };
+
+  // Inline Quick Add Room Category
+  const handleCreateNewRoom = async (e) => {
+    e.preventDefault();
+    if (!newRoomName.trim()) return;
+    if (!onAddCategory) {
+      alert('Room addition is not configured');
+      return;
+    }
+
+    try {
+      setAddingRoom(true);
+      const cleanName = newRoomName.trim().toUpperCase();
+      const created = await onAddCategory({
+        name: cleanName,
+        project_type: 'Residential',
+        display_order: categories.length + 1
+      });
+
+      if (created && created.id) {
+        setCategoryId(created.id);
+      }
+      setNewRoomName('');
+      setShowAddRoomInput(false);
+    } catch (err) {
+      console.error('Error adding room inline:', err);
+    } finally {
+      setAddingRoom(false);
+    }
+  };
+
+  // Preview area calculation in sq.ft from mm with 0.5 step roundup
   const previewArea = (Number(defaultWidth) > 0 && Number(defaultHeight) > 0)
-    ? Math.round((Number(defaultWidth) * Number(defaultHeight)) / 92903.04)
+    ? Math.ceil(((Number(defaultWidth) * Number(defaultHeight)) / 92903) * 2) / 2
     : null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError('Please enter a product name');
+      setError('Please select or enter a product name');
       return;
     }
 
@@ -78,12 +262,24 @@ const AddEditProductModal = ({
       category_id: selectedCat?.id || null,
       category_name: selectedCat?.name || 'LIVING ROOM',
       unit: unit || 'Sq.Ft.',
-      modern_rate: Number(modernRate) || 0,
-      luxury_modern_rate: Number(luxuryModernRate) || 0,
-      luxury_rate: Number(luxuryRate) || 0,
       default_width: Number(defaultWidth) > 0 ? Number(defaultWidth) : null,
       default_height: Number(defaultHeight) > 0 ? Number(defaultHeight) : null,
-      default_description: defaultDescription.trim()
+
+      // 3 Collection Rates
+      essential_rate: Number(essentialRate) || 0,
+      signature_rate: Number(signatureRate) || 0,
+      elite_rate: Number(eliteRate) || 0,
+
+      // 3 Collection Descriptions
+      essential_description: (essentialDesc || '').trim(),
+      signature_description: (signatureDesc || '').trim(),
+      elite_description: (eliteDesc || '').trim(),
+
+      // Backward compatibility aliases
+      modern_rate: Number(essentialRate) || 0,
+      luxury_modern_rate: Number(signatureRate) || 0,
+      luxury_rate: Number(eliteRate) || 0,
+      default_description: (signatureDesc || essentialDesc || '').trim()
     });
   };
 
@@ -108,36 +304,39 @@ const AddEditProductModal = ({
       <div
         style={{
           background: '#FFFFFF',
-          borderRadius: '14px',
+          borderRadius: '16px',
           padding: '24px',
-          maxWidth: '560px',
+          maxWidth: '680px',
           width: '100%',
-          boxShadow: '0 20px 40px rgba(43, 37, 32, 0.18)',
+          boxShadow: '0 20px 40px rgba(43, 37, 32, 0.22)',
           border: '1px solid #EAE4DD',
           animation: 'fadeInScale 0.18s ease-out',
-          maxHeight: '90vh',
+          maxHeight: '92vh',
           overflowY: 'auto'
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#2B2520' }}>
-              {product ? 'Edit Product & Rates' : 'Add New Furniture Product'}
+            <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#2B2520' }}>
+              {product ? 'Edit Product' : 'Add Furniture Product'}
             </h3>
-            <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#8C827A' }}>
-              Set standard calculation units, dimensions, and 3-tier rates.
+            <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#8C827A' }}>
+              Set room, dimensions, and collection rates.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             style={{
-              background: 'transparent',
+              background: '#F5EFE8',
               border: 'none',
-              fontSize: '18px',
-              color: '#8C827A',
+              borderRadius: '8px',
+              fontSize: '15px',
+              color: '#4A2C17',
               cursor: 'pointer',
-              padding: '4px 8px'
+              padding: '6px 10px',
+              lineHeight: 1
             }}
           >
             <i className="fa-solid fa-xmark"></i>
@@ -149,100 +348,242 @@ const AddEditProductModal = ({
             background: '#FEE2E2',
             color: '#B91C1C',
             padding: '8px 12px',
-            borderRadius: '6px',
-            fontSize: '12.5px',
-            marginBottom: '14px'
+            borderRadius: '8px',
+            fontSize: '12px',
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
           }}>
-            {error}
+            <i className="fa-solid fa-circle-exclamation"></i>
+            <span>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Row 1: Product Name & Category */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px', marginBottom: '14px' }}>
+          {/* Row 1: Product Name & Room Category */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            {/* Product Name (Dropdown + Custom option) */}
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#4A3E36', marginBottom: '5px' }}>
-                Product Name *
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. WARDROBE, TV UNIT, BED"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  border: '1px solid #DCD4CA',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  background: '#FAF8F5',
-                  color: '#2B2520',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-                autoFocus
-              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#4A3E36' }}>
+                  Product Name *
+                </label>
+                {isCustomProductName && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomProductName(false);
+                      setName(allProductOptions[0] || 'BED');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#4A2C17',
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      fontWeight: '600',
+                      padding: 0
+                    }}
+                  >
+                    ← List
+                  </button>
+                )}
+              </div>
+
+              {isCustomProductName ? (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    placeholder="TYPE PRODUCT NAME..."
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1.5px solid #4A2C17',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      color: '#2B2520',
+                      textTransform: 'uppercase',
+                      outline: 'none',
+                      background: '#FFFDF9',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              ) : (
+                <select
+                  value={name}
+                  onChange={(e) => handleProductSelectChange(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #DCD4CA',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    color: '#2B2520',
+                    background: '#FFFFFF',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <optgroup label="Standard Products">
+                    {allProductOptions.map((pName) => (
+                      <option key={pName} value={pName}>
+                        {pName}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <option value="__CUSTOM_NEW__" style={{ fontWeight: '700', color: '#4A2C17' }}>
+                    + Add Custom Name...
+                  </option>
+                </select>
+              )}
             </div>
 
+            {/* Room / Category (Dropdown + Add Room) */}
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#4A3E36', marginBottom: '5px' }}>
-                Room / Category *
-              </label>
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  border: '1px solid #DCD4CA',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  background: '#FAF8F5',
-                  color: '#2B2520',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name} ({cat.project_type})
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#4A3E36' }}>
+                  Room *
+                </label>
+                {!showAddRoomInput && onAddCategory && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddRoomInput(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#4A2C17',
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                      fontWeight: '700',
+                      padding: 0
+                    }}
+                  >
+                    <i className="fa-solid fa-plus"></i> New Room
+                  </button>
+                )}
+              </div>
+
+              {showAddRoomInput ? (
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="ROOM NAME..."
+                    value={newRoomName}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                    style={{
+                      padding: '7px 8px',
+                      border: '1.5px solid #4A2C17',
+                      borderRadius: '6px',
+                      fontSize: '11.5px',
+                      textTransform: 'uppercase',
+                      flex: 1,
+                      outline: 'none'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={addingRoom || !newRoomName.trim()}
+                    onClick={handleCreateNewRoom}
+                    style={{
+                      background: '#4A2C17',
+                      color: '#FFF',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '6px 10px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      cursor: (addingRoom || !newRoomName.trim()) ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {addingRoom ? '...' : 'Add'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddRoomInput(false);
+                      setNewRoomName('');
+                    }}
+                    style={{
+                      background: '#EAE4DD',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '6px 8px',
+                      fontSize: '11px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #DCD4CA',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#2B2520',
+                    background: '#FFFFFF',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
-          {/* Row 2: Unit & Dimensions */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+          {/* Row 2: Unit Type & Default Dimensions */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#4A3E36', marginBottom: '5px' }}>
-                Unit Type *
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#4A3E36', marginBottom: '4px' }}>
+                Unit *
               </label>
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '9px 10px',
+                  padding: '8px 10px',
                   border: '1px solid #DCD4CA',
                   borderRadius: '8px',
                   fontSize: '13px',
-                  background: '#FAF8F5',
                   color: '#2B2520',
+                  background: '#FFFFFF',
                   outline: 'none',
                   boxSizing: 'border-box'
                 }}
               >
-                <option value="Sq.Ft.">Sq.Ft. (Area)</option>
-                <option value="SET">SET / Nos</option>
-                <option value="RFT.">RFT. (Running Ft)</option>
-                <option value="APPROX">APPROX (Lump Sum)</option>
+                <option value="Sq.Ft.">Sq.Ft.</option>
+                <option value="SET">SET</option>
+                <option value="RFT.">RFT.</option>
+                <option value="APPROX">APPROX</option>
+                <option value="Nos">Nos</option>
               </select>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#4A3E36', marginBottom: '5px' }}>
-                Default Width (mm)
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#4A3E36', marginBottom: '4px' }}>
+                Width (mm)
               </label>
               <input
                 type="number"
@@ -251,11 +592,10 @@ const AddEditProductModal = ({
                 onChange={(e) => setDefaultWidth(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '9px 10px',
+                  padding: '8px 10px',
                   border: '1px solid #DCD4CA',
                   borderRadius: '8px',
                   fontSize: '13px',
-                  background: '#FAF8F5',
                   color: '#2B2520',
                   outline: 'none',
                   boxSizing: 'border-box'
@@ -264,8 +604,8 @@ const AddEditProductModal = ({
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#4A3E36', marginBottom: '5px' }}>
-                Default Height (mm)
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#4A3E36', marginBottom: '4px' }}>
+                Height (mm)
               </label>
               <input
                 type="number"
@@ -274,11 +614,10 @@ const AddEditProductModal = ({
                 onChange={(e) => setDefaultHeight(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '9px 10px',
+                  padding: '8px 10px',
                   border: '1px solid #DCD4CA',
                   borderRadius: '8px',
                   fontSize: '13px',
-                  background: '#FAF8F5',
                   color: '#2B2520',
                   outline: 'none',
                   boxSizing: 'border-box'
@@ -287,156 +626,352 @@ const AddEditProductModal = ({
             </div>
           </div>
 
-          {previewArea !== null && (
+          {previewArea && (
             <div style={{
-              fontSize: '11.5px',
-              color: '#4A2C17',
-              background: '#F6EFE9',
-              padding: '6px 10px',
+              background: '#F0F9FF',
+              border: '1px solid #BAE6FD',
               borderRadius: '6px',
-              marginBottom: '14px',
-              display: 'flex',
+              padding: '5px 10px',
+              fontSize: '11.5px',
+              color: '#0369A1',
+              marginBottom: '12px',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '6px',
+              fontWeight: '600'
             }}>
               <i className="fa-solid fa-calculator"></i>
-              <span>Standard calculated area: <strong>{previewArea} Sq.Ft.</strong> (from {defaultWidth}mm × {defaultHeight}mm)</span>
+              <span>Area: {previewArea} Sq.Ft.</span>
             </div>
           )}
 
-          {/* Section: 3-Tier Rates */}
+          {/* Section: 3-Collection Pricing & Specifications */}
           <div style={{
             background: '#FAF8F5',
             border: '1px solid #EAE4DD',
-            borderRadius: '10px',
+            borderRadius: '12px',
             padding: '14px',
             marginBottom: '14px'
           }}>
-            <div style={{ fontSize: '12px', fontWeight: '700', color: '#4A2C17', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
-              Standard 3-Tier Rates ({unit})
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '600', color: '#0369A1', marginBottom: '4px' }}>
-                  Modern Rate (₹)
-                </label>
-                <input
-                  type="number"
-                  placeholder="₹ 0"
-                  value={modernRate}
-                  onChange={(e) => setModernRate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    border: '1px solid #DCD4CA',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    background: '#FFFFFF',
-                    color: '#2B2520',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#4A2C17', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Collection Rates & Specs
               </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '600', color: '#92400E', marginBottom: '4px' }}>
-                  Luxury-Modern (₹)
-                </label>
-                <input
-                  type="number"
-                  placeholder="₹ 0"
-                  value={luxuryModernRate}
-                  onChange={(e) => setLuxuryModernRate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    border: '1px solid #DCD4CA',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    background: '#FFFFFF',
-                    color: '#2B2520',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '600', color: '#6B21A8', marginBottom: '4px' }}>
-                  Luxury Rate (₹)
-                </label>
-                <input
-                  type="number"
-                  placeholder="₹ 0"
-                  value={luxuryRate}
-                  onChange={(e) => setLuxuryRate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    border: '1px solid #DCD4CA',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    background: '#FFFFFF',
-                    color: '#2B2520',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section: Material Description / Specification */}
-          <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#4A3E36', marginBottom: '5px' }}>
-              Default Material Specification
-            </label>
-            <textarea
-              rows="3"
-              placeholder="e.g. Providing Alternate Ply, Inside Egg white Laminate & External Regular Colour laminate..."
-              value={defaultDescription}
-              onChange={(e) => setDefaultDescription(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '9px 12px',
-                border: '1px solid #DCD4CA',
-                borderRadius: '8px',
-                fontSize: '12.5px',
-                background: '#FAF8F5',
-                color: '#2B2520',
-                outline: 'none',
-                boxSizing: 'border-box',
-                resize: 'vertical'
-              }}
-            />
-
-            {/* Quick Prefill Chips */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-              <span style={{ fontSize: '11px', color: '#8C827A', alignSelf: 'center' }}>Quick prefill:</span>
-              {SUGGESTED_DESCRIPTIONS.slice(0, 3).map((desc, idx) => (
+              <div style={{ display: 'flex', gap: '4px' }}>
                 <button
-                  key={idx}
                   type="button"
-                  onClick={() => setDefaultDescription(desc)}
+                  onClick={() => setActiveTab('essential')}
                   style={{
-                    background: '#F0EBE4',
-                    border: '1px solid #DCD4CA',
-                    borderRadius: '12px',
-                    padding: '2px 8px',
-                    fontSize: '10.5px',
-                    color: '#4A3E36',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    border: activeTab === 'essential' ? '1.5px solid #0369A1' : '1px solid #DCD4CA',
+                    background: activeTab === 'essential' ? '#E0F2FE' : '#FFFFFF',
+                    color: activeTab === 'essential' ? '#0369A1' : '#666',
                     cursor: 'pointer'
                   }}
                 >
-                  Preset {idx + 1}
+                  🥉 Essential {essentialRate ? `(₹${Math.round(Number(essentialRate)).toLocaleString('en-IN')})` : ''}
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('signature')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    border: activeTab === 'signature' ? '1.5px solid #B45309' : '1px solid #DCD4CA',
+                    background: activeTab === 'signature' ? '#FEF3C7' : '#FFFFFF',
+                    color: activeTab === 'signature' ? '#B45309' : '#666',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🥈 Signature {signatureRate ? `(₹${Math.round(Number(signatureRate)).toLocaleString('en-IN')})` : ''}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('elite')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    border: activeTab === 'elite' ? '1.5px solid #7E22CE' : '1px solid #DCD4CA',
+                    background: activeTab === 'elite' ? '#F3E8FF' : '#FFFFFF',
+                    color: activeTab === 'elite' ? '#7E22CE' : '#666',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🥇 Elite {eliteRate ? `(₹${Math.round(Number(eliteRate)).toLocaleString('en-IN')})` : ''}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('all')}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    border: activeTab === 'all' ? '1.5px solid #4A2C17' : '1px solid #DCD4CA',
+                    background: activeTab === 'all' ? '#4A2C17' : '#FFFFFF',
+                    color: activeTab === 'all' ? '#FFFFFF' : '#666',
+                    cursor: 'pointer'
+                  }}
+                >
+                  All 3
+                </button>
+              </div>
             </div>
+
+            {/* TAB: ESSENTIAL COLLECTION */}
+            {(activeTab === 'essential' || activeTab === 'all') && (
+              <div style={{
+                background: '#FFFFFF',
+                border: '1.5px solid #BAE6FD',
+                borderRadius: '10px',
+                padding: '12px',
+                marginBottom: activeTab === 'all' ? '10px' : 0
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#0369A1' }}>
+                    🥉 Essential
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#0369A1' }}>
+                      Rate (₹):
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={essentialRate}
+                      onChange={(e) => setEssentialRate(e.target.value)}
+                      style={{
+                        width: '95px',
+                        padding: '5px 8px',
+                        border: '1.5px solid #0369A1',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: '#0369A1',
+                        background: '#F0F9FF',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#666', marginBottom: '3px' }}>
+                  Specification:
+                </label>
+                <textarea
+                  rows="2"
+                  placeholder="Enter specification..."
+                  value={essentialDesc}
+                  onChange={(e) => setEssentialDesc(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '7px 9px',
+                    border: '1px solid #BAE6FD',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    color: '#2B2520',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    resize: 'vertical'
+                  }}
+                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '5px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '10.5px', color: '#888', fontWeight: '600' }}>Quick Fill:</span>
+                  {COLLECTION_PRESETS.essential.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      title={preset.text}
+                      onClick={() => setEssentialDesc(preset.text)}
+                      style={{
+                        background: '#F0F9FF',
+                        border: '1px solid #BAE6FD',
+                        borderRadius: '10px',
+                        padding: '2px 8px',
+                        fontSize: '10.5px',
+                        fontWeight: '600',
+                        color: '#0369A1',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: SIGNATURE COLLECTION */}
+            {(activeTab === 'signature' || activeTab === 'all') && (
+              <div style={{
+                background: '#FFFFFF',
+                border: '1.5px solid #FCD34D',
+                borderRadius: '10px',
+                padding: '12px',
+                marginBottom: activeTab === 'all' ? '10px' : 0
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#B45309' }}>
+                    🥈 Signature
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#B45309' }}>
+                      Rate (₹):
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={signatureRate}
+                      onChange={(e) => setSignatureRate(e.target.value)}
+                      style={{
+                        width: '95px',
+                        padding: '5px 8px',
+                        border: '1.5px solid #B45309',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: '#B45309',
+                        background: '#FFFBEB',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#666', marginBottom: '3px' }}>
+                  Specification:
+                </label>
+                <textarea
+                  rows="2"
+                  placeholder="Enter specification..."
+                  value={signatureDesc}
+                  onChange={(e) => setSignatureDesc(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '7px 9px',
+                    border: '1px solid #FCD34D',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    color: '#2B2520',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    resize: 'vertical'
+                  }}
+                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '5px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '10.5px', color: '#888', fontWeight: '600' }}>Quick Fill:</span>
+                  {COLLECTION_PRESETS.signature.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      title={preset.text}
+                      onClick={() => setSignatureDesc(preset.text)}
+                      style={{
+                        background: '#FEF3C7',
+                        border: '1px solid #FCD34D',
+                        borderRadius: '10px',
+                        padding: '2px 8px',
+                        fontSize: '10.5px',
+                        fontWeight: '600',
+                        color: '#B45309',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: ELITE COLLECTION */}
+            {(activeTab === 'elite' || activeTab === 'all') && (
+              <div style={{
+                background: '#FFFFFF',
+                border: '1.5px solid #D8B4FE',
+                borderRadius: '10px',
+                padding: '12px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#7E22CE' }}>
+                    🥇 Elite
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <label style={{ fontSize: '11.5px', fontWeight: '600', color: '#7E22CE' }}>
+                      Rate (₹):
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={eliteRate}
+                      onChange={(e) => setEliteRate(e.target.value)}
+                      style={{
+                        width: '95px',
+                        padding: '5px 8px',
+                        border: '1.5px solid #7E22CE',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: '#7E22CE',
+                        background: '#FAF5FF',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#666', marginBottom: '3px' }}>
+                  Specification:
+                </label>
+                <textarea
+                  rows="2"
+                  placeholder="Enter specification..."
+                  value={eliteDesc}
+                  onChange={(e) => setEliteDesc(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '7px 9px',
+                    border: '1px solid #D8B4FE',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    color: '#2B2520',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    resize: 'vertical'
+                  }}
+                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '5px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '10.5px', color: '#888', fontWeight: '600' }}>Quick Fill:</span>
+                  {COLLECTION_PRESETS.elite.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      title={preset.text}
+                      onClick={() => setEliteDesc(preset.text)}
+                      style={{
+                        background: '#F3E8FF',
+                        border: '1px solid #D8B4FE',
+                        borderRadius: '10px',
+                        padding: '2px 8px',
+                        fontSize: '10.5px',
+                        fontWeight: '600',
+                        color: '#7E22CE',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Modal Footer Actions */}
@@ -463,7 +998,7 @@ const AddEditProductModal = ({
               type="submit"
               disabled={saving}
               style={{
-                padding: '9px 20px',
+                padding: '9px 22px',
                 borderRadius: '8px',
                 border: 'none',
                 background: '#4A2C17',

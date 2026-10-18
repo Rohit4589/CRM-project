@@ -9,9 +9,9 @@ const { PRODUCT_CATALOG, READYMADE_DESCRIPTIONS } = require('../constants/estima
  * Excel Formula: ROUNDUP(Width * Height / 92903, 0)
  */
 function calculateArea(widthMm, heightMm, currentArea = 0, unit = 'Sq.Ft.') {
-  if (unit === 'Sq.Ft.' && widthMm && heightMm) {
+  if (unit === 'Sq.Ft.' && widthMm && heightMm && Number(widthMm) > 0 && Number(heightMm) > 0) {
     const rawSqFt = (Number(widthMm) * Number(heightMm)) / 92903;
-    return Math.ceil(rawSqFt); // ROUNDUP to next whole integer like Excel
+    return Math.ceil(rawSqFt * 2) / 2; // Roundup by 0.5 steps (e.g. 3.4 -> 3.5, 3.7 -> 4.0, 9.1 -> 9.5)
   }
   return Number(currentArea) || 1;
 }
@@ -24,13 +24,16 @@ function getRateForTier(productName, tier = 'Luxury-Modern') {
   if (!product) return 0;
   
   switch (tier) {
+    case 'Essential Collection':
     case 'Modern':
-      return product.modern || 0;
+      return product.essentialRate || product.modern || 0;
+    case 'Elite Collection':
     case 'Luxury':
-      return product.luxury || 0;
+      return product.eliteRate || product.luxury || 0;
+    case 'Signature Collection':
     case 'Luxury-Modern':
     default:
-      return product.luxuryModern || 0;
+      return product.signatureRate || product.luxuryModern || 0;
   }
 }
 
@@ -60,7 +63,7 @@ function getProductDefaults(productName) {
  */
 function recalculateEstimate(roomsData = [], options = {}) {
   const {
-    furnitureLevel = 'Luxury-Modern',
+    furnitureLevel = 'Signature Collection',
     designFeePct = 10,
     gstPct = 0,
     roundOff = 0
@@ -72,27 +75,33 @@ function recalculateEstimate(roomsData = [], options = {}) {
     let roomTotal = 0;
     const items = (room.items || []).map((item, itemIdx) => {
       const unit = item.unit || 'Sq.Ft.';
-      const widthMm = item.widthMm ? Number(item.widthMm) : null;
-      const heightMm = item.heightMm ? Number(item.heightMm) : null;
+      const widthMm = (item.widthMm !== null && item.widthMm !== undefined && item.widthMm !== '') ? Number(item.widthMm) : null;
+      const heightMm = (item.heightMm !== null && item.heightMm !== undefined && item.heightMm !== '') ? Number(item.heightMm) : null;
       
-      // Calculate area
-      let totalArea = Number(item.totalArea);
-      if (unit === 'Sq.Ft.' && widthMm && heightMm) {
-        totalArea = Math.ceil((widthMm * heightMm) / 92903);
-      } else if (!totalArea) {
-        totalArea = 1;
+      // Calculate area: prioritize user's explicit totalArea if entered, otherwise calculate from dimensions
+      let totalArea = (item.totalArea !== undefined && item.totalArea !== null && item.totalArea !== '')
+        ? Number(item.totalArea)
+        : null;
+
+      if (totalArea === null || isNaN(totalArea) || totalArea <= 0) {
+        if (unit === 'Sq.Ft.' && widthMm && heightMm && widthMm > 0 && heightMm > 0) {
+          const rawSqFt = (widthMm * heightMm) / 92903;
+          totalArea = Math.ceil(rawSqFt * 2) / 2;
+        } else {
+          totalArea = 1;
+        }
       }
 
-      // Calculate rate
-      let rate = Number(item.rate);
-      if (rate === undefined || rate === null || isNaN(rate) || rate === 0) {
-        rate = getRateForTier(item.productName, furnitureLevel);
-      }
+      // Calculate rate: prioritize user's rate if provided
+      let rate = (item.rate !== undefined && item.rate !== null && item.rate !== '' && !isNaN(Number(item.rate)))
+        ? Number(item.rate)
+        : getRateForTier(item.productName, furnitureLevel);
 
       const amount = Math.round(totalArea * rate);
       roomTotal += amount;
 
       return {
+        ...item,
         id: item.id || `item_${roomIdx}_${itemIdx}_${Date.now()}`,
         productName: item.productName || 'Custom Item',
         description: item.description || READYMADE_DESCRIPTIONS[0],

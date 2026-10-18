@@ -14,7 +14,7 @@ const EstimateWizardModal = ({
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [projectType, setProjectType] = useState('Residential');
-  const [furnitureLevel, setFurnitureLevel] = useState('Luxury-Modern');
+  const [furnitureLevel, setFurnitureLevel] = useState('Signature Collection');
   const [existingEstimate, setExistingEstimate] = useState(null);
   const [copyExisting, setCopyExisting] = useState(true);
 
@@ -388,43 +388,11 @@ const EstimateWizardModal = ({
             </div>
           </div>
 
-          {/* Furniture Level Selection */}
-          <div className="wizard-section-title">3. Select Furniture Level (Pricing Tier)</div>
-          <div className="tier-selection-grid">
-            <div
-              className={`tier-card ${furnitureLevel === 'Modern' ? 'selected' : ''}`}
-              onClick={() => setFurnitureLevel('Modern')}
-            >
-              <div className="tier-badge">Budget-Friendly</div>
-              <h4>Modern</h4>
-              <div className="tier-price">₹800 – ₹1,300 / Sq.Ft.</div>
-              <p>Commercial ply, regular hardware, standard laminates</p>
-            </div>
-
-            <div
-              className={`tier-card ${furnitureLevel === 'Luxury-Modern' ? 'selected' : ''}`}
-              onClick={() => setFurnitureLevel('Luxury-Modern')}
-            >
-              <div className="tier-badge" style={{ background: '#92400E' }}>Most Popular</div>
-              <h4>Luxury-Modern</h4>
-              <div className="tier-price">₹1,200 – ₹1,800 / Sq.Ft.</div>
-              <p>Alternate ply, egg-white inner, premium hardware & acrylic</p>
-            </div>
-
-            <div
-              className={`tier-card ${furnitureLevel === 'Luxury' ? 'selected' : ''}`}
-              onClick={() => setFurnitureLevel('Luxury')}
-            >
-              <div className="tier-badge" style={{ background: '#6B21A8' }}>High-End</div>
-              <h4>Luxury</h4>
-              <div className="tier-price">₹1,800 – ₹2,500+ / Sq.Ft.</div>
-              <p>BWR/Marine ply, veneer polish, German soft-close fittings</p>
-            </div>
-          </div>
-
-          {/* Section 4: Rooms to Include */}
+          {/* Section 3: Which rooms do you have to make? */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <div className="wizard-section-title" style={{ margin: 0 }}>4. Rooms to Include</div>
+            <div className="wizard-section-title" style={{ margin: 0 }}>
+              3. Which rooms do you have to make?
+            </div>
             {!copyExisting && (
               <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
                 <button
@@ -478,7 +446,7 @@ const EstimateWizardModal = ({
               </div>
             </div>
           ) : (
-            <div className="room-checkbox-grid">
+            <div className="room-checkbox-grid" style={{ marginBottom: '20px' }}>
               {selectedRooms.map((room) => (
               <div
                 key={room.name}
@@ -612,6 +580,43 @@ const EstimateWizardModal = ({
             )}
           </div>
         )}
+
+          {/* Section 4: Which collection do you prefer? */}
+          <div className="wizard-section-title">4. Which collection do you prefer?</div>
+          <div className="tier-selection-grid" style={{ marginBottom: '20px' }}>
+            <div
+              className={`tier-card ${(furnitureLevel === 'Essential Collection' || furnitureLevel === 'Modern') ? 'selected' : ''}`}
+              onClick={() => setFurnitureLevel('Essential Collection')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="tier-badge" style={{ background: '#0369A1' }}>🥉 Pocket-Friendly</div>
+              <h4>Essential Collection</h4>
+              <div className="tier-price">₹800 – ₹1,300 / Sq.Ft.</div>
+              <p>Commercial ply, regular colour laminates, standard durable hardware.</p>
+            </div>
+
+            <div
+              className={`tier-card ${(furnitureLevel === 'Signature Collection' || furnitureLevel === 'Luxury-Modern') ? 'selected' : ''}`}
+              onClick={() => setFurnitureLevel('Signature Collection')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="tier-badge" style={{ background: '#92400E' }}>🥈 Most Popular</div>
+              <h4>Signature Collection</h4>
+              <div className="tier-price">₹1,200 – ₹1,800 / Sq.Ft.</div>
+              <p>BWR grade ply, egg-white inner, acrylic/profile shutters, soft-close hardware.</p>
+            </div>
+
+            <div
+              className={`tier-card ${(furnitureLevel === 'Elite Collection' || furnitureLevel === 'Luxury') ? 'selected' : ''}`}
+              onClick={() => setFurnitureLevel('Elite Collection')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="tier-badge" style={{ background: '#6B21A8' }}>🥇 Luxury Bespoke</div>
+              <h4>Elite Collection</h4>
+              <div className="tier-price">₹1,800 – ₹2,500+ / Sq.Ft.</div>
+              <p>Marine HDHMR/BWP ply, veneer polish / PU finish, German fittings (Hafele/Hettich).</p>
+            </div>
+          </div>
 
           <div className="estimate-modal-footer" style={{ padding: '16px 0 0 0', background: 'transparent' }}>
             <button type="button" className="btn-action-icon" style={{ width: 'auto', padding: '10px 18px' }} onClick={onClose}>

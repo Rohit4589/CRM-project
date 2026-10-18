@@ -767,31 +767,36 @@
 .room-items-table th {
   background: #FAF8F5;
   color: #5C5248;
-  padding: 8px 10px;
+  padding: 8px 6px;
   border-bottom: 1px solid #EAE4DD;
   font-weight: 600;
   text-align: left;
+  font-size: 11.5px;
 }
 
 .room-items-table td {
-  padding: 8px 10px;
+  padding: 6px 4px;
   border-bottom: 1px solid #F0EBE4;
-  vertical-align: middle;
+  vertical-align: top;
 }
 
 .room-items-table input,
-.room-items-table select {
+.room-items-table select,
+.room-items-table textarea {
   width: 100%;
-  padding: 6px 8px;
+  padding: 6px 6px;
   border: 1px solid #DCD4CA;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 11.5px;
   background: #FFFFFF;
   outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
 }
 
 .room-items-table input:focus,
-.room-items-table select:focus {
+.room-items-table select:focus,
+.room-items-table textarea:focus {
   border-color: #4A2C17;
 }
 
@@ -866,11 +871,196 @@
   line-height: 1.4;
 }
 
+/* Unified Creative Estimate Header Card (Sketch Layout) */
+.print-unified-header {
+  display: flex;
+  width: 100%;
+  border: 1.5px solid #4A2C17;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #FFFFFF;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(74, 44, 23, 0.06);
+}
+
+.print-unified-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* 1. Logo Column */
+.print-col-logo {
+  width: 17%;
+  min-width: 130px;
+  max-width: 160px;
+  padding: 10px 12px;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border-right: 1.5px solid #4A2C17;
+  flex-shrink: 0;
+}
+
+.print-col-logo img {
+  max-height: 58px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* 2. Company GST & Address Column */
+.print-col-company {
+  width: 26%;
+  min-width: 190px;
+  padding: 8px 12px;
+  background: #FAF8F5;
+  border-right: 1.5px solid #4A2C17;
+  flex-shrink: 0;
+}
+
+.print-company-brand {
+  font-size: 11px;
+  font-weight: 800;
+  color: #4A2C17;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+
+.print-company-gst {
+  font-size: 10px;
+  color: #000000;
+  margin-bottom: 3px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.print-company-gst strong {
+  color: #000000;
+  font-weight: 700;
+}
+
+.print-company-gst span {
+  font-weight: 800;
+  color: #000000;
+  letter-spacing: 0.3px;
+}
+
+.print-company-address {
+  font-size: 9.5px;
+  color: #000000;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.print-company-address strong {
+  color: #000000;
+  font-weight: 700;
+}
+
+/* 3. Customer & Order Details (2x3 Table) */
+.print-col-details {
+  flex: 1;
+  background: #FFFFFF;
+  border-right: 1.5px solid #4A2C17;
+  padding: 0;
+}
+
+.print-details-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  font-size: 10.5px;
+}
+
+.print-details-table td {
+  padding: 4.5px 8px;
+  border: 1px solid #E5D9C5;
+  vertical-align: middle;
+  background: #FAF8F5;
+  color: #000000;
+  font-weight: 600;
+}
+
+.print-details-table tr:first-child td {
+  border-top: none;
+}
+
+.print-details-table tr:last-child td {
+  border-bottom: none;
+}
+
+.print-details-table td:first-child {
+  border-left: none;
+  width: 50%;
+}
+
+.print-details-table td:last-child {
+  border-right: none;
+  width: 50%;
+}
+
+.print-field-label {
+  font-weight: 700;
+  color: #000000;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  margin-right: 5px;
+  display: inline-block;
+}
+
+.print-field-value {
+  color: #000000;
+  font-weight: 700;
+  font-size: 10.5px;
+}
+
+.print-field-value.highlight-order {
+  color: #000000;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+/* 4. Package Vertical Strip */
+.print-col-package {
+  width: 14%;
+  min-width: 110px;
+  max-width: 140px;
+  background: linear-gradient(180deg, #4A2C17 0%, #311A0B 100%);
+  color: #FFFFFF;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px 10px;
+  flex-shrink: 0;
+}
+
+.print-pkg-tag {
+  font-size: 8.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #E8D5C4;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.print-pkg-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: 0.5px;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
 .print-brand-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: none; /* Reduced duplicate line - room title row below provides the single clean divider */
+  border-bottom: none;
   padding-bottom: 8px;
   margin-bottom: 16px;
   gap: 24px;
@@ -946,7 +1136,26 @@
   padding: 6px 8px;
   border: 1px solid #4A2C17;
   font-weight: 700;
-  text-align: left;
+  text-align: center;
+}
+
+/* Table Column Alignment Rules:
+   1st (Left) column -> Left alignment
+   Last (Right) column -> Right alignment
+   All middle columns -> Center alignment */
+.print-room-table th:first-child,
+.print-room-table td:first-child {
+  text-align: left !important;
+}
+
+.print-room-table th:last-child,
+.print-room-table td:last-child {
+  text-align: right !important;
+}
+
+.print-room-table th:not(:first-child):not(:last-child),
+.print-room-table td:not(:first-child):not(:last-child):not([colspan]) {
+  text-align: center !important;
 }
 
 .print-room-table td {
@@ -966,6 +1175,99 @@
   background: #FAF8F5;
   font-weight: 700;
   border-top: 1px solid #4A2C17;
+}
+
+/* Editor Sheet Table - Exact Match to Estimate Preview (Photo 1) */
+.editor-sheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+  font-size: 11px;
+  background: #FFFFFF;
+}
+
+.editor-sheet-table th {
+  background: #4A2C17 !important;
+  color: #FFFFFF !important;
+  padding: 6px 8px;
+  border: 1px solid #4A2C17;
+  font-weight: 700;
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.editor-sheet-table td {
+  padding: 4px 6px;
+  border: 1px solid #DCD4CA;
+  background: #FFFFFF;
+  vertical-align: middle;
+}
+
+.editor-sheet-table tr:hover td {
+  background: #FDFAF7;
+}
+
+.editor-sheet-title-row td {
+  background: #F4EFEA !important;
+  color: #4A2C17;
+  font-weight: 800;
+  font-size: 12px;
+  border-top: 2px solid #4A2C17 !important;
+  padding: 6px 10px !important;
+}
+
+.editor-sheet-total-row td {
+  background: #FAF8F5 !important;
+  font-weight: 700;
+  border-top: 1px solid #4A2C17 !important;
+  padding: 6px 10px !important;
+}
+
+/* Seamless form controls inside editor sheet table */
+.editor-sheet-table input,
+.editor-sheet-table select,
+.editor-sheet-table textarea {
+  border: 1px solid transparent;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 3px 4px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.editor-sheet-table input:hover,
+.editor-sheet-table select:hover,
+.editor-sheet-table textarea:hover {
+  background: #FFFFFF;
+  border-color: #DCD4CA;
+}
+
+.editor-sheet-table input:focus,
+.editor-sheet-table select:focus,
+.editor-sheet-table textarea:focus {
+  background: #FFFFFF;
+  border-color: #4A2C17;
+  box-shadow: 0 0 0 1px #4A2C17;
+}
+
+/* Remove native top/bottom spinner buttons on number inputs */
+.editor-sheet-table input[type="number"]::-webkit-outer-spin-button,
+.editor-sheet-table input[type="number"]::-webkit-inner-spin-button,
+.estimate-editor-modal input[type="number"]::-webkit-outer-spin-button,
+.estimate-editor-modal input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+.editor-sheet-table input[type="number"],
+.estimate-editor-modal input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
 }
 
 .print-summary-table {
@@ -1000,8 +1302,8 @@
 .print-section-h5 {
   margin: 0 0 6px 0;
   font-size: 11px;
-  font-weight: 700;
-  color: #4A2C17;
+  font-weight: 800;
+  color: #000000;
 }
 
 .print-footer-info pre {
@@ -1009,6 +1311,8 @@
   white-space: pre-wrap;
   font-family: inherit;
   line-height: 1.4;
+  color: #000000;
+  font-weight: 600;
 }
 
 /* Screen styles for Preview Modal footer sections */
@@ -1017,7 +1321,8 @@
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   font-size: 10px;
-  color: #333;
+  color: #000000;
+  font-weight: 600;
   line-height: 1.45;
 }
 
@@ -1029,10 +1334,18 @@
   margin-top: 14px;
 }
 
+.print-section-h5 {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #000000;
+  margin: 0 0 7px 0;
+}
+
 .print-payment-section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 16px;
   margin-top: 14px;
   margin-bottom: 20px;
   padding-top: 14px;
@@ -1044,8 +1357,10 @@
   border: 1px solid #E5D9C5;
   padding: 10px 14px;
   border-radius: 6px;
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #000000;
+  font-weight: 600;
 }
 
 .print-signature-section {
@@ -1240,13 +1555,47 @@
     box-shadow: none !important;
     border-radius: 0 !important;
     overflow: visible !important;
-    color: #111111 !important;
+    color: #000000 !important;
+    font-weight: 600 !important;
     font-size: 10.5px !important;
     -webkit-box-decoration-break: clone !important;
     box-decoration-break: clone !important;
   }
 
+  .estimate-printable-sheet td,
+  .estimate-printable-sheet span,
+  .estimate-printable-sheet div,
+  .estimate-printable-sheet p,
+  .estimate-printable-sheet strong,
+  .estimate-printable-sheet pre {
+    color: #000000 !important;
+  }
+
+  .estimate-printable-sheet th,
+  .estimate-printable-sheet .print-grand-total-row td,
+  .estimate-printable-sheet .print-col-package * {
+    color: #FFFFFF !important;
+  }
+
   /* Header Brand Section */
+  .estimate-printable-sheet .print-unified-header {
+    display: flex !important;
+    width: 100% !important;
+    margin-top: 2mm !important;
+    margin-bottom: 14px !important;
+    border: 1.5px solid #4A2C17 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-col-package {
+    background: #4A2C17 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   .estimate-printable-sheet .print-brand-header {
     display: flex !important;
     justify-content: space-between !important;
@@ -1351,6 +1700,24 @@
   }
 
   /* 11. Terms & Conditions section */
+  .estimate-printable-sheet .print-material-specs-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .estimate-printable-sheet .print-material-card {
+    background: #FAF8F5 !important;
+    border: 1px solid #DCD4CA !important;
+    padding: 8px 12px !important;
+    border-radius: 4px !important;
+    font-size: 9px !important;
+    line-height: 1.4 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
   .estimate-printable-sheet .print-terms-section {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
@@ -1392,7 +1759,7 @@
     display: table !important;
     width: 100% !important;
     border-collapse: separate !important;
-    border-spacing: 16px 0 !important;
+    border-spacing: 14px 0 !important;
     margin-top: 8px !important;
     margin-bottom: 12px !important;
     padding-top: 10px !important;
@@ -1403,28 +1770,36 @@
 
   .estimate-printable-sheet .print-payment-col {
     display: table-cell !important;
-    width: 50% !important;
     vertical-align: top !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
+  .estimate-printable-sheet .print-payment-col:first-child {
+    width: 58% !important;
+  }
+
+  .estimate-printable-sheet .print-payment-col:last-child {
+    width: 42% !important;
+  }
+
   .estimate-printable-sheet .print-bank-card {
     background: #FAF8F5 !important;
     border: 1px solid #DCD4CA !important;
-    padding: 8px 12px !important;
+    padding: 9px 12px !important;
     border-radius: 4px !important;
-    font-size: 9.5px !important;
-    line-height: 1.45 !important;
+    font-size: 11px !important;
+    line-height: 1.55 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
   .estimate-printable-sheet .print-section-h5 {
-    margin: 0 0 5px 0 !important;
-    font-size: 10.5px !important;
-    font-weight: 700 !important;
-    color: #4A2C17 !important;
+    margin: 0 0 6px 0 !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.3px !important;
+    color: #000000 !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
   }

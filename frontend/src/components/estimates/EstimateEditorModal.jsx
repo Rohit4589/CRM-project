@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import EstimateRoomSection from './EstimateRoomSection';
 import EstimateSummaryFooter from './EstimateSummaryFooter';
 import AddRoomModal from './AddRoomModal';
@@ -11,6 +11,14 @@ const EstimateEditorModal = ({
   onPreview,
   saving = false
 }) => {
+  const modalBodyRef = useRef(null);
+
+  // Always start at the top of the estimate when editor opens
+  useEffect(() => {
+    if (modalBodyRef.current) {
+      modalBodyRef.current.scrollTop = 0;
+    }
+  }, []);
   const [customerName, setCustomerName] = useState(estimate.customer_name || '');
   const [phone, setPhone] = useState(estimate.phone || '');
   const [email, setEmail] = useState(estimate.email || '');
@@ -19,7 +27,13 @@ const EstimateEditorModal = ({
     estimate.date ? String(estimate.date).split('T')[0] : new Date().toISOString().split('T')[0]
   );
   const [projectType, setProjectType] = useState(estimate.project_type || 'Residential');
-  const [furnitureLevel, setFurnitureLevel] = useState(estimate.furniture_level || 'Luxury-Modern');
+  const [furnitureLevel, setFurnitureLevel] = useState(() => {
+    const fl = estimate.collection_tier || estimate.furniture_level || 'Signature Collection';
+    if (fl === 'Modern') return 'Essential Collection';
+    if (fl === 'Luxury') return 'Elite Collection';
+    if (fl === 'Luxury-Modern') return 'Signature Collection';
+    return fl;
+  });
   const [status, setStatus] = useState(estimate.status || 'Draft');
 
   const [rooms, setRooms] = useState(() => {
@@ -37,7 +51,13 @@ const EstimateEditorModal = ({
   const [gstPct, setGstPct] = useState(estimate.gst_pct ?? 0);
   const [roundOff, setRoundOff] = useState(estimate.round_off ?? 0);
   const [notes, setNotes] = useState(estimate.notes || catalog?.defaultNote || '');
-  const [termsConditions, setTermsConditions] = useState(estimate.terms_conditions || catalog?.defaultTerms || '');
+  const [termsConditions, setTermsConditions] = useState(() => {
+    const raw = estimate.terms_conditions;
+    if (!raw || raw.includes('Laminate Used In Medium Range')) {
+      return catalog?.defaultTerms || '';
+    }
+    return raw;
+  });
   const [paymentTerms, setPaymentTerms] = useState(estimate.payment_terms || catalog?.defaultPaymentTerms || '');
   const [bankDetails, setBankDetails] = useState(() => {
     let bd = estimate.bank_details;
@@ -48,29 +68,76 @@ const EstimateEditorModal = ({
         bd = null;
       }
     }
-    return bd || catalog?.defaultBankDetails || {};
+    const defaultBank = catalog?.defaultBankDetails || {
+      accountName: 'Modern Interior',
+      bankName: 'IndusInd Bank',
+      accountNo: '251000000789',
+      branch: 'Katraj Pune',
+      ifscCode: 'INDB0001665',
+      accountType: 'Current A/C',
+      gpay: '9552527801',
+      gstNo: '27BIPPS2002G1ZA'
+    };
+    if (!bd || !bd.bankName || bd.bankName === 'HDFC BANK' || bd.bankName === 'HDFC Bank') {
+      return { ...defaultBank, ...(bd || {}), bankName: 'IndusInd Bank', accountName: 'Modern Interior', accountNo: '251000000789', branch: 'Katraj Pune', ifscCode: 'INDB0001665', accountType: 'Current A/C', gpay: '9552527801', gstNo: '27BIPPS2002G1ZA' };
+    }
+    return bd;
   });
   const [roomToDelete, setRoomToDelete] = useState(null);
   const [showAddRoomModal, setShowAddRoomModal] = useState(false);
 
-  // Handle tier rate switch across existing items if desired
+  // Handle tier rate & description switch across existing items with per-collection memory
   const handleTierChange = (newTier) => {
+    const oldTier = furnitureLevel;
     setFurnitureLevel(newTier);
     if (!catalog?.products) return;
 
-    // Optional confirmation or automatic update of default rates
+    const isOldEssential = oldTier === 'Essential Collection' || oldTier === 'Modern';
+    const isOldElite = oldTier === 'Elite Collection' || oldTier === 'Luxury';
+
+    const isNewEssential = newTier === 'Essential Collection' || newTier === 'Modern';
+    const isNewElite = newTier === 'Elite Collection' || newTier === 'Luxury';
+
     const updatedRooms = rooms.map(room => ({
       ...room,
       items: (room.items || []).map(item => {
-        const prod = catalog.products.find(p => p.name.toUpperCase() === item.productName.toUpperCase());
-        if (prod) {
-          let newRate = prod.luxuryModern;
-          if (newTier === 'Modern') newRate = prod.modern;
-          if (newTier === 'Luxury') newRate = prod.luxury;
-          const newAmount = Math.round((Number(item.totalArea) || 1) * newRate);
-          return { ...item, rate: newRate, amount: newAmount };
+        const prod = catalog.products.find(p => p.name.toUpperCase() === (item.productName || '').toUpperCase());
+
+        // Snapshot current description into old tier's memory
+        let curEssentialDesc = item.essentialDesc !== undefined ? item.essentialDesc : (prod?.essentialDesc || '');
+        let curSignatureDesc = item.signatureDesc !== undefined ? item.signatureDesc : (prod?.signatureDesc || '');
+        let curEliteDesc = item.eliteDesc !== undefined ? item.eliteDesc : (prod?.eliteDesc || '');
+
+        if (isOldEssential) {
+          curEssentialDesc = item.description || curEssentialDesc;
+        } else if (isOldElite) {
+          curEliteDesc = item.description || curEliteDesc;
+        } else {
+          curSignatureDesc = item.description || curSignatureDesc;
         }
-        return item;
+
+        // Determine rate and description for the new tier
+        let newRate = prod ? (prod.signatureRate || prod.luxuryModern || 1600) : item.rate;
+        let newDesc = curSignatureDesc || prod?.signatureDesc || prod?.defaultDesc || item.description;
+
+        if (isNewEssential) {
+          newRate = prod ? (prod.essentialRate || prod.modern || 1200) : item.rate;
+          newDesc = curEssentialDesc || prod?.essentialDesc || prod?.defaultDesc || item.description;
+        } else if (isNewElite) {
+          newRate = prod ? (prod.eliteRate || prod.luxury || 2200) : item.rate;
+          newDesc = curEliteDesc || prod?.eliteDesc || prod?.defaultDesc || item.description;
+        }
+
+        const newAmount = Math.round((Number(item.totalArea) || 1) * (Number(newRate) || 0));
+        return {
+          ...item,
+          rate: newRate,
+          description: newDesc,
+          essentialDesc: curEssentialDesc,
+          signatureDesc: curSignatureDesc,
+          eliteDesc: curEliteDesc,
+          amount: newAmount
+        };
       })
     }));
 
@@ -95,6 +162,18 @@ const EstimateEditorModal = ({
     } else {
       setRoomToDelete(roomIndex);
     }
+  };
+
+  const handleMoveRoom = (roomIndex, direction) => {
+    const targetIndex = direction === 'up' ? roomIndex - 1 : roomIndex + 1;
+    if (targetIndex < 0 || targetIndex >= rooms.length) return;
+
+    setRooms(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(roomIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
   };
 
   const handleAddNewRooms = (newRoomsList) => {
@@ -188,6 +267,7 @@ const EstimateEditorModal = ({
       date,
       project_type: projectType,
       furniture_level: furnitureLevel,
+      collection_tier: furnitureLevel,
       status,
       rooms_data: rooms,
       design_fee_pct: designFeePct,
@@ -217,7 +297,7 @@ const EstimateEditorModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleSaveSubmit} className="estimate-modal-body">
+        <form ref={modalBodyRef} onSubmit={handleSaveSubmit} className="estimate-modal-body">
           {/* Header Customer & Tier Config */}
           <div className="editor-header-fields">
             <div className="editor-field">
@@ -258,14 +338,15 @@ const EstimateEditorModal = ({
             </div>
 
             <div className="editor-field">
-              <label>Furniture Level (Rate Tier)</label>
+              <label>Furniture Collection (Package)</label>
               <select
                 value={furnitureLevel}
                 onChange={(e) => handleTierChange(e.target.value)}
+                style={{ fontWeight: '700', color: '#4A2C17' }}
               >
-                <option value="Modern">Modern (Standard)</option>
-                <option value="Luxury-Modern">Luxury-Modern (Default)</option>
-                <option value="Luxury">Luxury (Premium)</option>
+                <option value="Essential Collection">🥉 Essential Collection</option>
+                <option value="Signature Collection">🥈 Signature Collection</option>
+                <option value="Elite Collection">🥇 Elite Collection</option>
               </select>
             </div>
 
@@ -306,6 +387,10 @@ const EstimateEditorModal = ({
               catalogDescriptions={catalog?.readymadeDescriptions || []}
               catalogUnits={catalog?.units || []}
               furnitureTier={furnitureLevel}
+              isFirst={roomIdx === 0}
+              isLast={roomIdx === rooms.length - 1}
+              onMoveUp={() => handleMoveRoom(roomIdx, 'up')}
+              onMoveDown={() => handleMoveRoom(roomIdx, 'down')}
               onRoomChange={(updated) => handleRoomChange(roomIdx, updated)}
               onRoomDelete={() => handleRoomDelete(roomIdx)}
             />
@@ -328,6 +413,7 @@ const EstimateEditorModal = ({
             setPaymentTerms={setPaymentTerms}
             bankDetails={bankDetails}
             setBankDetails={setBankDetails}
+            furnitureTier={furnitureLevel}
           />
 
           <div className="estimate-modal-footer">

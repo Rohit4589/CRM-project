@@ -1,4 +1,5 @@
 import React from 'react';
+import { getMaterialSpecsForCollection } from '../../data/collectionSpecs';
 
 const EstimateSummaryFooter = ({
   rooms = [],
@@ -15,8 +16,10 @@ const EstimateSummaryFooter = ({
   paymentTerms,
   setPaymentTerms,
   bankDetails,
-  setBankDetails
+  setBankDetails,
+  furnitureTier = 'Signature Collection'
 }) => {
+  const activeSpecs = getMaterialSpecsForCollection(furnitureTier);
   const subTotal = rooms.reduce((sum, r) => sum + (Number(r.roomTotal) || 0), 0);
   const designFeeAmount = Math.round((subTotal * Number(designFeePct || 0)) / 100);
   const taxableAmount = subTotal + designFeeAmount;
@@ -48,9 +51,31 @@ const EstimateSummaryFooter = ({
               </div>
             </div>
 
+            {/* Material Specifications for Active Collection */}
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                <strong style={{ color: '#2B2520' }}>{activeSpecs.title}:</strong>
+                <span style={{ fontSize: '10px', background: '#EAE4DD', padding: '1px 6px', borderRadius: '4px', fontWeight: '700', color: '#4A2C17' }}>
+                  {furnitureTier}
+                </span>
+              </div>
+              <div style={{ color: '#333', fontSize: '10.5px', background: '#F8F5F1', padding: '6px 10px', borderRadius: '4px', lineHeight: '1.4' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px' }}>
+                  {activeSpecs.items.slice(0, 4).map((it, idx) => (
+                    <div key={idx}><strong>{it.label}</strong> {it.text.substring(0, 50)}...</div>
+                  ))}
+                </div>
+                {activeSpecs.note && (
+                  <div style={{ marginTop: '4px', fontSize: '10px', color: '#555', borderTop: '1px dashed #DCD4CA', paddingTop: '3px' }}>
+                    <strong>Note:</strong> {activeSpecs.note}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '16px', marginTop: '10px', borderTop: '1px solid #EAE4DD', paddingTop: '10px' }}>
               <div>
-                <strong style={{ color: '#2B2520' }}>Standard Terms & Conditions (8 Points):</strong>
+                <strong style={{ color: '#2B2520' }}>Standard Terms & Conditions:</strong>
                 <div style={{ color: '#666', marginTop: '4px', whiteSpace: 'pre-line', maxHeight: '110px', overflowY: 'auto', lineHeight: '1.45', paddingRight: '6px' }}>
                   {termsConditions}
                 </div>

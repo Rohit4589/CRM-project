@@ -36,13 +36,13 @@ const EstimateTable = ({
         <table className="estimate-table">
           <thead>
             <tr>
-              <th style={{ width: '85px', minWidth: '85px' }}>Order No</th>
-              <th style={{ minWidth: '180px' }}>Customer Name</th>
-              <th style={{ width: '130px', minWidth: '120px' }}>Phone / Site</th>
-              <th style={{ width: '110px', minWidth: '100px' }}>Project Type</th>
-              <th style={{ width: '100px', minWidth: '95px' }}>Date</th>
-              <th style={{ width: '125px', minWidth: '120px' }}>Folder Status</th>
-              <th style={{ width: '130px', minWidth: '125px', whiteSpace: 'nowrap' }}>Final Total</th>
+              <th style={{ width: '85px', minWidth: '85px', textAlign: 'left' }}>Order No</th>
+              <th style={{ minWidth: '180px', textAlign: 'center' }}>Customer Name</th>
+              <th style={{ width: '130px', minWidth: '120px', textAlign: 'center' }}>Phone / Site</th>
+              <th style={{ width: '110px', minWidth: '100px', textAlign: 'center' }}>Project Type</th>
+              <th style={{ width: '100px', minWidth: '95px', textAlign: 'center' }}>Date</th>
+              <th style={{ width: '125px', minWidth: '120px', textAlign: 'center' }}>Folder Status</th>
+              <th style={{ width: '130px', minWidth: '125px', textAlign: 'center', whiteSpace: 'nowrap' }}>Final Total</th>
               <th style={{ width: '220px', minWidth: '220px', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
             </tr>
           </thead>
@@ -88,7 +88,7 @@ const EstimateTable = ({
 
               return (
                 <tr key={est.id}>
-                  <td>
+                  <td style={{ textAlign: 'left' }}>
                     <span className="estimate-num-badge">#{baseOrder}</span>
                     {revNumber ? (
                       <div style={{ marginTop: '3px' }}>
@@ -96,7 +96,7 @@ const EstimateTable = ({
                       </div>
                     ) : null}
                   </td>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
                     <strong
                       style={{
                         color: '#2B2520',
@@ -112,23 +112,30 @@ const EstimateTable = ({
                       {cleanCustomerName}
                     </strong>
                     {est.address && (
-                      <div style={{ fontSize: '11.5px', color: '#8C827A', marginTop: '3px', lineHeight: '1.4', wordBreak: 'break-word' }}>
+                      <div style={{ fontSize: '11.5px', color: '#8C827A', marginTop: '3px', lineHeight: '1.4', wordBreak: 'break-word', textAlign: 'center' }}>
                         {est.address}
                       </div>
                     )}
                   </td>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
                     <div>{est.phone || '-'}</div>
                   </td>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: '#4A2C17' }}>
                       {est.project_type || 'Residential'}
                     </div>
+                    <div style={{ fontSize: '11px', color: '#8A5D3B', marginTop: '2px', fontWeight: '500' }}>
+                      {est.collection_tier || (
+                        est.furniture_level === 'Modern' ? 'Essential' :
+                        est.furniture_level === 'Luxury' ? 'Elite' :
+                        'Signature'
+                      )}
+                    </div>
                   </td>
-                  <td>{dateStr}</td>
+                  <td style={{ textAlign: 'center' }}>{dateStr}</td>
                   
                   {/* Status Dropdown: 3 Categories (Running, Completed, On Hold) */}
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
                     <select
                       value={isCompleted ? 'Completed' : (isOnHold ? 'On Hold' : 'Running')}
                       onChange={(e) => onStatusChange && onStatusChange(est.id, e.target.value)}
@@ -153,7 +160,7 @@ const EstimateTable = ({
                     </select>
                   </td>
 
-                  <td style={{ whiteSpace: 'nowrap', width: '130px', minWidth: '125px' }}>
+                  <td style={{ textAlign: 'center', whiteSpace: 'nowrap', width: '130px', minWidth: '125px' }}>
                     <strong style={{ fontSize: '14px', color: '#2E7D32' }}>{formattedTotal}</strong>
                   </td>
                   <td style={{ textAlign: 'right', width: '220px', minWidth: '220px', whiteSpace: 'nowrap' }}>
