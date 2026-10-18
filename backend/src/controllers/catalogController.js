@@ -11,15 +11,24 @@ const pool = require('../config/db');
 exports.getCategories = async (req, res) => {
   try {
     const { project_type } = req.query;
-    let query = 'SELECT * FROM estimate_categories';
+    let query = `
+      SELECT c.*,
+        COALESCE(
+          json_agg(cp.product_id) FILTER (WHERE cp.product_id IS NOT NULL), 
+          '[]'
+        ) AS product_ids,
+        COUNT(DISTINCT cp.product_id)::int AS item_count
+      FROM estimate_categories c
+      LEFT JOIN estimate_category_products cp ON c.id = cp.category_id
+    `;
     const params = [];
 
     if (project_type && project_type !== 'All') {
-      query += ' WHERE project_type = $1 OR project_type = $2';
+      query += ' WHERE c.project_type = $1 OR c.project_type = $2';
       params.push(project_type, 'Both');
     }
 
-    query += ' ORDER BY display_order ASC, id ASC';
+    query += ' GROUP BY c.id ORDER BY c.display_order ASC, c.id ASC';
     const result = await pool.query(query, params);
 
     res.json({
@@ -38,7 +47,7 @@ exports.getCategories = async (req, res) => {
  */
 exports.createCategory = async (req, res) => {
   try {
-    const { name, project_type = 'Residential', display_order = 0 } = req.body;
+    const { name, project_type = 'Residential', display_order = 0, product_ids = [] } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'Room/Category name is required' });
     }
@@ -57,9 +66,26 @@ exports.createCategory = async (req, res) => {
       RETURNING *
     `, [cleanName, project_type, parseInt(display_order, 10) || 0]);
 
+    const createdCategory = result.rows[0];
+
+    // Link included product items in junction table
+    if (Array.isArray(product_ids) && product_ids.length > 0) {
+      for (const pid of product_ids) {
+        if (pid) {
+          await pool.query(
+            'INSERT INTO estimate_category_products (category_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [createdCategory.id, pid]
+          );
+        }
+      }
+    }
+
     res.status(201).json({
       success: true,
-      category: result.rows[0],
+      category: {
+        ...createdCategory,
+        product_ids
+      },
       message: 'Room category created successfully'
     });
   } catch (error) {
@@ -75,7 +101,7 @@ exports.createCategory = async (req, res) => {
 exports.updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, project_type, display_order } = req.body;
+    const { name, project_type, display_order, product_ids } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'Room name is required' });
@@ -100,12 +126,28 @@ exports.updateCategory = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
 
+    // Sync included product items in junction table
+    if (Array.isArray(product_ids)) {
+      await pool.query('DELETE FROM estimate_category_products WHERE category_id = $1', [id]);
+      for (const pid of product_ids) {
+        if (pid) {
+          await pool.query(
+            'INSERT INTO estimate_category_products (category_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [id, pid]
+          );
+        }
+      }
+    }
+
     // Also sync category_name on existing products for consistency
     await pool.query('UPDATE estimate_products SET category_name = $1 WHERE category_id = $2', [cleanName, id]);
 
     res.json({
       success: true,
-      category: result.rows[0],
+      category: {
+        ...result.rows[0],
+        product_ids: Array.isArray(product_ids) ? product_ids : []
+      },
       message: 'Room category updated successfully'
     });
   } catch (error) {
@@ -128,13 +170,15 @@ exports.deleteCategory = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
 
-    // Delete category (cascades or clears reference in estimate_products)
-    await pool.query('DELETE FROM estimate_products WHERE category_id = $1', [id]);
+    // Delete category links from junction table
+    await pool.query('DELETE FROM estimate_category_products WHERE category_id = $1', [id]);
+    // Clear foreign key reference from estimate_products (without deleting master products)
+    await pool.query('UPDATE estimate_products SET category_id = NULL WHERE category_id = $1', [id]);
     await pool.query('DELETE FROM estimate_categories WHERE id = $1', [id]);
 
     res.json({
       success: true,
-      message: `Room category "${check.rows[0].name}" and its associated products deleted successfully`
+      message: `Room category "${check.rows[0].name}" deleted successfully`
     });
   } catch (error) {
     console.error('Error deleting category:', error);
@@ -154,19 +198,20 @@ exports.getProducts = async (req, res) => {
   try {
     const { category_id, category_name, unit, search } = req.query;
     let query = `
-      SELECT p.*, c.name as resolved_category_name, c.project_type
+      SELECT DISTINCT p.*, c.name as resolved_category_name, c.project_type
       FROM estimate_products p
-      LEFT JOIN estimate_categories c ON p.category_id = c.id
+      LEFT JOIN estimate_category_products cp ON p.id = cp.product_id
+      LEFT JOIN estimate_categories c ON cp.category_id = c.id OR p.category_id = c.id
       WHERE 1=1
     `;
     const params = [];
 
     if (category_id && category_id !== 'All') {
       params.push(category_id);
-      query += ` AND p.category_id = $${params.length}`;
+      query += ` AND (cp.category_id = $${params.length} OR p.category_id = $${params.length})`;
     } else if (category_name && category_name !== 'All') {
       params.push(category_name.toUpperCase());
-      query += ` AND UPPER(p.category_name) = $${params.length}`;
+      query += ` AND (UPPER(c.name) = $${params.length} OR UPPER(p.category_name) = $${params.length})`;
     }
 
     if (unit && unit !== 'All') {
@@ -176,10 +221,16 @@ exports.getProducts = async (req, res) => {
 
     if (search && search.trim()) {
       params.push(`%${search.trim()}%`);
-      query += ` AND (p.name ILIKE $${params.length} OR p.default_description ILIKE $${params.length})`;
+      query += ` AND (
+        p.name ILIKE $${params.length} 
+        OR p.default_description ILIKE $${params.length}
+        OR p.essential_description ILIKE $${params.length}
+        OR p.signature_description ILIKE $${params.length}
+        OR p.elite_description ILIKE $${params.length}
+      )`;
     }
 
-    query += ' ORDER BY COALESCE(c.display_order, 99) ASC, p.category_name ASC, p.name ASC';
+    query += ' ORDER BY p.name ASC';
     const result = await pool.query(query, params);
 
     res.json({

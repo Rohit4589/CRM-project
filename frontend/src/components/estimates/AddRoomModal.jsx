@@ -142,7 +142,10 @@ const AddRoomModal = ({
           totalArea,
           unit,
           rate,
-          amount
+          amount,
+          essentialRate: catalogProd?.essentialRate || catalogProd?.modern || 1200,
+          signatureRate: catalogProd?.signatureRate || catalogProd?.luxuryModern || 1600,
+          eliteRate: catalogProd?.eliteRate || catalogProd?.luxury || 2200
         };
       });
 

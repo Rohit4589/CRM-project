@@ -61,8 +61,13 @@ const ProductsRates = ({ onNavigate }) => {
     return products.filter((prod) => {
       // Category match
       if (selectedCategory !== 'All') {
-        const prodCat = (prod.resolved_category_name || prod.category_name || '').toUpperCase();
-        if (prodCat !== selectedCategory.toUpperCase()) return false;
+        const catObj = categories.find(c => c.name.toUpperCase() === selectedCategory.toUpperCase());
+        if (catObj && Array.isArray(catObj.product_ids) && catObj.product_ids.length > 0) {
+          if (!catObj.product_ids.includes(prod.id)) return false;
+        } else {
+          const prodCat = (prod.resolved_category_name || prod.category_name || '').toUpperCase();
+          if (prodCat !== selectedCategory.toUpperCase()) return false;
+        }
       }
 
       // Unit match
@@ -89,17 +94,21 @@ const ProductsRates = ({ onNavigate }) => {
 
       return true;
     });
-  }, [products, selectedCategory, unitFilter, searchTerm]);
+  }, [products, categories, selectedCategory, unitFilter, searchTerm]);
 
   // Counts map per category
   const categoryCounts = useMemo(() => {
     const map = {};
-    products.forEach((p) => {
-      const cat = (p.resolved_category_name || p.category_name || 'OTHER').toUpperCase();
-      map[cat] = (map[cat] || 0) + 1;
+    categories.forEach((cat) => {
+      if (Array.isArray(cat.product_ids) && cat.product_ids.length > 0) {
+        map[cat.name.toUpperCase()] = cat.product_ids.length;
+      } else {
+        const count = products.filter(p => (p.resolved_category_name || p.category_name || '').toUpperCase() === cat.name.toUpperCase()).length;
+        map[cat.name.toUpperCase()] = count;
+      }
     });
     return map;
-  }, [products]);
+  }, [categories, products]);
 
   // KPI calculations
   const totalCategories = categories.length;
@@ -559,6 +568,7 @@ const ProductsRates = ({ onNavigate }) => {
       {showRoomModal && (
         <AddEditRoomModal
           room={editingRoom}
+          allProducts={products}
           saving={saving}
           onClose={() => {
             setShowRoomModal(false);

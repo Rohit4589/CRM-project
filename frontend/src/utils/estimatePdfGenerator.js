@@ -19,8 +19,8 @@ export async function downloadEstimatePdf(element, filename = 'Modern_Interior_E
     // A4 dimensions in mm
     const PAGE_W = 210;
     const PAGE_H = 297;
-    const MARGIN_X = 14; // mm left & right margin
-    const MARGIN_Y = 20; // mm top & bottom margin (more margin top & bottom)
+    const MARGIN_X = 12; // mm left & right margin
+    const MARGIN_Y = 12; // mm top & bottom margin
     const CONTENT_W = PAGE_W - MARGIN_X * 2;
     const CONTENT_H = PAGE_H - MARGIN_Y * 2;
 
