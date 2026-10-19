@@ -60,7 +60,17 @@ class SiteTask {
       query += ` AND st.site_id = $${params.length}`;
     }
 
-    query += ` ORDER BY st.is_completed ASC, st.id ASC;`;
+    query += ` ORDER BY 
+      st.is_completed ASC,
+      CASE st.priority 
+        WHEN 'Urgent' THEN 1 
+        WHEN 'High' THEN 2 
+        WHEN 'Medium' THEN 3 
+        WHEN 'Low' THEN 4 
+        ELSE 5 
+      END ASC,
+      st.due_time ASC NULLS LAST,
+      st.id ASC;`;
 
     const result = await pool.query(query, params);
     return result.rows;

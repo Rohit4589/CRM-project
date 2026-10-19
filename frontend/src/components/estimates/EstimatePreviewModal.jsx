@@ -640,14 +640,13 @@ const EstimatePreviewModal = ({
                     <div
                       style={{
                         display: 'flex',
-                        flexDirection: 'column',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         flexShrink: 0,
-                        textAlign: 'center',
-                        padding: '4px',
+                        padding: '2px',
                         background: '#FFFFFF',
-                        border: '1.5px solid #000000',
-                        borderRadius: '6px'
+                        border: '0.8px solid #888888',
+                        borderRadius: '4px'
                       }}
                     >
                       <img
@@ -663,18 +662,6 @@ const EstimatePreviewModal = ({
                           e.currentTarget.src = '/scanner.jpg';
                         }}
                       />
-                      <span
-                        style={{
-                          fontSize: '8px',
-                          fontWeight: '800',
-                          color: '#000000',
-                          marginTop: '2px',
-                          letterSpacing: '0.4px',
-                          textTransform: 'uppercase'
-                        }}
-                      >
-                        Scan &amp; Pay (UPI)
-                      </span>
                     </div>
                   </div>
                 </div>

@@ -466,9 +466,9 @@ const AddEditProductModal = ({
               >
                 <option value="Sq.Ft.">Sq.Ft.</option>
                 <option value="SET">SET</option>
+                <option value="Nos">Nos</option>
                 <option value="RFT.">RFT.</option>
                 <option value="APPROX">APPROX</option>
-                <option value="Nos">Nos</option>
               </select>
             </div>
 
