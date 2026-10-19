@@ -90,8 +90,21 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                       <div style={{fontWeight: '600', color: '#111827', fontSize: '13px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}>
                         {site.customerName}
                       </div>
-                      <div style={{fontSize: '11px', color: '#6B7280', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}>
-                        {site.location}
+                      <div style={{fontSize: '11px', color: '#6B7280', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap'}}>
+                        <span>{site.location}</span>
+                        {(site.refFrom || site.refName) && (
+                          <span style={{
+                            fontSize: '9.5px',
+                            background: '#FEF3C7',
+                            color: '#92400E',
+                            padding: '0px 5px',
+                            borderRadius: '3px',
+                            fontWeight: '600'
+                          }} title={`Source: ${site.refFrom || 'Referral'}${site.refName ? ` (${site.refName})` : ''}`}>
+                            <i className="fa-solid fa-bullhorn" style={{fontSize: '8px', marginRight: '3px'}}></i>
+                            {site.refFrom || site.refName}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -107,6 +120,27 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                     <div style={{fontSize: '11px', color: '#6B7280', marginTop: '2px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}>
                       <i className="fa-solid fa-envelope" style={{fontSize: '10px', color: '#9CA3AF', marginRight: '6px'}}></i>
                       {site.email}
+                    </div>
+                  )}
+                  {Array.isArray(site.contactPersons) && site.contactPersons.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: '3px',
+                        fontSize: '10px',
+                        color: '#059669',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        background: '#ECFDF5',
+                        padding: '1px 5px',
+                        borderRadius: '4px',
+                        fontWeight: '600',
+                        cursor: 'help'
+                      }}
+                      title={site.contactPersons.map(c => `${c.name || 'Contact'}: ${c.phone || ''}`).join('\n')}
+                    >
+                      <i className="fa-solid fa-users" style={{fontSize: '9px'}}></i>
+                      +{site.contactPersons.length} more
                     </div>
                   )}
                 </td>

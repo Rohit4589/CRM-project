@@ -70,15 +70,15 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
             </div>
           </div>
 
-          {/* Contact Info */}
+          {/* Contact & Referral Info */}
           <div style={{marginBottom: '18px'}}>
             <h4 style={{margin: '0 0 8px 0', fontSize: '12px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px'}}>
-              Customer Contact
+              Customer Contact & Referral Source
             </h4>
-            <div style={{display: 'flex', gap: '16px', flexWrap: 'wrap'}}>
+            <div style={{display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center'}}>
               <div style={{fontSize: '13px'}}>
                 <span style={{color: '#6B7280'}}>Phone: </span>
-                <strong style={{color: '#111827'}}>{selectedSite.phone}</strong>
+                <strong style={{color: '#111827'}}>{selectedSite.phone || 'N/A'}</strong>
               </div>
               {selectedSite.email && (
                 <div style={{fontSize: '13px'}}>
@@ -86,7 +86,51 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
                   <strong style={{color: '#111827'}}>{selectedSite.email}</strong>
                 </div>
               )}
+              {selectedSite.refFrom && (
+                <div style={{fontSize: '13px'}}>
+                  <span style={{color: '#6B7280'}}>Source: </span>
+                  <span style={{
+                    background: '#FEF3C7', color: '#92400E', padding: '2px 8px',
+                    borderRadius: '4px', fontWeight: '600', fontSize: '12px'
+                  }}>
+                    {selectedSite.refFrom}
+                  </span>
+                </div>
+              )}
+              {selectedSite.refName && (
+                <div style={{fontSize: '13px'}}>
+                  <span style={{color: '#6B7280'}}>Referred By: </span>
+                  <strong style={{color: '#111827'}}>{selectedSite.refName}</strong>
+                </div>
+              )}
             </div>
+
+            {Array.isArray(selectedSite.contactPersons) && selectedSite.contactPersons.length > 0 && (
+              <div style={{marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #E5E7EB'}}>
+                <span style={{fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600', display: 'block', marginBottom: '6px'}}>
+                  Additional Contact Persons:
+                </span>
+                <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+                  {selectedSite.contactPersons.map((cp, i) => (
+                    <div key={i} style={{
+                      background: '#F3F4F6',
+                      border: '1px solid #E5E7EB',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px'
+                    }}>
+                      <strong style={{color: '#111827'}}>{cp.name || 'Contact'}</strong>
+                      {cp.phone && (
+                        <span style={{color: '#4B5563', marginLeft: '6px'}}>
+                          <i className="fa-solid fa-phone" style={{fontSize: '10px', marginRight: '4px', color: 'var(--gold, #A56A30)'}}></i>
+                          {cp.phone}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Site Address & Map */}

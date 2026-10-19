@@ -96,8 +96,18 @@ const LocationMapPicker = ({
       setSearching(true);
       setErrorMessage('');
       setSearchResults([]);
-      const res = await fetch(`${API_BASE}/geocode/search?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
+
+      const hasCity = /(pune|pcmc|mumbai|nashik|nagpur|thane|solapur|kolhapur|bangalore|delhi)/i.test(q);
+      const searchTarget = hasCity ? q : `${q}, Pune, Maharashtra`;
+
+      let res = await fetch(`${API_BASE}/geocode/search?q=${encodeURIComponent(searchTarget)}`);
+      let data = await res.json();
+
+      if ((!data.success || !data.results || data.results.length === 0) && !hasCity) {
+        // Fallback to original query without Pune
+        const fallbackRes = await fetch(`${API_BASE}/geocode/search?q=${encodeURIComponent(q)}`);
+        data = await fallbackRes.json();
+      }
 
       if (data.success && data.results && data.results.length > 0) {
         setSearchResults(data.results);
@@ -163,7 +173,11 @@ const LocationMapPicker = ({
       (pos) => {
         setSearching(false);
         const { latitude, longitude } = pos.coords;
-        applyLocation(latitude, longitude, '', 16);
+        if (latitude > 20.0 || latitude < 17.5 || longitude < 72.8 || longitude > 75.0) {
+          setErrorMessage(`⚠️ Notice: Your desktop internet connection/ISP reported Nagpur (~${latitude.toFixed(2)}, ${longitude.toFixed(2)}) because computers lack GPS chips. Click "Pune Center" or "Katraj / Gujarwadi" above to place your site in Pune.`);
+        } else {
+          applyLocation(latitude, longitude, '', 16);
+        }
       },
       (err) => {
         setSearching(false);
@@ -177,8 +191,21 @@ const LocationMapPicker = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    const initialPos = coords || { lat: 18.5204, lng: 73.8567 }; // Pune default
-    const initialZoom = coords ? 15 : 12;
+    const parsed = parseCoordinates(initialLatLng);
+    // If coords are outside Pune/Maharashtra (e.g. lat > 20, Nagpur from desktop ISP) ignore outlier
+    const isOutlier = parsed && (parsed.lat > 20.0 || parsed.lat < 17.5 || parsed.lng < 72.8 || parsed.lng > 75.0);
+    const validInitial = parsed && !isOutlier ? parsed : null;
+    const initialPos = validInitial || { lat: 18.5204, lng: 73.8567 }; // Pune default
+    const initialZoom = validInitial ? 15 : 12;
+
+    setCoords(validInitial);
+    setSearchQuery(initialLocation || initialAddress || '');
+    setErrorMessage('');
+    if (validInitial) {
+      setAddressPreview(initialAddress || initialLocation || '');
+    } else {
+      setAddressPreview(initialLocation ? `${initialLocation}, Pune` : 'Pune, Maharashtra, India');
+    }
 
     const timer = setTimeout(() => {
       if (!mapContainerRef.current) return;
@@ -202,9 +229,9 @@ const LocationMapPicker = ({
 
       mapInstanceRef.current = map;
 
-      // Add marker if coordinates exist
-      if (coords) {
-        const marker = L.marker([coords.lat, coords.lng], {
+      // Add marker if valid initial coords exist
+      if (validInitial) {
+        const marker = L.marker([validInitial.lat, validInitial.lng], {
           icon: createPinIcon(),
           draggable: true
         }).addTo(map);
@@ -214,7 +241,7 @@ const LocationMapPicker = ({
           applyLocation(newPos.lat, newPos.lng);
         });
 
-        marker.bindPopup(`<b>Selected Site Location</b><br>${coords.lat}, ${coords.lng}`).openPopup();
+        marker.bindPopup(`<b>Selected Site Location</b><br>${validInitial.lat}, ${validInitial.lng}`).openPopup();
         markerRef.current = marker;
       }
 
@@ -224,6 +251,12 @@ const LocationMapPicker = ({
       });
 
       map.invalidateSize();
+
+      // If no valid coords, automatically search by location/address in Pune
+      if (!validInitial && (initialLocation || initialAddress)) {
+        const q = initialLocation || initialAddress;
+        handleSearchAddress(q);
+      }
     }, 150);
 
     return () => {
@@ -234,16 +267,7 @@ const LocationMapPicker = ({
         markerRef.current = null;
       }
     };
-  }, [isOpen]);
-
-  // If search query is prefilled from address and no initial coords, auto-search
-  useEffect(() => {
-    if (isOpen && !coords && (initialAddress || initialLocation)) {
-      const q = initialAddress || initialLocation;
-      setSearchQuery(q);
-      handleSearchAddress(q);
-    }
-  }, [isOpen]);
+  }, [isOpen, initialLatLng]);
 
   if (!isOpen) return null;
 
@@ -376,6 +400,41 @@ const LocationMapPicker = ({
             </button>
           </form>
 
+          {/* Quick Pune Area Presets */}
+          <div style={{marginTop: '10px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap'}}>
+            <span style={{fontSize: '11px', color: '#64748B', fontWeight: '700'}}>
+              <i className="fa-solid fa-location-dot" style={{color: 'var(--gold, #A56A30)', marginRight: '3px'}}></i>
+              Quick Pune Jump:
+            </span>
+            {[
+              { label: 'Pune Center', lat: 18.5204, lng: 73.8567 },
+              { label: 'Katraj / Gujarwadi', lat: 18.4405, lng: 73.8606 },
+              { label: 'Kothrud', lat: 18.5074, lng: 73.8077 },
+              { label: 'Bavdhan', lat: 18.5133, lng: 73.7699 },
+              { label: 'Ravet / PCMC', lat: 18.6536, lng: 73.7438 },
+              { label: 'Hinjewadi', lat: 18.5913, lng: 73.7389 },
+              { label: 'Wagholi', lat: 18.5793, lng: 73.9814 },
+            ].map((p, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => applyLocation(p.lat, p.lng, p.label, 15)}
+                style={{
+                  background: '#F8FAFC',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '4px',
+                  padding: '2px 8px',
+                  fontSize: '11px',
+                  color: '#334155',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
           {/* Search suggestions dropdown if multiple */}
           {searchResults.length > 1 && (
             <div style={{
@@ -488,7 +547,19 @@ const LocationMapPicker = ({
             )}
           </div>
 
-          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>
+            <button
+              type="button"
+              onClick={() => applyLocation(18.5204, 73.8567, 'Pune, Maharashtra', 14)}
+              style={{
+                padding: '8px 12px', background: '#FEF3C7', border: '1px solid #FCD34D',
+                color: '#92400E', borderRadius: '6px', fontSize: '12px', fontWeight: '700',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px'
+              }}
+              title="Reset pin to Pune Center"
+            >
+              <i className="fa-solid fa-location-crosshairs"></i> Reset to Pune
+            </button>
             {coords && (
               <button
                 type="button"

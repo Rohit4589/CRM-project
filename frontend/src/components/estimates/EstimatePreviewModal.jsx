@@ -278,13 +278,64 @@ const EstimatePreviewModal = ({
             {/* Header Brand with Logo on Left and Customer Info on Right */}
             {/* Unified Creative Estimate Header matching Cardboard Sketch */}
             <div className="print-unified-header">
-              {/* 1. Logo Section */}
+              {/* 1. Logo (65% height) + Collection Name (35% height) Column */}
               <div className="print-unified-col print-col-logo">
-                <img
-                  src={modernLogo}
-                  alt="Modern Interior"
-                  onError={(e) => { e.currentTarget.src = '/logo.png'; }}
-                />
+                <div className="print-logo-top" style={{ height: '65%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px 8px', background: '#FFFFFF' }}>
+                  <img
+                    src={modernLogo}
+                    alt="Modern Interior"
+                    style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                    onError={(e) => { e.currentTarget.src = '/logo.png'; }}
+                  />
+                </div>
+                <div
+                  className="print-col-pkg-bottom"
+                  style={{
+                    height: '35%',
+                    background: '#4A2C17',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    padding: '3px 6px',
+                    boxSizing: 'border-box',
+                    borderTop: '1px solid #4A2C17'
+                  }}
+                >
+                  <div
+                    className="print-pkg-title"
+                    style={{
+                      fontSize: '9.5px',
+                      fontWeight: '800',
+                      color: '#FFFFFF',
+                      letterSpacing: '0.4px',
+                      lineHeight: '1.2',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {activeTier}
+                  </div>
+                  <div
+                    className="print-pkg-subtitle"
+                    style={{
+                      fontSize: '6.5px',
+                      fontWeight: '600',
+                      color: '#E8D5C4',
+                      letterSpacing: '0.2px',
+                      lineHeight: '1.1',
+                      marginTop: '2px',
+                      paddingTop: '2px',
+                      borderTop: '1px solid rgba(232, 213, 196, 0.4)',
+                      whiteSpace: 'nowrap',
+                      textAlign: 'center',
+                      width: '100%'
+                    }}
+                  >
+                    Furniture &amp; Interior Quotation
+                  </div>
+                </div>
               </div>
 
               {/* 2. Company GST & Address Section */}
@@ -298,7 +349,7 @@ const EstimatePreviewModal = ({
                 </div>
               </div>
 
-              {/* 3. Customer & Order Details (2x3 Grid matching Sketch) */}
+              {/* 3. Customer & Order Details (Expanded across remaining space) */}
               <div className="print-unified-col print-col-details">
                 <table className="print-details-table">
                   <tbody>
@@ -335,31 +386,6 @@ const EstimatePreviewModal = ({
                   </tbody>
                 </table>
               </div>
-
-              {/* 4. Package Vertical Accent Strip */}
-              <div className="print-unified-col print-col-package">
-                <div className="print-pkg-title">
-                  {activeTier}
-                </div>
-                <div
-                  className="print-pkg-subtitle"
-                  style={{
-                    fontSize: '7px',
-                    fontWeight: '600',
-                    color: '#E8D5C4',
-                    letterSpacing: '0.2px',
-                    lineHeight: '1.2',
-                    marginTop: '4px',
-                    paddingTop: '3px',
-                    borderTop: '1px solid rgba(232, 213, 196, 0.4)',
-                    whiteSpace: 'nowrap',
-                    textAlign: 'center',
-                    width: '100%'
-                  }}
-                >
-                  Furniture &amp; Interior Quotation
-                </div>
-              </div>
             </div>
 
             {/* Room-wise Tables (Matching Excel) */}
@@ -372,21 +398,21 @@ const EstimatePreviewModal = ({
                     </td>
                   </tr>
                   <tr>
-                    <th style={{ width: '22%', textAlign: 'left' }}>PRODUCT NAME</th>
-                    <th style={{ width: '30%', textAlign: 'center' }}>DISCRIPTION</th>
-                    <th style={{ width: '9%', textAlign: 'center' }}>WIDTH</th>
-                    <th style={{ width: '9%', textAlign: 'center' }}>HEIGHT</th>
-                    <th style={{ width: '8%', textAlign: 'center' }}>AREA</th>
+                    <th style={{ width: '18%', textAlign: 'left' }}>PRODUCT NAME</th>
+                    <th style={{ width: '38%', textAlign: 'center' }}>DISCRIPTION</th>
+                    <th style={{ width: '8%', textAlign: 'center' }}>WIDTH</th>
+                    <th style={{ width: '8%', textAlign: 'center' }}>HEIGHT</th>
+                    <th style={{ width: '7%', textAlign: 'center' }}>AREA</th>
                     <th style={{ width: '7%', textAlign: 'center' }}>UNIT</th>
                     <th style={{ width: '7%', textAlign: 'center' }}>RATE</th>
-                    <th style={{ width: '8%', textAlign: 'right' }}>AMOUNT</th>
+                    <th style={{ width: '7%', textAlign: 'right' }}>AMOUNT</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(room.items || []).map((it, iIdx) => (
                     <tr key={iIdx}>
-                      <td style={{ textAlign: 'left', fontWeight: '700', color: '#000000' }}>{it.productName}</td>
-                      <td style={{ fontSize: '10.5px', color: '#000000', fontWeight: '600', textAlign: 'center' }}>{it.description}</td>
+                      <td style={{ textAlign: 'left', fontWeight: '700', color: '#000000', wordBreak: 'normal', overflowWrap: 'normal', whiteSpace: 'normal', lineHeight: '1.25' }}>{it.productName}</td>
+                      <td style={{ fontSize: '10.5px', color: '#000000', fontWeight: '600', textAlign: 'center', lineHeight: '1.3' }}>{it.description}</td>
                       <td style={{ textAlign: 'center', color: '#000000', fontWeight: '600' }}>{it.widthMm || '-'}</td>
                       <td style={{ textAlign: 'center', color: '#000000', fontWeight: '600' }}>{it.heightMm || '-'}</td>
                       <td style={{ textAlign: 'center', fontWeight: '700', color: '#000000' }}>{it.totalArea ?? '-'}</td>

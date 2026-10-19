@@ -107,6 +107,30 @@ const EstimateRoomSection = ({
     });
   };
 
+  const handleMoveItemUp = (itemIndex) => {
+    if (itemIndex <= 0) return;
+    const updatedItems = [...room.items];
+    const [movedItem] = updatedItems.splice(itemIndex, 1);
+    updatedItems.splice(itemIndex - 1, 0, movedItem);
+
+    onRoomChange({
+      ...room,
+      items: updatedItems
+    });
+  };
+
+  const handleMoveItemDown = (itemIndex) => {
+    if (itemIndex >= room.items.length - 1) return;
+    const updatedItems = [...room.items];
+    const [movedItem] = updatedItems.splice(itemIndex, 1);
+    updatedItems.splice(itemIndex + 1, 0, movedItem);
+
+    onRoomChange({
+      ...room,
+      items: updatedItems
+    });
+  };
+
   const handleRoomNameChange = (e) => {
     onRoomChange({
       ...room,
@@ -232,7 +256,7 @@ const EstimateRoomSection = ({
               <th style={{ width: '7%', textAlign: 'center' }}>UNIT</th>
               <th style={{ width: '7%', textAlign: 'center' }}>RATE</th>
               <th style={{ width: '8%', textAlign: 'right' }}>AMOUNT</th>
-              <th style={{ width: '24px' }}></th>
+              <th style={{ width: '72px', textAlign: 'center' }}></th>
             </tr>
           </thead>
           <tbody>
@@ -246,6 +270,10 @@ const EstimateRoomSection = ({
                 catalogDescriptions={catalogDescriptions}
                 catalogUnits={catalogUnits}
                 furnitureTier={furnitureTier}
+                isFirstItem={idx === 0}
+                isLastItem={idx === (room.items || []).length - 1}
+                onMoveUp={() => handleMoveItemUp(idx)}
+                onMoveDown={() => handleMoveItemDown(idx)}
                 onChange={(updated) => handleItemChange(idx, updated)}
                 onRemove={() => handleRemoveItem(idx)}
               />

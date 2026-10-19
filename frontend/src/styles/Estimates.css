@@ -872,6 +872,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   color: #111111;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -894,29 +895,55 @@
   box-sizing: border-box;
 }
 
-/* 1. Logo Column */
+/* 1. Logo (65%) + Collection (35%) Column */
 .print-col-logo {
-  width: 17%;
-  min-width: 130px;
-  max-width: 160px;
-  padding: 10px 12px;
-  align-items: center;
-  justify-content: center;
+  width: 18%;
+  min-width: 140px;
+  max-width: 175px;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
   background: #FFFFFF;
   border-right: 1.5px solid #4A2C17;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
-.print-col-logo img {
-  max-height: 58px;
+.print-logo-top {
+  height: 65%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  background: #FFFFFF;
+}
+
+.print-logo-top img {
+  max-height: 50px;
   max-width: 100%;
   object-fit: contain;
 }
 
+.print-col-pkg-bottom {
+  height: 35%;
+  background: #4A2C17;
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3px 6px;
+  box-sizing: border-box;
+  border-top: 1px solid #4A2C17;
+}
+
 /* 2. Company GST & Address Column */
 .print-col-company {
-  width: 26%;
-  min-width: 190px;
+  width: 25%;
+  min-width: 180px;
   padding: 8px 12px;
   background: #FAF8F5;
   border-right: 1.5px solid #4A2C17;
@@ -963,11 +990,11 @@
   font-weight: 700;
 }
 
-/* 3. Customer & Order Details (2x3 Table) */
+/* 3. Customer & Order Details (2x3 Table) - Fills Full Remaining Width */
 .print-col-details {
   flex: 1;
   background: #FFFFFF;
-  border-right: 1.5px solid #4A2C17;
+  border-right: none;
   padding: 0;
 }
 
@@ -1158,6 +1185,8 @@
   padding: 6px 8px;
   border: 1px solid #4A2C17;
   font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.4px;
   text-align: center;
 }
 
@@ -1183,6 +1212,7 @@
 .print-room-table td {
   padding: 6px 8px;
   border: 1px solid #DCD4CA;
+  font-size: 11px;
 }
 
 .print-room-title-row td {
@@ -1193,12 +1223,16 @@
   border-top: 2px solid #4A2C17;
   text-align: left !important;
   padding-left: 10px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
 }
 
 .print-room-total-row td {
   background: #FAF8F5;
   font-weight: 700;
+  font-size: 11px;
   border-top: 1px solid #4A2C17;
+  padding: 6px 10px;
 }
 
 /* Editor Sheet Table - Exact Match to Estimate Preview (Photo 1) */
@@ -1464,11 +1498,11 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm 12mm 12mm 12mm;
-    margin-top: 12mm;
-    margin-bottom: 12mm;
-    margin-left: 12mm;
-    margin-right: 12mm;
+    margin: 8mm 6mm;
+    margin-top: 8mm;
+    margin-bottom: 8mm;
+    margin-left: 6mm;
+    margin-right: 6mm;
   }
 
   /* Global fragmentation rules */
@@ -1604,13 +1638,14 @@
   }
 
   /* 7. Printable Sheet in normal document flow - allows natural page fragmentation */
+  /* 7. Printable Sheet in normal document flow - allows natural page fragmentation */
   .estimate-printable-sheet {
     position: static !important;
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 auto !important;
-    padding: 8mm 10mm !important;
+    padding: 4mm 6mm !important;
     box-sizing: border-box !important;
     background: #FFFFFF !important;
     box-shadow: none !important;
@@ -1651,40 +1686,72 @@
     break-after: avoid !important;
   }
 
-  .estimate-printable-sheet .print-col-package {
+  .estimate-printable-sheet .print-col-logo {
+    width: 18% !important;
+    min-width: 135px !important;
+    max-width: 175px !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-right: 1.5px solid #4A2C17 !important;
+  }
+
+  .estimate-printable-sheet .print-logo-top {
+    height: 65% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 5px 8px !important;
+    background: #FFFFFF !important;
+  }
+
+  .estimate-printable-sheet .print-logo-top img {
+    max-height: 48px !important;
+    max-width: 100% !important;
+    object-fit: contain !important;
+  }
+
+  .estimate-printable-sheet .print-col-pkg-bottom {
+    height: 35% !important;
     background: #4A2C17 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    width: 17% !important;
-    min-width: 135px !important;
-    max-width: 175px !important;
-    padding: 6px 8px !important;
+    color: #FFFFFF !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
     align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 3px 6px !important;
+    box-sizing: border-box !important;
+    border-top: 1px solid #4A2C17 !important;
   }
 
   .estimate-printable-sheet .print-pkg-title {
-    font-size: 10.5px !important;
+    font-size: 9.5px !important;
     font-weight: 800 !important;
     color: #FFFFFF !important;
-    line-height: 1.25 !important;
-    letter-spacing: 0.5px !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0.4px !important;
     text-transform: uppercase !important;
   }
 
   .estimate-printable-sheet .print-pkg-subtitle {
-    font-size: 6.8px !important;
+    font-size: 6.5px !important;
     font-weight: 600 !important;
     color: #FAF8F5 !important;
-    margin-top: 3px !important;
-    padding-top: 3px !important;
+    margin-top: 2px !important;
+    padding-top: 2px !important;
     border-top: 1px solid rgba(255, 255, 255, 0.4) !important;
-    line-height: 1.2 !important;
+    line-height: 1.1 !important;
     display: block !important;
     text-align: center !important;
     white-space: nowrap !important;
+  }
+
+  .estimate-printable-sheet .print-col-details {
+    flex: 1 !important;
+    border-right: none !important;
   }
 
   .estimate-printable-sheet .print-brand-header {
@@ -1739,6 +1806,8 @@
   }
 
   .estimate-printable-sheet .print-room-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
     page-break-inside: auto !important;
     break-inside: auto !important;
     margin-top: 4mm !important;
@@ -1747,9 +1816,21 @@
 
   .estimate-printable-sheet .print-room-table td,
   .estimate-printable-sheet .print-room-table th {
-    padding: 4.5px 7px !important;
+    padding: 4px 6px !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  .estimate-printable-sheet .print-room-table th {
+    background: #4A2C17 !important;
+    color: #FFFFFF !important;
+    font-size: 10.5px !important;
+  }
+
+  /* Description column font reduced ONLY on PDF / Print */
+  .estimate-printable-sheet .print-room-table td:nth-child(2) {
+    font-size: 8.8px !important;
+    line-height: 1.25 !important;
   }
 
   /* Room title row must stay with table header */
@@ -1763,11 +1844,6 @@
     background: #F4EFEA !important;
     text-align: left !important;
     padding-left: 8px !important;
-  }
-
-  .estimate-printable-sheet .print-room-table th {
-    background: #4A2C17 !important;
-    color: #FFFFFF !important;
   }
 
   /* Room total row — keep on same page as data rows before it */
