@@ -52,6 +52,19 @@ const AddRoomModal = ({
     }
   }, [isOpen]);
 
+  // Close modal on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const togglePreset = (roomName) => {
@@ -96,7 +109,7 @@ const AddRoomModal = ({
       const foundPreset = availablePresets.find(p => p.roomName.toUpperCase() === roomName.toUpperCase());
       const presetItems = (foundPreset && loadPresets) ? (foundPreset.items || []) : [];
 
-      const items = presetItems.map((pi, iIdx) => {
+      let items = presetItems.map((pi, iIdx) => {
         const catalogProd = (catalog?.products || []).find(
           p => p.name.toUpperCase() === pi.productName.toUpperCase()
         );
@@ -149,7 +162,68 @@ const AddRoomModal = ({
         };
       });
 
-      // If no items generated (e.g. custom room or user chose blank), provide a starter item
+      // If preset didn't have items, check dynamic catalog products assigned to this room category
+      if (items.length === 0 && loadPresets) {
+        const matchingCatalog = (catalog?.products || []).filter(p => {
+          const catNames = (Array.isArray(p.category_names) && p.category_names.length > 0)
+            ? p.category_names.map(c => (c || '').toUpperCase())
+            : [(p.category || '').toUpperCase()];
+          return catNames.includes(roomName.toUpperCase());
+        });
+
+        if (matchingCatalog.length > 0) {
+          const isEssential = furnitureTier === 'Essential Collection' || furnitureTier === 'Modern';
+          const isElite = furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury';
+
+          items = matchingCatalog.map((p, iIdx) => {
+            const essentialDesc = p.essentialDesc || p.defaultDesc || '';
+            const signatureDesc = p.signatureDesc || p.defaultDesc || '';
+            const eliteDesc = p.eliteDesc || p.defaultDesc || '';
+
+            let rate = p.signatureRate || p.luxuryModern || 1600;
+            let description = signatureDesc;
+
+            if (isEssential) {
+              rate = p.essentialRate || p.modern || 1200;
+              description = essentialDesc;
+            } else if (isElite) {
+              rate = p.eliteRate || p.luxury || 2200;
+              description = eliteDesc;
+            }
+
+            const unit = p.defaultUnit || 'Sq.Ft.';
+            const w = (p.defaultW !== null && p.defaultW !== undefined && p.defaultW !== '') ? Number(p.defaultW) : '';
+            const h = (p.defaultH !== null && p.defaultH !== undefined && p.defaultH !== '') ? Number(p.defaultH) : '';
+            let totalArea = 1;
+            if (unit === 'Sq.Ft.' && w && h && Number(w) > 0 && Number(h) > 0) {
+              const rawSqFt = (Number(w) * Number(h)) / 92903;
+              totalArea = Math.ceil(rawSqFt * 2) / 2;
+            }
+
+            const amount = Math.round(totalArea * rate);
+
+            return {
+              id: `item_${timestamp}_${rIdx}_${iIdx}`,
+              productName: p.name,
+              description,
+              essentialDesc,
+              signatureDesc,
+              eliteDesc,
+              widthMm: w,
+              heightMm: h,
+              totalArea,
+              unit,
+              rate,
+              amount,
+              essentialRate: p.essentialRate || p.modern || 1200,
+              signatureRate: p.signatureRate || p.luxuryModern || 1600,
+              eliteRate: p.eliteRate || p.luxury || 2200
+            };
+          });
+        }
+      }
+
+      // If still no items generated (e.g. custom room or user chose blank), provide a starter item
       if (items.length === 0) {
         const defaultProd = catalog?.products?.[0] || { name: 'FURNITURE ITEM', signatureRate: 1600 };
         const isEssential = furnitureTier === 'Essential Collection' || furnitureTier === 'Modern';

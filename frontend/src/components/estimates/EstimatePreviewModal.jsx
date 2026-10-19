@@ -11,6 +11,17 @@ const EstimatePreviewModal = ({
 }) => {
   const printSheetRef = useRef(null);
 
+  // Close preview modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   if (!estimate) return null;
 
   const rooms = estimate.rooms_data || [];

@@ -97,32 +97,59 @@ exports.getCatalog = async (req, res) => {
       dbCategories = catRes.rows;
 
       const prodRes = await pool.query(`
-        SELECT p.*, c.name as cat_name
+        SELECT 
+          p.*, 
+          c.name as cat_name,
+          COALESCE(
+            (
+              SELECT array_agg(ec.name ORDER BY ec.display_order ASC, ec.name ASC)
+              FROM estimate_category_products ecp
+              JOIN estimate_categories ec ON ecp.category_id = ec.id
+              WHERE ecp.product_id = p.id
+            ),
+            ARRAY[]::text[]
+          ) AS category_names,
+          COALESCE(
+            (
+              SELECT array_agg(ecp.category_id)
+              FROM estimate_category_products ecp
+              WHERE ecp.product_id = p.id
+            ),
+            ARRAY[]::int[]
+          ) AS category_ids
         FROM estimate_products p
         LEFT JOIN estimate_categories c ON p.category_id = c.id
         ORDER BY COALESCE(c.display_order, 99) ASC, p.category_name ASC, p.name ASC
       `);
 
       if (prodRes.rows.length > 0) {
-        dbProducts = prodRes.rows.map(p => ({
-          id: p.id,
-          name: p.name,
-          category: p.cat_name || p.category_name,
-          category_id: p.category_id,
-          defaultUnit: p.unit || 'Sq.Ft.',
-          modern: Number(p.essential_rate || p.modern_rate) || 0,
-          luxuryModern: Number(p.signature_rate || p.luxury_modern_rate) || 0,
-          luxury: Number(p.elite_rate || p.luxury_rate) || 0,
-          essentialRate: Number(p.essential_rate || p.modern_rate) || 0,
-          signatureRate: Number(p.signature_rate || p.luxury_modern_rate) || 0,
-          eliteRate: Number(p.elite_rate || p.luxury_rate) || 0,
-          essentialDesc: p.essential_description || p.default_description || '',
-          signatureDesc: p.signature_description || p.default_description || '',
-          eliteDesc: p.elite_description || p.default_description || '',
-          defaultW: p.default_width ? Number(p.default_width) : null,
-          defaultH: p.default_height ? Number(p.default_height) : null,
-          defaultDesc: p.signature_description || p.essential_description || p.default_description || ''
-        }));
+        dbProducts = prodRes.rows.map(p => {
+          const mappedCats = (p.category_names && p.category_names.length > 0)
+            ? p.category_names
+            : [p.cat_name || p.category_name || 'General'].filter(Boolean);
+
+          return {
+            id: p.id,
+            name: p.name,
+            category: mappedCats[0] || p.cat_name || p.category_name || 'General',
+            category_id: p.category_id,
+            category_names: mappedCats,
+            category_ids: p.category_ids || [],
+            defaultUnit: p.unit || 'Sq.Ft.',
+            modern: Number(p.essential_rate || p.modern_rate) || 0,
+            luxuryModern: Number(p.signature_rate || p.luxury_modern_rate) || 0,
+            luxury: Number(p.elite_rate || p.luxury_rate) || 0,
+            essentialRate: Number(p.essential_rate || p.modern_rate) || 0,
+            signatureRate: Number(p.signature_rate || p.luxury_modern_rate) || 0,
+            eliteRate: Number(p.elite_rate || p.luxury_rate) || 0,
+            essentialDesc: p.essential_description || p.default_description || '',
+            signatureDesc: p.signature_description || p.default_description || '',
+            eliteDesc: p.elite_description || p.default_description || '',
+            defaultW: p.default_width ? Number(p.default_width) : null,
+            defaultH: p.default_height ? Number(p.default_height) : null,
+            defaultDesc: p.signature_description || p.essential_description || p.default_description || ''
+          };
+        });
       }
     } catch (dbErr) {
       console.warn('Could not read dynamic catalog from DB, falling back to static constants:', dbErr.message);

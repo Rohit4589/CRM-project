@@ -52,14 +52,47 @@ const Estimates = ({ onNavigate }) => {
   useEffect(() => {
     const initData = async () => {
       try {
-        const [catRes, sitesRes] = await Promise.all([
+        const [catRes, sitesRes, prodsRes] = await Promise.all([
           fetch(`${API_BASE}/estimates/catalog`),
-          fetch(`${API_BASE}/sites`)
+          fetch(`${API_BASE}/sites`),
+          fetch(`${API_BASE}/catalog/products`)
         ]);
         const catData = await catRes.json();
         const sitesData = await sitesRes.json();
+        const prodsData = await prodsRes.json();
 
-        if (catData.success) setCatalog(catData.catalog);
+        if (catData.success) {
+          const catalogObj = { ...catData.catalog };
+          if (prodsData.success && Array.isArray(prodsData.products) && prodsData.products.length > 0) {
+            catalogObj.products = prodsData.products.map(p => {
+              const mappedCats = (Array.isArray(p.category_names) && p.category_names.length > 0)
+                ? p.category_names
+                : [p.category_name || 'General'];
+
+              return {
+                id: p.id,
+                name: p.name,
+                category: mappedCats[0] || p.category_name || 'General',
+                category_names: mappedCats,
+                category_ids: p.category_ids || [],
+                defaultUnit: p.unit || 'Sq.Ft.',
+                modern: Number(p.essential_rate || p.modern_rate) || 0,
+                luxuryModern: Number(p.signature_rate || p.luxury_modern_rate) || 0,
+                luxury: Number(p.elite_rate || p.luxury_rate) || 0,
+                essentialRate: Number(p.essential_rate || p.modern_rate) || 0,
+                signatureRate: Number(p.signature_rate || p.luxury_modern_rate) || 0,
+                eliteRate: Number(p.elite_rate || p.luxury_rate) || 0,
+                essentialDesc: p.essential_description || p.default_description || '',
+                signatureDesc: p.signature_description || p.default_description || '',
+                eliteDesc: p.elite_description || p.default_description || '',
+                defaultW: p.default_width ? Number(p.default_width) : null,
+                defaultH: p.default_height ? Number(p.default_height) : null,
+                defaultDesc: p.signature_description || p.essential_description || p.default_description || ''
+              };
+            });
+          }
+          setCatalog(catalogObj);
+        }
         if (sitesData.success) setSites(sitesData.sites || []);
       } catch (err) {
         console.error('Error initializing estimate data:', err);
@@ -220,11 +253,16 @@ const Estimates = ({ onNavigate }) => {
 
       // Find all products in catalog assigned to this room
       const matchingCatalogProds = (catalog?.products || []).filter(p => {
-        const pCat = (p.category || '').toUpperCase();
-        return pCat === cleanRoomUpper ||
-          (cleanRoomUpper.includes('BEDROOM') && pCat.includes('BEDROOM')) ||
-          (cleanRoomUpper.includes('MASTER') && pCat.includes('BEDROOM')) ||
-          (cleanRoomUpper.includes('KID') && pCat.includes('BEDROOM'));
+        const catNames = (Array.isArray(p.category_names) && p.category_names.length > 0)
+          ? p.category_names.map(c => (c || '').toUpperCase())
+          : [(p.category || '').toUpperCase()];
+
+        return catNames.includes(cleanRoomUpper) ||
+          catNames.some(c => 
+            (cleanRoomUpper.includes('BEDROOM') && c.includes('BEDROOM')) ||
+            (cleanRoomUpper.includes('MASTER') && c.includes('BEDROOM')) ||
+            (cleanRoomUpper.includes('KID') && c.includes('BEDROOM'))
+          );
       });
 
       // Also check fallback presets if no dynamic products found

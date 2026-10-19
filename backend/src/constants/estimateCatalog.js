@@ -267,7 +267,7 @@ const COLLECTION_MATERIAL_SPECS = {
       { label: '2. External Laminate:', text: 'Merino / Greenlam or equivalent brand, SF/HGL finish (₹1,500–₹2,000 per sheet), applied to visible surfaces only.' },
       { label: '3. Internal Laminate:', text: 'Regular Egg White Laminate with Suede Finish.' },
       { label: '4. Edge Banding:', text: 'Best possible colour-matched edge banding, subject to availability.' },
-      { label: '5. Hinges:', text: 'Onyx Brand Regular (Non-Soft-Close) Hinges or equivalent brand.' }
+      { label: '5. Hinges:', text: 'Onyx or equivalent Brand Regular (Non-Soft-Close) Hinges.' }
     ],
     note: 'Handles, decorative items, soft-close hinges, special hardware and accessories are excluded unless specifically mentioned in the quotation.',
     additionalCharges: 'Any changes in model, design or material specifications, or laminate selection exceeding the specified price range / requiring special finishes, made after work is in process shall be charged extra at actual cost difference.'
