@@ -43,7 +43,19 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lan
 
       <aside className={`sidebar ${isOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-brand">
-          <div className="sidebar-brand-inner">
+          <div 
+            className="sidebar-brand-inner"
+            onClick={(e) => handleItemClick(e, isEmployee ? 'emp-dashboard' : 'dashboard')}
+            style={{ cursor: 'pointer' }}
+            title="Go to Dashboard"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                handleItemClick(e, isEmployee ? 'emp-dashboard' : 'dashboard');
+              }
+            }}
+          >
             <div className="sidebar-logo-wrap">
               <img 
                 src={modernLogo} 
@@ -141,7 +153,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lan
                   className={`menu-item ${activeTab === 'sites' || activeTab === 'customers' ? 'active' : ''}`} 
                   onClick={(e) => handleItemClick(e, 'sites')}
                 >
-                  <i className="fa-solid fa-location-dot"></i> {t.sites}
+                  <i className="fa-solid fa-users"></i> {t.sites}
                 </a>
                 <a 
                   href="#" 

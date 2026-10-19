@@ -11,7 +11,9 @@ const getSites = async (req, res) => {
         phone, 
         email, 
         location, 
+        ref_from as "refFrom",
         ref_name as "refName",
+        contact_persons as "contactPersons",
         full_address as "fullAddress", 
         lat_lng as "latLng", 
         TO_CHAR(start_date, 'YYYY-MM-DD') as "startDate", 
@@ -42,7 +44,9 @@ const getSites = async (req, res) => {
         phone: row.phone || '',
         email: row.email || '',
         location: row.location || '',
+        refFrom: row.refFrom || '',
         refName: row.refName || '',
+        contactPersons: Array.isArray(row.contactPersons) ? row.contactPersons : (typeof row.contactPersons === 'string' ? JSON.parse(row.contactPersons || '[]') : []),
         fullAddress: row.fullAddress || '',
         latLng: row.latLng || '',
         startDate: row.startDate || '',
@@ -85,7 +89,9 @@ const addSite = async (req, res) => {
       phone,
       email,
       location,
+      refFrom,
       refName,
+      contactPersons,
       fullAddress,
       latLng,
       startDate,
@@ -139,11 +145,20 @@ const addSite = async (req, res) => {
       finalSiteRef = nextNum < 1000 ? String(nextNum).padStart(3, '0') : String(nextNum);
     }
 
+    const finalContactPersons = JSON.stringify(
+      Array.isArray(contactPersons)
+        ? contactPersons.filter(cp => cp && (cp.name || cp.phone || cp.contact)).map(cp => ({
+            name: toTitleCase(String(cp.name || '').trim()),
+            phone: String(cp.phone || cp.contact || '').trim()
+          }))
+        : []
+    );
+
     const insertQuery = `
       INSERT INTO public.sites 
-        (site_ref, customer_name, phone, email, location, ref_name, full_address, lat_lng, start_date, target_date, status, progress, notes)
+        (site_ref, customer_name, phone, email, location, ref_from, ref_name, full_address, lat_lng, start_date, target_date, status, progress, notes, contact_persons)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::jsonb)
       RETURNING 
         id, 
         site_ref as "siteRef", 
@@ -151,7 +166,9 @@ const addSite = async (req, res) => {
         phone, 
         email, 
         location, 
+        ref_from as "refFrom",
         ref_name as "refName",
+        contact_persons as "contactPersons",
         full_address as "fullAddress", 
         lat_lng as "latLng", 
         TO_CHAR(start_date, 'YYYY-MM-DD') as "startDate", 
@@ -167,6 +184,7 @@ const addSite = async (req, res) => {
       phone ? phone.trim() : '',
       email ? email.trim() : '',
       location ? toTitleCase(location.trim()) : '',
+      refFrom ? refFrom.trim() : '',
       refName ? toTitleCase(refName.trim()) : '',
       fullAddress ? toTitleCase(fullAddress.trim()) : '',
       latLng ? latLng.trim() : '',
@@ -175,6 +193,7 @@ const addSite = async (req, res) => {
       status || 'Running',
       Number(progress || 0),
       notes ? notes.trim() : '',
+      finalContactPersons,
     ]);
 
     const row = result.rows[0];
@@ -193,7 +212,9 @@ const addSite = async (req, res) => {
       phone: row.phone,
       email: row.email,
       location: row.location,
+      refFrom: row.refFrom || '',
       refName: row.refName || '',
+      contactPersons: Array.isArray(row.contactPersons) ? row.contactPersons : [],
       fullAddress: row.fullAddress,
       latLng: row.latLng,
       startDate: row.startDate || '',
@@ -262,7 +283,9 @@ const updateSite = async (req, res) => {
       phone,
       email,
       location,
+      refFrom,
       refName,
+      contactPersons,
       fullAddress,
       latLng,
       startDate,
@@ -297,6 +320,17 @@ const updateSite = async (req, res) => {
       }
     }
 
+    const finalContactPersons = contactPersons !== undefined
+      ? JSON.stringify(
+          Array.isArray(contactPersons)
+            ? contactPersons.filter(cp => cp && (cp.name || cp.phone || cp.contact)).map(cp => ({
+                name: toTitleCase(String(cp.name || '').trim()),
+                phone: String(cp.phone || cp.contact || '').trim()
+              }))
+            : []
+        )
+      : null;
+
     const updateQuery = `
       UPDATE public.sites
       SET 
@@ -305,15 +339,17 @@ const updateSite = async (req, res) => {
         phone = COALESCE($3, phone),
         email = COALESCE($4, email),
         location = COALESCE($5, location),
-        ref_name = CASE WHEN $6::varchar IS NOT NULL THEN $6::varchar ELSE ref_name END,
-        full_address = COALESCE($7, full_address),
-        lat_lng = CASE WHEN $8::varchar IS NOT NULL THEN $8::varchar ELSE lat_lng END,
-        start_date = $9,
-        target_date = $10,
-        status = COALESCE($11, status),
-        progress = COALESCE($12, progress),
-        notes = COALESCE($13, notes)
-      WHERE id = $14
+        ref_from = CASE WHEN $6::varchar IS NOT NULL THEN $6::varchar ELSE ref_from END,
+        ref_name = CASE WHEN $7::varchar IS NOT NULL THEN $7::varchar ELSE ref_name END,
+        full_address = COALESCE($8, full_address),
+        lat_lng = CASE WHEN $9::varchar IS NOT NULL THEN $9::varchar ELSE lat_lng END,
+        start_date = $10,
+        target_date = $11,
+        status = COALESCE($12, status),
+        progress = COALESCE($13, progress),
+        notes = COALESCE($14, notes),
+        contact_persons = CASE WHEN $15::jsonb IS NOT NULL THEN $15::jsonb ELSE contact_persons END
+      WHERE id = $16
       RETURNING 
         id, 
         site_ref as "siteRef", 
@@ -321,7 +357,9 @@ const updateSite = async (req, res) => {
         phone, 
         email, 
         location, 
+        ref_from as "refFrom",
         ref_name as "refName",
+        contact_persons as "contactPersons",
         full_address as "fullAddress", 
         lat_lng as "latLng", 
         TO_CHAR(start_date, 'YYYY-MM-DD') as "startDate", 
@@ -337,6 +375,7 @@ const updateSite = async (req, res) => {
       phone ? phone.trim() : null,
       email ? email.trim() : null,
       location ? toTitleCase(location.trim()) : null,
+      refFrom !== undefined ? (refFrom ? refFrom.trim() : '') : null,
       refName !== undefined ? (refName ? toTitleCase(refName.trim()) : '') : null,
       fullAddress ? toTitleCase(fullAddress.trim()) : null,
       latLng !== undefined ? (latLng ? latLng.trim() : '') : null,
@@ -345,6 +384,7 @@ const updateSite = async (req, res) => {
       status || null,
       progress !== undefined ? Number(progress) : null,
       notes ? notes.trim() : null,
+      finalContactPersons,
       targetDbId,
     ]);
 
@@ -376,6 +416,9 @@ const updateSite = async (req, res) => {
       phone: row.phone,
       email: row.email,
       location: row.location,
+      refFrom: row.refFrom || '',
+      refName: row.refName || '',
+      contactPersons: Array.isArray(row.contactPersons) ? row.contactPersons : [],
       fullAddress: row.fullAddress,
       latLng: row.latLng,
       startDate: row.startDate || '',

@@ -8,6 +8,10 @@ const EstimateItemRow = ({
   catalogDescriptions = [],
   catalogUnits = ['Sq.Ft.', 'SET', 'RFT.', 'APPROX'],
   furnitureTier = 'Signature Collection',
+  isFirstItem = false,
+  isLastItem = false,
+  onMoveUp,
+  onMoveDown,
   onChange,
   onRemove
 }) => {
@@ -209,54 +213,80 @@ const EstimateItemRow = ({
 
   return (
     <tr>
-      {/* Product Name Column matching Photo 1 */}
+      {/* Product Name Column - Directly Editable for this bill + Catalog Dropdown */}
       <td style={{ fontWeight: '600' }}>
-        {isCustomProduct ? (
-          <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-            <input
-              type="text"
-              value={item.productName || ''}
-              placeholder="Product Name..."
-              onChange={(e) => onChange({ ...item, productName: e.target.value.toUpperCase() })}
-              style={{ fontWeight: '700', textTransform: 'uppercase', color: '#000000' }}
-            />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100%' }}>
+          <input
+            type="text"
+            value={item.productName || ''}
+            placeholder="PRODUCT NAME..."
+            onChange={(e) => onChange({ ...item, productName: e.target.value.toUpperCase() })}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              color: '#000000',
+              padding: '4px 6px',
+              border: '1px solid #DCD4CA',
+              borderRadius: '4px',
+              fontSize: '11px',
+              background: '#FFFFFF'
+            }}
+            title="Click to edit product name for this estimate only"
+          />
+          <div style={{ position: 'relative', flexShrink: 0 }}>
             <button
               type="button"
-              onClick={() => setIsCustomProduct(false)}
-              title="Pick from standard products list"
+              title="Pick product from catalog"
               style={{
-                background: 'transparent',
-                border: 'none',
+                background: '#FAF8F5',
+                border: '1px solid #DCD4CA',
+                borderRadius: '4px',
+                color: '#4A2C17',
                 cursor: 'pointer',
-                color: '#888',
-                padding: '2px 4px',
-                fontSize: '11px'
+                padding: '4px 6px',
+                fontSize: '11px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '24px',
+                width: '26px'
               }}
             >
               <i className="fa-solid fa-list"></i>
             </button>
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) handleProductSelect(e.target.value);
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                opacity: 0,
+                cursor: 'pointer'
+              }}
+              title="Select from product catalog to auto-fill specs & rates"
+            >
+              <option value="" disabled>-- Select Catalog Product --</option>
+              {categories.map((cat) => (
+                <optgroup key={cat} label={`📂 ${cat}`}>
+                  {catalogProducts
+                    .filter((p) => (p.category || 'General') === cat)
+                    .map((p) => (
+                      <option key={p.name} value={p.name}>
+                        {p.name}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
-        ) : (
-          <select
-            value={item.productName || ''}
-            onChange={(e) => handleProductSelect(e.target.value)}
-            style={{ fontWeight: '700', textTransform: 'uppercase', color: '#000000', cursor: 'pointer' }}
-          >
-            <option value="" disabled>-- Select Product --</option>
-            {categories.map((cat) => (
-              <optgroup key={cat} label={`📂 ${cat}`}>
-                {catalogProducts
-                  .filter((p) => (p.category || 'General') === cat)
-                  .map((p) => (
-                    <option key={p.name} value={p.name}>
-                      {p.name}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-            <option value="__CUSTOM__">✏️ Custom / Other Item...</option>
-          </select>
-        )}
+        </div>
       </td>
 
       {/* Description / Specification Column - Centered Multi-line Paragraph */}
@@ -461,26 +491,68 @@ const EstimateItemRow = ({
         ₹{(item.amount || 0).toLocaleString('en-IN')}
       </td>
 
-      {/* Delete Row Column */}
-      <td style={{ width: '24px', textAlign: 'center', verticalAlign: 'middle' }}>
-        <button
-          type="button"
-          onClick={onRemove}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#B91C1C',
-            cursor: 'pointer',
-            padding: '2px 4px',
-            fontSize: '12px',
-            opacity: 0.6
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.6'; }}
-          title="Remove line item"
-        >
-          <i className="fa-solid fa-xmark"></i>
-        </button>
+      {/* Reorder and Delete Item Column */}
+      <td style={{ width: '72px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap', padding: '2px 4px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+          {/* Move Item Up */}
+          <button
+            type="button"
+            disabled={isFirstItem}
+            onClick={onMoveUp}
+            title={isFirstItem ? 'Already at top of room' : 'Move item up'}
+            style={{
+              background: isFirstItem ? 'transparent' : '#FAF8F5',
+              border: isFirstItem ? '1px solid transparent' : '1px solid #DCD4CA',
+              borderRadius: '3px',
+              color: isFirstItem ? '#D1D5DB' : '#4A2C17',
+              cursor: isFirstItem ? 'not-allowed' : 'pointer',
+              padding: '3px 5px',
+              fontSize: '10px',
+              lineHeight: 1
+            }}
+          >
+            <i className="fa-solid fa-arrow-up"></i>
+          </button>
+
+          {/* Move Item Down */}
+          <button
+            type="button"
+            disabled={isLastItem}
+            onClick={onMoveDown}
+            title={isLastItem ? 'Already at bottom of room' : 'Move item down'}
+            style={{
+              background: isLastItem ? 'transparent' : '#FAF8F5',
+              border: isLastItem ? '1px solid transparent' : '1px solid #DCD4CA',
+              borderRadius: '3px',
+              color: isLastItem ? '#D1D5DB' : '#4A2C17',
+              cursor: isLastItem ? 'not-allowed' : 'pointer',
+              padding: '3px 5px',
+              fontSize: '10px',
+              lineHeight: 1
+            }}
+          >
+            <i className="fa-solid fa-arrow-down"></i>
+          </button>
+
+          {/* Delete Item */}
+          <button
+            type="button"
+            onClick={onRemove}
+            title="Remove item"
+            style={{
+              background: '#FEE2E2',
+              border: '1px solid #FECACA',
+              borderRadius: '3px',
+              color: '#B91C1C',
+              cursor: 'pointer',
+              padding: '3px 5px',
+              fontSize: '10px',
+              lineHeight: 1
+            }}
+          >
+            <i className="fa-solid fa-xmark"></i>
+          </button>
+        </div>
       </td>
     </tr>
   );

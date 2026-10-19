@@ -1,15 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { toTitleCase } from '../../utils/autoCapitalize';
+
+const STANDARD_REF_SOURCES = [
+  'Existing Customer',
+  'Walk-in',
+  'Just Dial',
+  'Google',
+  'Instagram / Social Media',
+  'Architect / Contractor',
+  'Friends & Family',
+  'Other'
+];
+
+const getSiteRefLabel = (site) => {
+  if (!site) return '';
+  const rawCode = site.siteCode !== undefined && site.siteCode !== null && site.siteCode !== ''
+    ? String(site.siteCode).trim()
+    : String(site.id || site.siteRef || '').replace(/[^0-9]/g, '');
+  const code = rawCode ? (parseInt(rawCode, 10) < 1000 ? String(parseInt(rawCode, 10)).padStart(3, '0') : rawCode) : '';
+  const name = site.customerName || 'Unnamed';
+  return code ? `${code} - ${name}` : name;
+};
 
 const EditSiteModal = ({
   editingSite,
   setEditingSite,
+  existingSites = [],
   onSubmit,
   onOpenMapPicker,
   onQuickFetch,
   quickGeocoding,
   geoNotice
 }) => {
+  const [isCustomRefFrom, setIsCustomRefFrom] = useState(false);
+  const [isCustomRefName, setIsCustomRefName] = useState(false);
+
+  useEffect(() => {
+    if (editingSite) {
+      setIsCustomRefFrom(editingSite.refFrom && !STANDARD_REF_SOURCES.includes(editingSite.refFrom));
+      setIsCustomRefName(
+        editingSite.refName && !existingSites.some(s => getSiteRefLabel(s) === editingSite.refName || s.customerName === editingSite.refName)
+      );
+    }
+  }, [editingSite?.id, editingSite?.dbId]);
+
   if (!editingSite) return null;
 
   return (
@@ -21,13 +55,13 @@ const EditSiteModal = ({
     }}>
       <div style={{
         background: '#fff', borderRadius: '12px',
-        width: '100%', maxWidth: '620px',
+        width: '100%', maxWidth: '980px',
         boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
         maxHeight: '92vh', overflowY: 'auto'
       }}>
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '18px 20px', borderBottom: '1px solid #E5E7EB'
+          padding: '18px 24px', borderBottom: '1px solid #E5E7EB'
         }}>
           <div>
             <h2 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827'}}>
@@ -52,8 +86,25 @@ const EditSiteModal = ({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} style={{padding: '20px'}}>
-          <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
+        <form onSubmit={onSubmit} style={{padding: '24px'}}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
+            gap: '24px',
+            alignItems: 'start',
+            marginBottom: '10px'
+          }}>
+            {/* LEFT COLUMN: Customer & Contact Information */}
+            <div>
+              <div style={{
+                fontSize: '12px', fontWeight: '700', color: 'var(--gold, #A56A30)',
+                textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px',
+                display: 'flex', alignItems: 'center', gap: '6px'
+              }}>
+                <i className="fa-solid fa-user-circle"></i> Customer & Contact Details
+              </div>
+
+              <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
             {/* Editable Site Ref Number */}
             <div style={{flex: '1 1 200px'}}>
               <label style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
@@ -121,7 +172,7 @@ const EditSiteModal = ({
             </div>
           </div>
 
-          {/* Customer / Site Name & Reference Name */}
+          {/* Customer / Site Name & Customer Ref From */}
           <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
             <div style={{flex: '1 1 200px'}}>
               <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
@@ -142,7 +193,134 @@ const EditSiteModal = ({
             <div style={{flex: '1 1 200px'}}>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
                 <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                  Reference Name
+                  Customer Ref From
+                </label>
+                <span style={{color: '#6B7280', fontSize: '11px', fontWeight: '500'}}>
+                  (Optional)
+                </span>
+              </div>
+              <select
+                value={
+                  isCustomRefFrom ? '__CUSTOM__' :
+                  (!editingSite.refFrom ? '' : (STANDARD_REF_SOURCES.includes(editingSite.refFrom) ? editingSite.refFrom : '__CUSTOM__'))
+                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '__CUSTOM__') {
+                    setIsCustomRefFrom(true);
+                    setEditingSite({ ...editingSite, refFrom: '' });
+                  } else {
+                    setIsCustomRefFrom(false);
+                    setEditingSite({ ...editingSite, refFrom: val });
+                  }
+                }}
+                style={{
+                  width: '100%', padding: '9px 12px', borderRadius: '8px',
+                  border: '1.5px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
+                  backgroundColor: '#fff', fontSize: '13px'
+                }}
+              >
+                <option value="__CUSTOM__">✏️ + Custom (Type your own source...)</option>
+                <option value="">-- Select Customer Source --</option>
+                <option value="Existing Customer">Existing Customer</option>
+                <option value="Walk-in">Walk-in</option>
+                <option value="Just Dial">Just Dial</option>
+                <option value="Google">Google</option>
+                <option value="Instagram / Social Media">Instagram / Social Media</option>
+                <option value="Architect / Contractor">Architect / Contractor</option>
+                <option value="Friends & Family">Friends & Family</option>
+                <option value="Other">Other</option>
+              </select>
+              {(isCustomRefFrom || (editingSite.refFrom && !STANDARD_REF_SOURCES.includes(editingSite.refFrom))) && (
+                <input
+                  type="text"
+                  placeholder="Type custom source (e.g. Exhibition, Hoarding...)"
+                  value={editingSite.refFrom || ''}
+                  onChange={(e) => setEditingSite({ ...editingSite, refFrom: toTitleCase(e.target.value) })}
+                  style={{
+                    marginTop: '6px', width: '100%', padding: '8px 12px', borderRadius: '6px',
+                    border: '1.5px solid var(--gold, #A56A30)', boxSizing: 'border-box', outline: 'none',
+                    fontSize: '13px', backgroundColor: '#FFFDF7'
+                  }}
+                  autoFocus
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Conditional Referral / Existing Customer Section */}
+          {editingSite.refFrom === 'Existing Customer' ? (
+            <div style={{
+              marginBottom: '14px',
+              padding: '12px 14px',
+              backgroundColor: '#F0FDF4',
+              borderRadius: '8px',
+              border: '1px solid #BBF7D0'
+            }}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+                <label style={{color: '#166534', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                  <i className="fa-solid fa-users" style={{color: '#16a34a'}}></i>
+                  Referred By Existing Customer / Site
+                </label>
+                <span style={{color: '#15803D', fontSize: '11px', fontWeight: '600'}}>
+                  Select from {existingSites.length} Customers
+                </span>
+              </div>
+              <select
+                value={
+                  isCustomRefName ? '__CUSTOM__' :
+                  (() => {
+                    const match = existingSites.find(s => getSiteRefLabel(s) === editingSite.refName || s.customerName === editingSite.refName);
+                    return match ? getSiteRefLabel(match) : (editingSite.refName ? '__CUSTOM__' : '');
+                  })()
+                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '__CUSTOM__') {
+                    setIsCustomRefName(true);
+                    setEditingSite({ ...editingSite, refName: '' });
+                  } else {
+                    setIsCustomRefName(false);
+                    setEditingSite({ ...editingSite, refName: val });
+                  }
+                }}
+                style={{
+                  width: '100%', padding: '9px 12px', borderRadius: '6px',
+                  border: '1.5px solid #16A34A', boxSizing: 'border-box', outline: 'none',
+                  backgroundColor: '#FFFFFF', fontSize: '13px'
+                }}
+              >
+                <option value="__CUSTOM__">✏️ + Custom (Type Customer / Site Name...)</option>
+                <option value="">-- Choose Referring Customer / Site --</option>
+                {existingSites.map((site) => {
+                  const label = getSiteRefLabel(site);
+                  return (
+                    <option key={site.id || site.dbId || site.siteCode} value={label}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+              {(isCustomRefName || (editingSite.refName && !existingSites.some(s => getSiteRefLabel(s) === editingSite.refName || s.customerName === editingSite.refName))) && (
+                <input
+                  type="text"
+                  placeholder="Type referring customer or site name..."
+                  value={editingSite.refName || ''}
+                  onChange={(e) => setEditingSite({ ...editingSite, refName: toTitleCase(e.target.value) })}
+                  style={{
+                    marginTop: '8px', width: '100%', padding: '8px 12px', borderRadius: '6px',
+                    border: '1.5px solid #15803D', boxSizing: 'border-box', outline: 'none',
+                    fontSize: '13px', backgroundColor: '#FFFFFF'
+                  }}
+                  autoFocus
+                />
+              )}
+            </div>
+          ) : (
+            <div style={{marginBottom: '14px'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+                <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  Reference / Contact Person Name
                 </label>
                 <span style={{color: '#6B7280', fontSize: '11px', fontWeight: '500'}}>
                   (Optional)
@@ -150,7 +328,7 @@ const EditSiteModal = ({
               </div>
               <input
                 type="text"
-                placeholder="Enter Name"
+                placeholder="Enter referee name or contact person (optional)"
                 value={editingSite.refName || ''}
                 onChange={(e) => setEditingSite({...editingSite, refName: toTitleCase(e.target.value)})}
                 style={{
@@ -160,7 +338,7 @@ const EditSiteModal = ({
                 }}
               />
             </div>
-          </div>
+          )}
 
           <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
             <div style={{flex: '1 1 200px'}}>
@@ -198,7 +376,168 @@ const EditSiteModal = ({
             </div>
           </div>
 
-          <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
+          {/* Multiple Contact Persons */}
+          <div style={{
+            marginBottom: '16px',
+            padding: '12px 14px',
+            backgroundColor: '#F9FAFB',
+            borderRadius: '8px',
+            border: '1px solid #E5E7EB'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: (editingSite.contactPersons && editingSite.contactPersons.length > 0) ? '10px' : '0px'
+            }}>
+              <div>
+                <label style={{color: '#374151', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', margin: 0}}>
+                  <i className="fa-solid fa-address-book" style={{color: 'var(--gold, #A56A30)'}}></i>
+                  Contact Persons
+                </label>
+                <span style={{fontSize: '11px', color: '#6B7280'}}>
+                  Add extra contact persons for this customer / site
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const current = Array.isArray(editingSite.contactPersons) ? [...editingSite.contactPersons] : [];
+                  setEditingSite({
+                    ...editingSite,
+                    contactPersons: [...current, { name: '', phone: '' }]
+                  });
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'var(--gold, #A56A30)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '5px 10px',
+                  fontSize: '11.5px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}
+              >
+                <i className="fa-solid fa-plus"></i> Add Person
+              </button>
+            </div>
+
+            {Array.isArray(editingSite.contactPersons) && editingSite.contactPersons.length > 0 && (
+              <div style={{display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px'}}>
+                {editingSite.contactPersons.map((cp, idx) => (
+                  <div key={idx} style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                    <input
+                      type="text"
+                      placeholder="Person Name / Role"
+                      value={cp.name || ''}
+                      onChange={(e) => {
+                        const updated = [...editingSite.contactPersons];
+                        updated[idx] = { ...updated[idx], name: toTitleCase(e.target.value) };
+                        setEditingSite({ ...editingSite, contactPersons: updated });
+                      }}
+                      style={{
+                        flex: '1 1 180px',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid #D1D5DB',
+                        fontSize: '12.5px',
+                        outline: 'none',
+                        background: '#fff'
+                      }}
+                    />
+                    <input
+                      type="tel"
+                      placeholder="Contact Number"
+                      value={cp.phone || cp.contact || ''}
+                      onChange={(e) => {
+                        const updated = [...editingSite.contactPersons];
+                        updated[idx] = { ...updated[idx], phone: e.target.value };
+                        setEditingSite({ ...editingSite, contactPersons: updated });
+                      }}
+                      style={{
+                        flex: '1 1 160px',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid #D1D5DB',
+                        fontSize: '12.5px',
+                        outline: 'none',
+                        background: '#fff'
+                      }}
+                    />
+                    {/* Add another line below with + icon */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...editingSite.contactPersons];
+                        updated.splice(idx + 1, 0, { name: '', phone: '' });
+                        setEditingSite({ ...editingSite, contactPersons: updated });
+                      }}
+                      title="Add another line below"
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#ECFDF5',
+                        border: '1px solid #A7F3D0',
+                        color: '#059669',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        flexShrink: 0
+                      }}
+                    >
+                      <i className="fa-solid fa-plus"></i>
+                    </button>
+                    {/* Remove row button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = editingSite.contactPersons.filter((_, i) => i !== idx);
+                        setEditingSite({ ...editingSite, contactPersons: updated });
+                      }}
+                      title="Remove contact person"
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#FEF2F2',
+                        border: '1px solid #FECACA',
+                        color: '#DC2626',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        flexShrink: 0
+                      }}
+                    >
+                      <i className="fa-solid fa-trash-can"></i>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+            </div>
+
+            {/* RIGHT COLUMN: Site Location & Project Timeline */}
+            <div>
+              <div style={{
+                fontSize: '12px', fontWeight: '700', color: 'var(--gold, #A56A30)',
+                textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px',
+                display: 'flex', alignItems: 'center', gap: '6px'
+              }}>
+                <i className="fa-solid fa-map-location-dot"></i> Site Location & Timeline
+              </div>
+
+              <div style={{display: 'flex', gap: '14px', marginBottom: '14px', flexWrap: 'wrap'}}>
             <div style={{flex: '1 1 200px'}}>
               <label style={{display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                 Location / Area
@@ -349,8 +688,10 @@ const EditSiteModal = ({
               }}
             ></textarea>
           </div>
+            </div>
+          </div>
 
-          <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px', borderTop: '1px solid #E5E7EB', flexWrap: 'wrap'}}>
+          <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '16px', borderTop: '1px solid #E5E7EB', flexWrap: 'wrap'}}>
             <button
               type="button"
               onClick={() => setEditingSite(null)}

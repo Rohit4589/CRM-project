@@ -39,6 +39,13 @@
   text-align: center;
   gap: 10px;
   width: 100%;
+  cursor: pointer;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.sidebar-brand-inner:hover {
+  opacity: 0.92;
+  transform: scale(1.02);
 }
 
 .sidebar-logo-wrap {

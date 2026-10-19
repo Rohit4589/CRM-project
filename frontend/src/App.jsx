@@ -39,11 +39,10 @@ function App() {
     }
   });
 
-  // Restore active tab from localStorage on refresh
+  // Always land on Dashboard when opening or refreshing the website
   const [activeTab, setActiveTab] = useState(() => {
     try {
-      const savedTab = localStorage.getItem('mi_crm_tab');
-      if (savedTab) return savedTab;
+      localStorage.removeItem('mi_crm_tab');
       const savedUser = localStorage.getItem('mi_crm_user');
       if (savedUser) {
         const parsed = JSON.parse(savedUser);
@@ -76,7 +75,6 @@ function App() {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    localStorage.setItem('mi_crm_tab', tab);
   };
 
   const handleLogin = (user) => {
@@ -84,7 +82,6 @@ function App() {
     localStorage.setItem('mi_crm_user', JSON.stringify(user));
     const defaultTab = user.role === 'employee' ? 'emp-dashboard' : 'dashboard';
     setActiveTab(defaultTab);
-    localStorage.setItem('mi_crm_tab', defaultTab);
   };
 
   const handleLogout = () => {

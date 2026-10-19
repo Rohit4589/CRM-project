@@ -32,6 +32,7 @@ const Sites = ({ onNavigate }) => {
   const [formData, setFormData] = useState({
     siteCode: '',
     customerName: '',
+    refFrom: '',
     refName: '',
     phone: '',
     email: '',
@@ -41,7 +42,8 @@ const Sites = ({ onNavigate }) => {
     startDate: new Date().toISOString().split('T')[0],
     targetDate: '',
     status: 'Running',
-    notes: ''
+    notes: '',
+    contactPersons: []
   });
 
   // Fetch sites from live database
@@ -81,6 +83,7 @@ const Sites = ({ onNavigate }) => {
     setFormData({
       siteCode: defaultCode,
       customerName: '',
+      refFrom: '',
       refName: '',
       phone: '',
       email: '',
@@ -90,7 +93,8 @@ const Sites = ({ onNavigate }) => {
       startDate: new Date().toISOString().split('T')[0],
       targetDate: '',
       status: 'Running',
-      notes: ''
+      notes: '',
+      contactPersons: []
     });
     setShowAddModal(true);
   };
@@ -143,6 +147,7 @@ const Sites = ({ onNavigate }) => {
     setEditingSite({
       ...site,
       siteCode: formattedCode,
+      refFrom: site.refFrom || '',
       refName: site.refName || '',
       phone: site.phone || '',
       email: site.email || '',
@@ -152,6 +157,7 @@ const Sites = ({ onNavigate }) => {
       startDate: site.startDate || '',
       targetDate: site.targetDate || '',
       notes: site.notes || '',
+      contactPersons: Array.isArray(site.contactPersons) ? site.contactPersons : [],
       progress: site.progress || 0
     });
   };
@@ -206,15 +212,24 @@ const Sites = ({ onNavigate }) => {
       setQuickGeocoding(true);
       setGeoNotice('🔍 Searching coordinates...');
 
-      const query = addressToGeocode.toLowerCase().includes('india') 
-        ? addressToGeocode 
-        : `${addressToGeocode}, India`;
+      const rawAddr = addressToGeocode.trim();
+      const hasCity = /(pune|pcmc|mumbai|nashik|nagpur|thane|solapur|kolhapur|bangalore|delhi)/i.test(rawAddr);
+      const query = hasCity ? `${rawAddr}, India` : `${rawAddr}, Pune, Maharashtra, India`;
 
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+      let res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=3`,
         { headers: { 'Accept-Language': 'en' } }
       );
-      const results = await res.json();
+      let results = await res.json();
+
+      if ((!results || results.length === 0) && !hasCity) {
+        const fallbackQuery = `${rawAddr}, Maharashtra, India`;
+        res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackQuery)}&limit=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        results = await res.json();
+      }
 
       if (results && results.length > 0) {
         const lat = parseFloat(results[0].lat).toFixed(6);
@@ -410,6 +425,7 @@ const Sites = ({ onNavigate }) => {
         onClose={() => setShowAddModal(false)}
         formData={formData}
         setFormData={setFormData}
+        existingSites={sites}
         onSubmit={handleAddSubmit}
         onOpenMapPicker={() => {
           setMapPickerTarget('add');
@@ -433,6 +449,7 @@ const Sites = ({ onNavigate }) => {
       <EditSiteModal
         editingSite={editingSite}
         setEditingSite={setEditingSite}
+        existingSites={sites.filter(s => (s.id || s.dbId) !== (editingSite?.id || editingSite?.dbId))}
         onSubmit={handleEditSubmit}
         onOpenMapPicker={() => {
           setMapPickerTarget('edit');
