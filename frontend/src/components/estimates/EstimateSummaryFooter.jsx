@@ -99,7 +99,12 @@ const EstimateSummaryFooter = ({
                 min="0"
                 max="100"
                 value={designFeePct}
-                onChange={(e) => setDesignFeePct(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => {
+                  const cleaned = String(e.target.value).replace(/^0+(?=\d)/, '');
+                  e.target.value = cleaned;
+                  setDesignFeePct(cleaned);
+                }}
                 style={{
                   width: '50px',
                   padding: '2px 4px',
@@ -142,7 +147,12 @@ const EstimateSummaryFooter = ({
               <input
                 type="number"
                 value={roundOff}
-                onChange={(e) => setRoundOff(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => {
+                  const cleaned = String(e.target.value).replace(/^0+(?=\d)/, '');
+                  e.target.value = cleaned;
+                  setRoundOff(cleaned);
+                }}
                 style={{
                   width: '70px',
                   padding: '2px 4px',

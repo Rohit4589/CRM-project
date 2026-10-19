@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 const EstimateWizardModal = ({
   sites = [],
@@ -17,6 +17,59 @@ const EstimateWizardModal = ({
   const [furnitureLevel, setFurnitureLevel] = useState('Signature Collection');
   const [existingEstimate, setExistingEstimate] = useState(null);
   const [copyExisting, setCopyExisting] = useState(true);
+
+  // Searchable site dropdown state
+  const [showSiteDropdown, setShowSiteDropdown] = useState(false);
+  const [siteSearch, setSiteSearch] = useState('');
+  const siteDropdownRef = useRef(null);
+
+  // Close site dropdown when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (siteDropdownRef.current && !siteDropdownRef.current.contains(e.target)) {
+        setShowSiteDropdown(false);
+      }
+    };
+    if (showSiteDropdown) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [showSiteDropdown]);
+
+  // Close wizard modal or site dropdown on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (showSiteDropdown) {
+          setShowSiteDropdown(false);
+          return;
+        }
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSiteDropdown, onClose]);
+
+  // Filter sites based on siteSearch query (matches 1st letter, 2nd letter, name, ref, phone, location)
+  const filteredSites = useMemo(() => {
+    if (!siteSearch.trim()) return sites;
+    const q = siteSearch.trim().toLowerCase();
+    return sites.filter(s => {
+      const name = (s.customerName || s.customer_name || '').toLowerCase();
+      const code = String(s.siteRef || s.site_ref || s.siteCode || s.id || '').toLowerCase();
+      const ph = String(s.phone || '').toLowerCase();
+      const addr = String(s.fullAddress || s.location || '').toLowerCase();
+      return name.includes(q) || code.includes(q) || ph.includes(q) || addr.includes(q);
+    });
+  }, [sites, siteSearch]);
+
+  const activeSelectedSite = useMemo(() => {
+    if (!selectedSiteId) return null;
+    return sites.find(s => String(s.dbId || s.id) === String(selectedSiteId)) || null;
+  }, [sites, selectedSiteId]);
 
   // Custom room adding state
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -69,8 +122,10 @@ const EstimateWizardModal = ({
   };
 
   // Handle site selection and auto-fill customer info + detect previous bill
-  const handleSiteSelect = (e) => {
-    const siteVal = e.target.value;
+  const handleSiteSelect = (valOrEvent) => {
+    const siteVal = (valOrEvent && typeof valOrEvent === 'object' && valOrEvent.target)
+      ? valOrEvent.target.value
+      : valOrEvent;
     setSelectedSiteId(siteVal);
 
     if (!siteVal) {
@@ -165,7 +220,7 @@ const EstimateWizardModal = ({
     }
 
     const activeRooms = selectedRooms.filter(r => r.checked).map(r => r.name);
-    if (!copyExisting && activeRooms.length === 0) {
+    if ((!copyExisting || !existingEstimate) && activeRooms.length === 0) {
       alert('Please select at least one room');
       return;
     }
@@ -223,43 +278,182 @@ const EstimateWizardModal = ({
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
-              <div className="editor-field" style={{ gridColumn: 'span 2' }}>
-                <label style={{ fontWeight: '700', color: '#4A2C17', fontSize: '13px' }}>
-                  Select Registered Site / Customer *
+              <div className="editor-field" style={{ gridColumn: 'span 2', position: 'relative' }} ref={siteDropdownRef}>
+                <label style={{ fontWeight: '700', color: '#4A2C17', fontSize: '13px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Select Registered Site / Customer *</span>
+                  {selectedSiteId && (
+                    <span
+                      onClick={() => {
+                        handleSiteSelect('');
+                        setSiteSearch('');
+                      }}
+                      style={{ fontSize: '11px', color: '#DC2626', cursor: 'pointer', fontWeight: '600' }}
+                    >
+                      Clear Selection
+                    </span>
+                  )}
                 </label>
-                <select
-                  value={selectedSiteId}
-                  onChange={handleSiteSelect}
-                  required
+
+                {/* Searchable Site Trigger Box */}
+                <div
+                  onClick={() => {
+                    setShowSiteDropdown(prev => !prev);
+                    setSiteSearch('');
+                  }}
                   style={{
                     border: '2px solid #4A2C17',
+                    borderRadius: '8px',
                     fontWeight: '700',
                     fontSize: '13.5px',
-                    padding: '10px 12px',
-                    background: '#FAF8F5'
+                    padding: '10px 14px',
+                    background: '#FAF8F5',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                    color: selectedSiteId ? '#1F1A17' : '#8C7B6D'
                   }}
                 >
-                  <option value="" disabled>-- Select Existing Site / Customer --</option>
-                  {sites.map(s => {
-                    const rawRef = s.siteRef || s.site_ref || s.siteCode || s.id;
-                    const match = String(rawRef || '').match(/\d+/);
-                    let ref = rawRef;
-                    if (match) {
-                      const num = parseInt(match[0], 10);
-                      ref = num < 1000 ? String(num).padStart(3, '0') : String(num);
-                    } else {
-                      ref = String(rawRef || '').replace(/^SITE-/i, '');
-                    }
-                    const name = s.customerName || s.customer_name || 'Customer';
-                    const val = s.dbId || s.id;
-                    const statusText = s.status || 'Running';
-                    return (
-                      <option key={val} value={val}>
-                        Order #{ref} · {name} ({statusText})
-                      </option>
-                    );
-                  })}
-                </select>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <i className="fa-solid fa-building-user" style={{ color: '#4A2C17' }}></i>
+                    {activeSelectedSite ? (
+                      <span>
+                        Order #{activeSelectedSite.siteRef || activeSelectedSite.siteCode || activeSelectedSite.id} · {activeSelectedSite.customerName || activeSelectedSite.customer_name} ({activeSelectedSite.status || 'Running'})
+                      </span>
+                    ) : (
+                      <span>-- Click to select or search existing site / customer --</span>
+                    )}
+                  </div>
+                  <i className={`fa-solid fa-chevron-${showSiteDropdown ? 'up' : 'down'}`} style={{ color: '#4A2C17', fontSize: '12px' }}></i>
+                </div>
+
+                {/* Floating Searchable Dropdown Popup */}
+                {showSiteDropdown && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      marginTop: '4px',
+                      background: '#FFFFFF',
+                      border: '2px solid #4A2C17',
+                      borderRadius: '8px',
+                      boxShadow: '0 12px 30px rgba(43, 37, 32, 0.25)',
+                      zIndex: 99999,
+                      maxHeight: '300px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden',
+                      textAlign: 'left'
+                    }}
+                  >
+                    {/* Search Input at Top */}
+                    <div style={{ padding: '10px', background: '#FAF8F5', borderBottom: '1px solid #EAE4DD' }}>
+                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '10px', color: '#8C827A', fontSize: '12px', pointerEvents: 'none' }}></i>
+                        <input
+                          type="text"
+                          placeholder="Type 1st or 2nd letter of customer, phone, location..."
+                          value={siteSearch}
+                          onChange={(e) => setSiteSearch(e.target.value)}
+                          autoFocus
+                          style={{
+                            width: '100%',
+                            padding: '8px 28px 8px 30px',
+                            fontSize: '12.5px',
+                            border: '1.5px solid #4A2C17',
+                            borderRadius: '6px',
+                            outline: 'none',
+                            background: '#FFFFFF',
+                            fontWeight: '600'
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        {siteSearch && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setSiteSearch(''); }}
+                            style={{ position: 'absolute', right: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#8C827A', fontSize: '13px' }}
+                          >
+                            <i className="fa-solid fa-xmark"></i>
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '10.5px', color: '#8C827A', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Recommended sites</span>
+                        <span>{filteredSites.length} available</span>
+                      </div>
+                    </div>
+
+                    {/* Sites List */}
+                    <div style={{ overflowY: 'auto', flex: 1, maxHeight: '220px' }}>
+                      {filteredSites.length === 0 ? (
+                        <div style={{ padding: '24px', textAlign: 'center', color: '#8C827A', fontSize: '12.5px' }}>
+                          No sites matching "{siteSearch}"
+                        </div>
+                      ) : (
+                        filteredSites.map(s => {
+                          const val = s.dbId || s.id;
+                          const isSelected = String(selectedSiteId) === String(val);
+                          const rawRef = s.siteRef || s.site_ref || s.siteCode || s.id;
+                          const name = s.customerName || s.customer_name || 'Customer';
+                          const statusText = s.status || 'Running';
+                          const loc = s.location || s.fullAddress || '';
+
+                          return (
+                            <div
+                              key={val}
+                              onClick={() => {
+                                handleSiteSelect(val);
+                                setShowSiteDropdown(false);
+                                setSiteSearch('');
+                              }}
+                              style={{
+                                padding: '9px 12px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #F5F1EC',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                background: isSelected ? '#F5EBE1' : '#FFFFFF',
+                                transition: 'background 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = '#FAF8F5'; }}
+                              onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = '#FFFFFF'; }}
+                            >
+                              <div>
+                                <div style={{ fontWeight: '700', fontSize: '12.5px', color: '#2B2520' }}>
+                                  Order #{rawRef} · {name}
+                                </div>
+                                {loc && (
+                                  <div style={{ fontSize: '11px', color: '#8C827A', marginTop: '2px' }}>
+                                    <i className="fa-solid fa-location-dot" style={{ fontSize: '9px', marginRight: '4px' }}></i>
+                                    {loc}
+                                  </div>
+                                )}
+                              </div>
+                              <span
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: '700',
+                                  color: statusText === 'Completed' ? '#065F46' : '#92400E',
+                                  background: statusText === 'Completed' ? '#D1FAE5' : '#FEF3C7',
+                                  padding: '2px 7px',
+                                  borderRadius: '4px',
+                                  flexShrink: 0
+                                }}
+                              >
+                                {statusText}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div style={{ fontSize: '11px', color: '#7D6C5E', marginTop: '4px' }}>
                   ℹ️ Estimates are strictly linked to registered site customers and their order folders.
                 </div>
@@ -389,26 +583,45 @@ const EstimateWizardModal = ({
           </div>
 
           {/* Section 3: Which rooms do you have to make? */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
             <div className="wizard-section-title" style={{ margin: 0 }}>
               3. Which rooms do you have to make?
             </div>
-            {!copyExisting && (
-              <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-                <button
-                  type="button"
-                  onClick={() => handleSelectAll(true)}
-                  style={{ background: 'none', border: 'none', color: '#4A2C17', cursor: 'pointer', fontWeight: '700' }}
-                >
-                  Select All
-                </button>
-                <span style={{ color: '#DCD4CA' }}>|</span>
+            {(!copyExisting || !existingEstimate) && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={() => handleSelectAll(false)}
-                  style={{ background: 'none', border: 'none', color: '#8C827A', cursor: 'pointer' }}
+                  style={{
+                    background: '#FAF8F5',
+                    border: '1px solid #DCD4CA',
+                    borderRadius: '6px',
+                    color: '#6B5E51',
+                    padding: '5px 12px',
+                    fontSize: '11.5px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                  title="Uncheck all rooms"
                 >
                   Deselect All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectAll(true)}
+                  style={{
+                    background: '#FAF8F5',
+                    border: '1px solid #DCD4CA',
+                    borderRadius: '6px',
+                    color: '#4A2C17',
+                    padding: '5px 12px',
+                    fontSize: '11.5px',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                  title="Select all rooms"
+                >
+                  Select All
                 </button>
               </div>
             )}

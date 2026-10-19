@@ -280,6 +280,256 @@ const EstimateEditorModal = ({
     });
   };
 
+  // Comprehensive Keyboard Navigation (Arrow Keys up/down/left/right, Enter, and Esc to close)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // 1. ESCAPE: Close modal / cancel confirmation
+      if (e.key === 'Escape') {
+        if (roomToDelete) {
+          e.stopPropagation();
+          setRoomToDelete(null);
+          return;
+        }
+        if (showAddRoomModal) {
+          e.stopPropagation();
+          setShowAddRoomModal(false);
+          return;
+        }
+        // If a catalog dropdown or floating suggestion is currently open, let its own handler dismiss it
+        const hasOpenPopup = modalBodyRef.current?.querySelector('.catalog-dropdown-popup, .product-suggestions-menu');
+        if (hasOpenPopup) {
+          return;
+        }
+        if (onClose) {
+          onClose();
+        }
+        return;
+      }
+
+      // 2. CTRL+S / CMD+S: Quick Save
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        const fakeEvent = { preventDefault: () => {} };
+        handleSaveSubmit(fakeEvent);
+        return;
+      }
+
+      // 3. ARROW KEYS & ENTER navigation
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
+        return;
+      }
+
+      const target = e.target;
+      if (!target || !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) {
+        return;
+      }
+
+      // Skip arrow navigation inside search boxes or popups
+      if (target.getAttribute('placeholder')?.includes('search') || target.closest('.catalog-dropdown-popup')) {
+        return;
+      }
+
+      // Special case: multiline textarea (like Notes or Terms), let arrow keys move within text unless at boundaries
+      if (target.tagName === 'TEXTAREA') {
+        if (e.key === 'ArrowUp' && target.selectionStart > 0) return;
+        if (e.key === 'ArrowDown' && target.selectionEnd < target.value.length) return;
+      }
+
+      // Check if target is inside an item table row (EstimateItemRow)
+      const currentTr = target.closest('tr[data-nav-row="true"]');
+      if (currentTr) {
+        const currentCol = parseInt(target.getAttribute('data-col') ?? '-1', 10);
+        const allRows = Array.from(modalBodyRef.current?.querySelectorAll('tr[data-nav-row="true"]') || []);
+        const currentRowIndex = allRows.indexOf(currentTr);
+
+        // DOWN or ENTER: move to same column in next row
+        if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
+          e.preventDefault();
+          if (currentRowIndex < allRows.length - 1) {
+            const nextRow = allRows[currentRowIndex + 1];
+            const nextTarget = nextRow.querySelector(`[data-col="${currentCol}"]`) || nextRow.querySelector('[data-nav-item="true"]');
+            if (nextTarget) {
+              nextTarget.focus();
+              nextTarget.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+              nextTarget.select?.();
+            }
+          } else {
+            // Reached last row, move to first footer field
+            const footerInput = modalBodyRef.current?.querySelector('.grand-totals-grid input, .grand-totals-grid select');
+            if (footerInput) {
+              footerInput.focus();
+              footerInput.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+              footerInput.select?.();
+            }
+          }
+          return;
+        }
+
+        // UP or SHIFT+ENTER: move to same column in previous row
+        if (e.key === 'ArrowUp' || (e.key === 'Enter' && e.shiftKey)) {
+          e.preventDefault();
+          if (currentRowIndex > 0) {
+            const prevRow = allRows[currentRowIndex - 1];
+            const prevTarget = prevRow.querySelector(`[data-col="${currentCol}"]`) || prevRow.querySelector('[data-nav-item="true"]');
+            if (prevTarget) {
+              prevTarget.focus();
+              prevTarget.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+              prevTarget.select?.();
+            }
+          } else {
+            // Reached first row, move to last header field
+            const headerInputs = Array.from(modalBodyRef.current?.querySelectorAll('.editor-header-fields input, .editor-header-fields select') || []);
+            if (headerInputs.length > 0) {
+              const lastHeader = headerInputs[headerInputs.length - 1];
+              lastHeader.focus();
+              lastHeader.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+              lastHeader.select?.();
+            }
+          }
+          return;
+        }
+
+        // RIGHT ARROW: move to next column in current row, or wrap to next row
+        if (e.key === 'ArrowRight') {
+          let canMoveRight = false;
+          try {
+            if (target.type === 'number' || target.tagName === 'SELECT') {
+              canMoveRight = true;
+            } else if (typeof target.selectionEnd === 'number') {
+              const isAllSelected = target.selectionStart === 0 && target.selectionEnd === target.value.length;
+              const isAtEnd = target.selectionEnd === target.value.length;
+              canMoveRight = isAllSelected || isAtEnd;
+            } else {
+              canMoveRight = true;
+            }
+          } catch {
+            canMoveRight = true;
+          }
+
+          if (canMoveRight) {
+            e.preventDefault();
+            const nextColInput = currentTr.querySelector(`[data-col="${currentCol + 1}"]`);
+            if (nextColInput) {
+              nextColInput.focus();
+              nextColInput.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+              nextColInput.select?.();
+            } else if (currentRowIndex < allRows.length - 1) {
+              const nextRow = allRows[currentRowIndex + 1];
+              const firstColInput = nextRow.querySelector('[data-col="0"]') || nextRow.querySelector('[data-nav-item="true"]');
+              if (firstColInput) {
+                firstColInput.focus();
+                firstColInput.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+                firstColInput.select?.();
+              }
+            }
+          }
+          return;
+        }
+
+        // LEFT ARROW: move to previous column in current row, or wrap to previous row
+        if (e.key === 'ArrowLeft') {
+          let canMoveLeft = false;
+          try {
+            if (target.type === 'number' || target.tagName === 'SELECT') {
+              canMoveLeft = true;
+            } else if (typeof target.selectionStart === 'number') {
+              const isAllSelected = target.selectionStart === 0 && target.selectionEnd === target.value.length;
+              const isAtStart = target.selectionStart === 0;
+              canMoveLeft = isAllSelected || isAtStart;
+            } else {
+              canMoveLeft = true;
+            }
+          } catch {
+            canMoveLeft = true;
+          }
+
+          if (canMoveLeft) {
+            e.preventDefault();
+            const prevColInput = currentTr.querySelector(`[data-col="${currentCol - 1}"]`);
+            if (prevColInput) {
+              prevColInput.focus();
+              prevColInput.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+              prevColInput.select?.();
+            } else if (currentRowIndex > 0) {
+              const prevRow = allRows[currentRowIndex - 1];
+              const lastColInput = prevRow.querySelector('[data-col="6"]') || prevRow.querySelector('[data-nav-item="true"]:last-of-type');
+              if (lastColInput) {
+                lastColInput.focus();
+                lastColInput.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+                lastColInput.select?.();
+              }
+            }
+          }
+          return;
+        }
+      }
+
+      // If outside table grid: Header fields, Footer fields, or general form fields
+      const allFormInputs = Array.from(modalBodyRef.current?.querySelectorAll(
+        'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'
+      ) || []);
+      const currentIndex = allFormInputs.indexOf(target);
+      if (currentIndex === -1) return;
+
+      if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
+        e.preventDefault();
+        if (currentIndex < allFormInputs.length - 1) {
+          const nextInput = allFormInputs[currentIndex + 1];
+          nextInput.focus();
+          nextInput.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+          nextInput.select?.();
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowUp' || (e.key === 'Enter' && e.shiftKey)) {
+        e.preventDefault();
+        if (currentIndex > 0) {
+          const prevInput = allFormInputs[currentIndex - 1];
+          prevInput.focus();
+          prevInput.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+          prevInput.select?.();
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowRight') {
+        let canMove = false;
+        try {
+          if (target.type === 'number' || target.tagName === 'SELECT') canMove = true;
+          else if (target.selectionEnd === target.value.length || (target.selectionStart === 0 && target.selectionEnd === target.value.length)) canMove = true;
+        } catch { canMove = true; }
+        if (canMove && currentIndex < allFormInputs.length - 1) {
+          e.preventDefault();
+          const nextInput = allFormInputs[currentIndex + 1];
+          nextInput.focus();
+          nextInput.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+          nextInput.select?.();
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowLeft') {
+        let canMove = false;
+        try {
+          if (target.type === 'number' || target.tagName === 'SELECT') canMove = true;
+          else if (target.selectionStart === 0 || (target.selectionStart === 0 && target.selectionEnd === target.value.length)) canMove = true;
+        } catch { canMove = true; }
+        if (canMove && currentIndex > 0) {
+          e.preventDefault();
+          const prevInput = allFormInputs[currentIndex - 1];
+          prevInput.focus();
+          prevInput.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+          prevInput.select?.();
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [roomToDelete, showAddRoomModal, onClose, customerName, phone, email, address, date, projectType, furnitureLevel, status, rooms, designFeePct, gstPct, roundOff, notes, termsConditions, paymentTerms, bankDetails]);
+
   return (
     <div className="estimate-modal-overlay">
       <div className="estimate-modal modal-large">

@@ -95,6 +95,7 @@ const AddEditProductModal = ({
   const [isCustomProductName, setIsCustomProductName] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [unit, setUnit] = useState('Sq.Ft.');
+  const [isCustomUnit, setIsCustomUnit] = useState(false);
   const [defaultWidth, setDefaultWidth] = useState('');
   const [defaultHeight, setDefaultHeight] = useState('');
 
@@ -133,7 +134,9 @@ const AddEditProductModal = ({
       setIsCustomProductName(!allProductOptions.includes(pName));
 
       setCategoryId(product.category_id || (categories.find(c => c.name.toUpperCase() === (product.category_name || '').toUpperCase())?.id || ''));
-      setUnit(product.unit || 'Sq.Ft.');
+      const pUnit = product.unit || 'Sq.Ft.';
+      setUnit(pUnit);
+      setIsCustomUnit(!['Sq.Ft.', 'SET', 'Nos', 'Pcs', 'RFT.', 'APPROX', 'Meter', 'Pair', 'Sheet'].includes(pUnit));
       setDefaultWidth(product.default_width ? String(product.default_width) : '');
       setDefaultHeight(product.default_height ? String(product.default_height) : '');
 
@@ -175,6 +178,7 @@ const AddEditProductModal = ({
         : categories[0];
       setCategoryId(initialCat?.id || '');
       setUnit('Sq.Ft.');
+      setIsCustomUnit(false);
       setDefaultWidth('');
       setDefaultHeight('');
       setEssentialRate('');
@@ -186,6 +190,53 @@ const AddEditProductModal = ({
     }
     setError('');
   }, [product, defaultCategory, categories, allProductOptions]);
+
+  // Keyboard navigation & Escape key support
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (!['ArrowUp', 'ArrowDown', 'Enter'].includes(e.key)) return;
+
+      const target = e.target;
+      if (!target || !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return;
+
+      if (target.tagName === 'TEXTAREA') {
+        if (e.key === 'ArrowUp' && target.selectionStart > 0) return;
+        if (e.key === 'ArrowDown' && target.selectionEnd < target.value.length) return;
+      }
+
+      const modalEl = target.closest('.modal-content, .modal-body, form');
+      if (!modalEl) return;
+
+      const inputs = Array.from(modalEl.querySelectorAll(
+        'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'
+      ));
+      const idx = inputs.indexOf(target);
+      if (idx === -1) return;
+
+      if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) {
+        if (target.tagName === 'TEXTAREA' && e.key === 'Enter') return; // allow newline in textarea
+        e.preventDefault();
+        if (idx < inputs.length - 1) {
+          inputs[idx + 1].focus();
+          inputs[idx + 1].select?.();
+        }
+      } else if (e.key === 'ArrowUp' || (e.key === 'Enter' && e.shiftKey)) {
+        e.preventDefault();
+        if (idx > 0) {
+          inputs[idx - 1].focus();
+          inputs[idx - 1].select?.();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   // When user selects a product from the dropdown
   const handleProductSelectChange = (val) => {
@@ -446,30 +497,90 @@ const AddEditProductModal = ({
           {/* Row 2: Unit Type & Default Dimensions */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#4A3E36', marginBottom: '4px' }}>
-                Unit *
-              </label>
-              <select
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 10px',
-                  border: '1px solid #DCD4CA',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  color: '#2B2520',
-                  background: '#FFFFFF',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="Sq.Ft.">Sq.Ft.</option>
-                <option value="SET">SET</option>
-                <option value="Nos">Nos</option>
-                <option value="RFT.">RFT.</option>
-                <option value="APPROX">APPROX</option>
-              </select>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '600', color: '#4A3E36' }}>
+                  Unit *
+                </label>
+                {isCustomUnit ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomUnit(false);
+                      setUnit('Sq.Ft.');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#0369A1',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      padding: 0
+                    }}
+                  >
+                    ← Presets
+                  </button>
+                ) : null}
+              </div>
+
+              {isCustomUnit ? (
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="e.g. Pair, Pcs, Meter, Sheet"
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    border: '1.5px solid #4A2C17',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#2B2520',
+                    background: '#FFFDF9',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              ) : (
+                <select
+                  value={['Sq.Ft.', 'SET', 'Nos', 'Pcs', 'RFT.', 'APPROX', 'Meter', 'Pair', 'Sheet'].includes(unit) ? unit : '__CUSTOM__'}
+                  onChange={(e) => {
+                    if (e.target.value === '__CUSTOM__') {
+                      setIsCustomUnit(true);
+                      setUnit('');
+                    } else {
+                      setUnit(e.target.value);
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    border: '1px solid #DCD4CA',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    color: '#2B2520',
+                    background: '#FFFFFF',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="Sq.Ft.">Sq.Ft.</option>
+                  <option value="SET">SET</option>
+                  <option value="Nos">Nos</option>
+                  <option value="Pcs">Pcs</option>
+                  <option value="RFT.">RFT.</option>
+                  <option value="APPROX">APPROX</option>
+                  <option value="Meter">Meter</option>
+                  <option value="Pair">Pair</option>
+                  <option value="Sheet">Sheet</option>
+                  {unit && !['Sq.Ft.', 'SET', 'Nos', 'Pcs', 'RFT.', 'APPROX', 'Meter', 'Pair', 'Sheet'].includes(unit) && (
+                    <option value={unit}>📝 Custom: {unit}</option>
+                  )}
+                  <option value="__CUSTOM__">✏️ Custom Unit (Type Any Label)...</option>
+                </select>
+              )}
             </div>
 
             <div>
@@ -480,7 +591,8 @@ const AddEditProductModal = ({
                 type="number"
                 placeholder="e.g. 1800"
                 value={defaultWidth}
-                onChange={(e) => setDefaultWidth(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setDefaultWidth(e.target.value.replace(/^0+(?=\d)/, ''))}
                 style={{
                   width: '100%',
                   padding: '8px 10px',
@@ -502,7 +614,8 @@ const AddEditProductModal = ({
                 type="number"
                 placeholder="e.g. 2100"
                 value={defaultHeight}
-                onChange={(e) => setDefaultHeight(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setDefaultHeight(e.target.value.replace(/^0+(?=\d)/, ''))}
                 style={{
                   width: '100%',
                   padding: '8px 10px',
@@ -637,7 +750,8 @@ const AddEditProductModal = ({
                       type="number"
                       placeholder="0"
                       value={essentialRate}
-                      onChange={(e) => setEssentialRate(e.target.value)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setEssentialRate(e.target.value.replace(/^0+(?=\d)/, ''))}
                       style={{
                         width: '95px',
                         padding: '5px 8px',
@@ -720,7 +834,8 @@ const AddEditProductModal = ({
                       type="number"
                       placeholder="0"
                       value={signatureRate}
-                      onChange={(e) => setSignatureRate(e.target.value)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setSignatureRate(e.target.value.replace(/^0+(?=\d)/, ''))}
                       style={{
                         width: '95px',
                         padding: '5px 8px',
@@ -802,7 +917,8 @@ const AddEditProductModal = ({
                       type="number"
                       placeholder="0"
                       value={eliteRate}
-                      onChange={(e) => setEliteRate(e.target.value)}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setEliteRate(e.target.value.replace(/^0+(?=\d)/, ''))}
                       style={{
                         width: '95px',
                         padding: '5px 8px',
