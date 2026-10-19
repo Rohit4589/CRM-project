@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 const EstimateItemRow = ({
   item,
@@ -6,7 +6,7 @@ const EstimateItemRow = ({
   roomName = '',
   catalogProducts = [],
   catalogDescriptions = [],
-  catalogUnits = ['Sq.Ft.', 'SET', 'RFT.', 'APPROX'],
+  catalogUnits = ['Sq.Ft.', 'SET', 'Nos', 'RFT.', 'APPROX'],
   furnitureTier = 'Signature Collection',
   isFirstItem = false,
   isLastItem = false,
@@ -15,6 +15,13 @@ const EstimateItemRow = ({
   onChange,
   onRemove
 }) => {
+  // Ensure standard units always include Nos and any current item unit
+  const standardUnits = ['Sq.Ft.', 'SET', 'Nos', 'RFT.', 'APPROX'];
+  const availableUnits = Array.from(new Set([
+    ...(Array.isArray(catalogUnits) && catalogUnits.length > 0 ? catalogUnits : standardUnits),
+    'Nos',
+    ...(item.unit ? [item.unit] : [])
+  ]));
   // Check if current product exists in catalog
   const isExistingInCatalog = catalogProducts.some(
     p => p.name.toUpperCase() === (item.productName || '').trim().toUpperCase()
@@ -27,8 +34,32 @@ const EstimateItemRow = ({
   const isExistingDesc = catalogDescriptions.includes(item.description);
   const [isCustomDesc, setIsCustomDesc] = useState(false);
 
+  // Product autocomplete recommendations state
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+
   // Extract unique categories from catalog products, putting current room's category first
   const cleanRoomUpper = (roomName || '').trim().toUpperCase();
+
+  // Filter catalog products for auto-recommendations as user types
+  const query = (item.productName || '').trim().toUpperCase();
+  const productSuggestions = useMemo(() => {
+    if (!query) {
+      const inRoom = catalogProducts.filter(p => (p.category || '').toUpperCase() === cleanRoomUpper);
+      return inRoom.length > 0 ? inRoom.slice(0, 8) : catalogProducts.slice(0, 8);
+    }
+    const startsWith = [];
+    const includes = [];
+    for (const p of catalogProducts) {
+      const pUpper = (p.name || '').toUpperCase();
+      if (pUpper.startsWith(query)) {
+        startsWith.push(p);
+      } else if (pUpper.includes(query)) {
+        includes.push(p);
+      }
+      if (startsWith.length + includes.length >= 14) break;
+    }
+    return [...startsWith, ...includes];
+  }, [query, catalogProducts, cleanRoomUpper]);
   const rawCats = Array.from(new Set(catalogProducts.map(p => p.category || 'General')));
   const categories = rawCats.sort((a, b) => {
     const aMatch = a.toUpperCase() === cleanRoomUpper;
@@ -56,6 +87,10 @@ const EstimateItemRow = ({
   const handleDescriptionSelect = (newDesc) => {
     if (newDesc === '__CUSTOM__') {
       setIsCustomDesc(true);
+      onChange({
+        ...item,
+        description: ''
+      });
       return;
     }
 
@@ -203,38 +238,175 @@ const EstimateItemRow = ({
 
   const handleUnitChange = (val) => {
     const updated = { ...item, unit: val };
-    if (val === 'Sq.Ft.' && updated.widthMm && updated.heightMm && Number(updated.widthMm) > 0 && Number(updated.heightMm) > 0) {
+    const cleanUnit = (val || '').trim();
+    if (cleanUnit === 'Sq.Ft.' && updated.widthMm && updated.heightMm && Number(updated.widthMm) > 0 && Number(updated.heightMm) > 0) {
       const rawSqFt = (Number(updated.widthMm) * Number(updated.heightMm)) / 92903;
       updated.totalArea = Math.ceil(rawSqFt * 2) / 2;
+    } else if (cleanUnit === 'SET' || cleanUnit.toLowerCase().startsWith('no') || cleanUnit === 'APPROX') {
+      if (!updated.totalArea || Number(updated.totalArea) <= 0) {
+        updated.totalArea = 1;
+      }
     }
     updated.amount = Math.round((Number(updated.totalArea) || 1) * (Number(updated.rate) || 0));
     onChange(updated);
   };
 
+  const openUpward = isLastItem && index >= 1;
+
   return (
-    <tr>
-      {/* Product Name Column - Directly Editable for this bill + Catalog Dropdown */}
-      <td style={{ fontWeight: '600' }}>
+    <tr style={{ position: 'relative', zIndex: showProductSuggestions ? 99999 : 1 }}>
+      {/* Product Name Column - Directly Editable + Dynamic Recommendations Dropdown */}
+      <td style={{ fontWeight: '600', position: 'relative', zIndex: showProductSuggestions ? 99999 : 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100%' }}>
-          <input
-            type="text"
-            value={item.productName || ''}
-            placeholder="PRODUCT NAME..."
-            onChange={(e) => onChange({ ...item, productName: e.target.value.toUpperCase() })}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              color: '#000000',
-              padding: '4px 6px',
-              border: '1px solid #DCD4CA',
-              borderRadius: '4px',
-              fontSize: '11px',
-              background: '#FFFFFF'
-            }}
-            title="Click to edit product name for this estimate only"
-          />
+          <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+            <input
+              type="text"
+              list={`products-datalist-${item.id || index}`}
+              value={item.productName || ''}
+              placeholder="PRODUCT NAME..."
+              onFocus={() => setShowProductSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowProductSuggestions(false), 200)}
+              onChange={(e) => {
+                const val = e.target.value.toUpperCase();
+                onChange({ ...item, productName: val });
+                setShowProductSuggestions(true);
+                const exact = catalogProducts.find(p => p.name.toUpperCase() === val.trim());
+                if (exact) {
+                  handleProductSelect(exact.name);
+                  setShowProductSuggestions(false);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (productSuggestions.length > 0) {
+                    handleProductSelect(productSuggestions[0].name);
+                    setShowProductSuggestions(false);
+                  }
+                } else if (e.key === 'Escape') {
+                  setShowProductSuggestions(false);
+                }
+              }}
+              style={{
+                width: '100%',
+                fontWeight: '700',
+                textTransform: 'uppercase',
+                color: '#000000',
+                padding: '4px 6px',
+                border: '1px solid #DCD4CA',
+                borderRadius: '4px',
+                fontSize: '11px',
+                background: '#FFFFFF'
+              }}
+              title="Type letters (e.g. 'b' for Bed) to get catalog recommendations"
+            />
+
+            {/* Native browser datalist for autocomplete */}
+            <datalist id={`products-datalist-${item.id || index}`}>
+              {productSuggestions.map((prod) => (
+                <option key={prod.name} value={prod.name}>
+                  {prod.category ? `📂 ${prod.category}` : ''}
+                </option>
+              ))}
+            </datalist>
+
+            {/* Floating Suggestions / Recommendations Menu */}
+            {showProductSuggestions && productSuggestions.length > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  ...(openUpward
+                    ? { bottom: '100%', marginBottom: '4px' }
+                    : { top: '100%', marginTop: '3px' }),
+                  left: 0,
+                  minWidth: '260px',
+                  maxWidth: '340px',
+                  maxHeight: '220px',
+                  overflowY: 'auto',
+                  background: '#FFFFFF',
+                  border: '1px solid #DCD4CA',
+                  borderRadius: '6px',
+                  boxShadow: '0 8px 24px rgba(43, 37, 32, 0.25)',
+                  zIndex: 99999,
+                  textAlign: 'left'
+                }}
+              >
+                <div
+                  style={{
+                    padding: '5px 8px',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    color: '#8C827A',
+                    background: '#FAF8F5',
+                    borderBottom: '1px solid #F0ECE6',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    display: 'flex',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <span>Recommended Products</span>
+                  <span>{productSuggestions.length} items</span>
+                </div>
+                {productSuggestions.map((prod) => {
+                  const rate = Number(
+                    furnitureTier === 'Essential Collection' || furnitureTier === 'Modern'
+                      ? (prod.essentialRate || prod.modern)
+                      : furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury'
+                        ? (prod.eliteRate || prod.luxury)
+                        : (prod.signatureRate || prod.luxuryModern)
+                  ) || 0;
+                  const unit = prod.defaultUnit || 'Sq.Ft.';
+                  return (
+                    <div
+                      key={prod.name}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleProductSelect(prod.name);
+                        setShowProductSuggestions(false);
+                      }}
+                      style={{
+                        padding: '7px 10px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #F5F1EC',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                        transition: 'background 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#F9F6F0'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: '700', fontSize: '11.5px', color: '#2B2520' }}>
+                          {prod.name}
+                        </div>
+                        {prod.category && (
+                          <div style={{ fontSize: '10px', color: '#8C827A', marginTop: '1px' }}>
+                            📂 {prod.category}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <span
+                          style={{
+                            fontSize: '10.5px',
+                            fontWeight: '700',
+                            color: '#4A2C17',
+                            background: '#F5EBE1',
+                            padding: '2px 5px',
+                            borderRadius: '3px'
+                          }}
+                        >
+                          {rate > 0 ? `₹${rate.toLocaleString('en-IN')}` : ''} {unit}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <button
               type="button"
@@ -295,6 +467,7 @@ const EstimateItemRow = ({
           <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
             <textarea
               rows={2}
+              autoFocus
               value={item.description || ''}
               placeholder="Enter custom description..."
               onChange={(e) => onChange({ ...item, description: e.target.value })}
@@ -379,6 +552,7 @@ const EstimateItemRow = ({
               onChange={(e) => {
                 if (e.target.value === '__CUSTOM__') {
                   setIsCustomDesc(true);
+                  onChange({ ...item, description: '' });
                 } else {
                   handleDescriptionSelect(e.target.value);
                 }
@@ -463,17 +637,79 @@ const EstimateItemRow = ({
         />
       </td>
 
-      {/* Unit - Centered matching Photo 1 */}
-      <td style={{ textAlign: 'center' }}>
-        <select
-          value={item.unit || 'Sq.Ft.'}
-          onChange={(e) => handleUnitChange(e.target.value)}
-          style={{ textAlign: 'center', cursor: 'pointer', color: '#000000', fontWeight: '600' }}
-        >
-          {catalogUnits.map((u, i) => (
-            <option key={i} value={u}>{u}</option>
-          ))}
-        </select>
+      {/* Unit - Directly Editable + Suggestions Dropdown */}
+      <td style={{ textAlign: 'center', minWidth: '76px', padding: '2px 4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', width: '100%', justifyContent: 'center' }}>
+          <input
+            type="text"
+            list={`units-datalist-${item.id || index}`}
+            value={item.unit || ''}
+            placeholder="Unit"
+            onChange={(e) => handleUnitChange(e.target.value)}
+            style={{
+              textAlign: 'center',
+              fontWeight: '600',
+              color: '#000000',
+              flex: 1,
+              minWidth: '45px',
+              padding: '4px 2px',
+              border: '1px solid #DCD4CA',
+              borderRadius: '4px',
+              background: '#FFFFFF',
+              fontSize: '11px'
+            }}
+            title="Type custom unit (e.g. Nos, No's, Pcs) or click arrow to choose"
+          />
+          <datalist id={`units-datalist-${item.id || index}`}>
+            {availableUnits.map((u, i) => (
+              <option key={i} value={u} />
+            ))}
+          </datalist>
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) handleUnitChange(e.target.value);
+              }}
+              title="Select unit from list"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                opacity: 0,
+                cursor: 'pointer',
+                zIndex: 2
+              }}
+            >
+              <option value="" disabled>-- Select Unit --</option>
+              {availableUnits.map((u, i) => (
+                <option key={i} value={u}>{u}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              tabIndex={-1}
+              title="Choose unit from list"
+              style={{
+                background: '#FAF8F5',
+                border: '1px solid #DCD4CA',
+                borderRadius: '4px',
+                color: '#4A2C17',
+                cursor: 'pointer',
+                padding: '4px 5px',
+                fontSize: '10px',
+                lineHeight: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <i className="fa-solid fa-chevron-down" style={{ fontSize: '9px' }}></i>
+            </button>
+          </div>
+        </div>
       </td>
 
       {/* Rate - Centered */}

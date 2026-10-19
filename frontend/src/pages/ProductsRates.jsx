@@ -74,7 +74,9 @@ const ProductsRates = ({ onNavigate }) => {
 
       // Unit match
       if (unitFilter !== 'All') {
-        if (unitFilter === 'SET' && (prod.unit === 'SET' || prod.unit === 'Nos')) {
+        if (unitFilter === 'Nos' && (prod.unit === 'Nos' || prod.unit === "No's")) {
+          // match
+        } else if (unitFilter === 'SET' && prod.unit === 'SET') {
           // match
         } else if (prod.unit !== unitFilter) {
           return false;
@@ -428,7 +430,8 @@ const ProductsRates = ({ onNavigate }) => {
           >
             <option value="All">All Units</option>
             <option value="Sq.Ft.">Sq.Ft. (Area)</option>
-            <option value="SET">SET / Nos</option>
+            <option value="SET">SET</option>
+            <option value="Nos">Nos</option>
             <option value="RFT.">RFT. (Running Ft)</option>
             <option value="APPROX">APPROX (Lump Sum)</option>
           </select>
@@ -483,7 +486,7 @@ const ProductsRates = ({ onNavigate }) => {
                     ? `${parseFloat(prod.default_width)} × ${parseFloat(prod.default_height)}`
                     : '-';
 
-                  const unitClass = prod.unit === 'Sq.Ft.' ? 'SqFt' : (prod.unit === 'SET' ? 'SET' : (prod.unit === 'RFT.' ? 'RFT' : 'APPROX'));
+                  const unitClass = prod.unit === 'Sq.Ft.' ? 'SqFt' : (prod.unit === 'SET' ? 'SET' : (prod.unit === 'Nos' || prod.unit === "No's" ? 'Nos' : (prod.unit === 'RFT.' ? 'RFT' : 'APPROX')));
 
                   const essRate = Number(prod.essential_rate !== undefined ? prod.essential_rate : prod.modern_rate) || 0;
                   const sigRate = Number(prod.signature_rate !== undefined ? prod.signature_rate : prod.luxury_modern_rate) || 0;

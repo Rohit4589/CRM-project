@@ -1,6 +1,72 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { API_BASE } from '../config/api';
 import '../styles/TodoList.css';
+
+const PRIORITY_ORDER = {
+  Urgent: 4,
+  High: 3,
+  Medium: 2,
+  Low: 1
+};
+
+// Sort tasks: pending first, then by priority (Urgent > High > Medium > Low), then due time
+const sortTasksByPriority = (tasks = []) => {
+  return [...tasks].sort((a, b) => {
+    // 1. Incomplete tasks come first
+    if (a.isCompleted !== b.isCompleted) {
+      return a.isCompleted ? 1 : -1;
+    }
+    // 2. Higher priority first
+    const pA = PRIORITY_ORDER[a.priority] || 2;
+    const pB = PRIORITY_ORDER[b.priority] || 2;
+    if (pB !== pA) {
+      return pB - pA;
+    }
+    // 3. Due time earlier first
+    if (a.dueTime && b.dueTime) {
+      return a.dueTime.localeCompare(b.dueTime);
+    }
+    if (a.dueTime && !b.dueTime) return -1;
+    if (!a.dueTime && b.dueTime) return 1;
+    return (a.id || 0) - (b.id || 0);
+  });
+};
+
+// Compute site priority score based on its tasks for today
+const getSitePriorityInfo = (siteTasks) => {
+  if (!siteTasks || siteTasks.length === 0) {
+    return { score: 0, highestPriority: null, allDone: false, total: 0, completed: 0 };
+  }
+  const total = siteTasks.length;
+  const completed = siteTasks.filter(t => t.isCompleted).length;
+  const allDone = total > 0 && completed === total;
+
+  if (allDone) {
+    // All tasks completed: drops to the bottom in sequence!
+    return { score: -1, highestPriority: 'Completed', allDone: true, total, completed };
+  }
+
+  // Find highest priority among pending tasks
+  const pendingTasks = siteTasks.filter(t => !t.isCompleted);
+  let maxWeight = 0;
+  let topPriority = 'Medium';
+
+  for (const t of pendingTasks) {
+    const weight = PRIORITY_ORDER[t.priority] || 2;
+    if (weight > maxWeight) {
+      maxWeight = weight;
+      topPriority = t.priority;
+    }
+  }
+
+  return {
+    score: maxWeight, // 4 for Urgent, 3 for High, 2 for Medium, 1 for Low
+    highestPriority: topPriority,
+    allDone: false,
+    total,
+    completed
+  };
+};
 
 const TodoList = ({ onNavigate }) => {
   const [sites, setSites] = useState([]);
@@ -107,7 +173,7 @@ const TodoList = ({ onNavigate }) => {
     setActiveSite(site);
     const siteRawId = Number(site.dbId || site.id);
     const existing = allTasks.filter(t => Number(t.siteId) === siteRawId);
-    setModalTasks(existing.map(t => ({ ...t })));
+    setModalTasks(sortTasksByPriority(existing.map(t => ({ ...t }))));
     setNewTaskTitle('');
     setNewTaskPriority('Medium');
     setNewTaskEmployeeId('');
@@ -125,10 +191,11 @@ const TodoList = ({ onNavigate }) => {
     setToastNotice(null);
   };
 
-  // Helper: Get tasks for a site from allTasks
+  // Helper: Get tasks for a site from allTasks, sorted by priority & status
   const getTasksForSite = (site) => {
     const siteRawId = Number(site.dbId || site.id);
-    return allTasks.filter(t => Number(t.siteId) === siteRawId);
+    const tasks = allTasks.filter(t => Number(t.siteId) === siteRawId);
+    return sortTasksByPriority(tasks);
   };
 
   // Direct toggle task completion in the table
@@ -156,7 +223,7 @@ const TodoList = ({ onNavigate }) => {
     }
   };
 
-  // Add Task to modal staged list
+  // Add Task to modal staged list (auto-sorted by priority!)
   const handleAddTaskToModal = (e) => {
     if (e) e.preventDefault();
     setFormError('');
@@ -195,18 +262,36 @@ const TodoList = ({ onNavigate }) => {
       isCompleted: false
     };
 
-    setModalTasks(prev => [...prev, newTaskObj]);
+    setModalTasks(prev => sortTasksByPriority([...prev, newTaskObj]));
     setNewTaskTitle('');
     setNewTaskPriority('Medium');
     setNewTaskEmployeeId('');
     setNewTaskDueTime('');
   };
 
-  // Toggle task inside modal
+  // Toggle task inside modal (re-sorts completed tasks to bottom)
   const handleToggleModalTask = (taskId) => {
-    setModalTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t
-    ));
+    setModalTasks(prev => {
+      const updated = prev.map(t => 
+        t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t
+      );
+      return sortTasksByPriority(updated);
+    });
+  };
+
+  // Cycle priority directly on clicking priority pill in modal
+  const handleCycleModalPriority = (taskId) => {
+    const cycle = { Low: 'Medium', Medium: 'High', High: 'Urgent', Urgent: 'Low' };
+    setModalTasks(prev => {
+      const updated = prev.map(t => {
+        if (t.id === taskId) {
+          const next = cycle[t.priority || 'Medium'] || 'Medium';
+          return { ...t, priority: next };
+        }
+        return t;
+      });
+      return sortTasksByPriority(updated);
+    });
   };
 
   // Start inline editing task
@@ -268,26 +353,52 @@ const TodoList = ({ onNavigate }) => {
     }
   };
 
-  // Filter sites
-  const filteredSites = sites.filter(site => {
-    const nameMatch = (site.customerName || site.clientName || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const codeMatch = String(site.siteCode || site.siteRef || site.id || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const locMatch = (site.location || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const phoneMatch = (site.phone || '').includes(searchTerm);
+  // Filter and sort sites dynamically by priority score & completion
+  const filteredSites = useMemo(() => {
+    return sites
+      .filter(site => {
+        const nameMatch = (site.customerName || site.clientName || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const codeMatch = String(site.siteCode || site.siteRef || site.id || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const locMatch = (site.location || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const phoneMatch = (site.phone || '').includes(searchTerm);
 
-    if (!nameMatch && !codeMatch && !locMatch && !phoneMatch) return false;
+        if (!nameMatch && !codeMatch && !locMatch && !phoneMatch) return false;
 
-    const siteTasks = getTasksForSite(site);
-    const total = siteTasks.length;
-    const completed = siteTasks.filter(t => t.isCompleted).length;
-    const isCompleted = total > 0 && completed === total;
-    const isActive = total > 0 && completed < total;
+        const siteTasks = getTasksForSite(site);
+        const total = siteTasks.length;
+        const completed = siteTasks.filter(t => t.isCompleted).length;
+        const isCompleted = total > 0 && completed === total;
+        const isActive = total > 0 && completed < total;
 
-    if (statusFilter === 'Active') return isActive;
-    if (statusFilter === 'Completed') return isCompleted;
+        if (statusFilter === 'Active') return isActive;
+        if (statusFilter === 'Completed') return isCompleted;
 
-    return true;
-  });
+        return true;
+      })
+      .sort((a, b) => {
+        const tasksA = getTasksForSite(a);
+        const tasksB = getTasksForSite(b);
+        const infoA = getSitePriorityInfo(tasksA);
+        const infoB = getSitePriorityInfo(tasksB);
+
+        // 1. Primary: Priority Score DESC (Urgent 4 > High 3 > Medium 2 > Low 1 > No Tasks 0 > Completed -1)
+        if (infoB.score !== infoA.score) {
+          return infoB.score - infoA.score;
+        }
+
+        // 2. Secondary: If tied on priority, site with more uncompleted tasks first
+        const pendingA = infoA.total - infoA.completed;
+        const pendingB = infoB.total - infoB.completed;
+        if (pendingB !== pendingA) {
+          return pendingB - pendingA;
+        }
+
+        // 3. Tertiary: Numerical site reference code descending
+        const numA = parseInt(String(a.siteCode || a.siteRef || a.id).replace(/\D/g, ''), 10) || 0;
+        const numB = parseInt(String(b.siteCode || b.siteRef || b.id).replace(/\D/g, ''), 10) || 0;
+        return numB - numA;
+      });
+  }, [sites, allTasks, searchTerm, statusFilter]);
 
   // Calculate overall metrics for selected date
   const totalSitesCount = sites.length;
@@ -425,6 +536,7 @@ const TodoList = ({ onNavigate }) => {
               ) : (
                 filteredSites.map(site => {
                   const siteTasksList = getTasksForSite(site);
+                  const priorityInfo = getSitePriorityInfo(siteTasksList);
                   const completed = siteTasksList.filter(t => t.isCompleted).length;
                   const total = siteTasksList.length;
                   const allDone = total > 0 && completed === total;
@@ -447,19 +559,27 @@ const TodoList = ({ onNavigate }) => {
                         </button>
                       </td>
 
-                      {/* Site Code */}
+                      {/* Site Code + Priority Tag */}
                       <td>
-                        <span className="site-code-badge">
-                          {siteRefCode}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-start' }}>
+                          <span className="site-code-badge">
+                            {siteRefCode}
+                          </span>
+                          {priorityInfo.highestPriority && (
+                            <span className={`site-priority-tag ${priorityInfo.highestPriority.toLowerCase()}`}>
+                              {priorityInfo.highestPriority === 'Urgent' && '🔥 Urgent'}
+                              {priorityInfo.highestPriority === 'High' && '⚡ High'}
+                              {priorityInfo.highestPriority === 'Medium' && '📋 Medium'}
+                              {priorityInfo.highestPriority === 'Low' && 'Low'}
+                              {priorityInfo.highestPriority === 'Completed' && '✓ All Done'}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Client / Site */}
                       <td>
                         <div className="site-profile-col">
-                          <div className="site-icon-avatar">
-                            <i className="fa-solid fa-building-user"></i>
-                          </div>
                           <div>
                             <div className="site-client-title">{site.customerName || site.clientName || 'Valued Client'}</div>
                             <div className="site-location-sub">
@@ -470,7 +590,7 @@ const TodoList = ({ onNavigate }) => {
                         </div>
                       </td>
 
-                      {/* Interactive Task Checklist Preview */}
+                      {/* Interactive Task Checklist Preview (Sorted by Priority) */}
                       <td>
                         {siteTasksList.length === 0 ? (
                           <span 
@@ -486,11 +606,12 @@ const TodoList = ({ onNavigate }) => {
                                 key={t.id} 
                                 className={`interactive-task-item ${t.isCompleted ? 'done' : ''}`}
                                 onClick={(e) => handleToggleTableTask(t, e)}
-                                title={t.isCompleted ? "Click to reopen" : "Click to mark completed"}
+                                title={`${t.title} [Priority: ${t.priority || 'Medium'}] - ${t.isCompleted ? "Click to reopen" : "Click to mark completed"}`}
                               >
                                 <div className="inline-checkbox">
                                   {t.isCompleted && <i className="fa-solid fa-check"></i>}
                                 </div>
+                                <span className={`task-priority-dot ${(t.priority || 'medium').toLowerCase()}`} />
                                 <span className="task-title-inline">{t.title}</span>
                               </div>
                             ))}
@@ -754,7 +875,15 @@ const TodoList = ({ onNavigate }) => {
 
                             {/* Meta Info: Priority, Staff, Due Time */}
                             <div className="task-meta-chips">
-                              <span className={`priority-pill ${priorityClass}`}>
+                              <span 
+                                className={`priority-pill ${priorityClass}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCycleModalPriority(task.id);
+                                }}
+                                title="Click to cycle priority (Low → Medium → High → Urgent)"
+                              >
+                                <i className="fa-solid fa-arrows-rotate" style={{ fontSize: '9px', opacity: 0.7 }}></i>
                                 {task.priority || 'Medium'}
                               </span>
 

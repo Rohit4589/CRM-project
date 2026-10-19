@@ -385,7 +385,7 @@ const EstimateEditorModal = ({
               roomIndex={roomIdx}
               catalogProducts={catalog?.products || []}
               catalogDescriptions={catalog?.readymadeDescriptions || []}
-              catalogUnits={catalog?.units || []}
+              catalogUnits={Array.from(new Set([...(catalog?.units || []), 'Sq.Ft.', 'SET', 'Nos', 'RFT.', 'APPROX']))}
               furnitureTier={furnitureLevel}
               isFirst={roomIdx === 0}
               isLast={roomIdx === rooms.length - 1}

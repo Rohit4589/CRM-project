@@ -6,7 +6,7 @@ const EstimateRoomSection = ({
   roomIndex,
   catalogProducts,
   catalogDescriptions,
-  catalogUnits,
+  catalogUnits = ['Sq.Ft.', 'SET', 'Nos', 'RFT.', 'APPROX'],
   furnitureTier,
   isFirst = false,
   isLast = false,
@@ -29,61 +29,22 @@ const EstimateRoomSection = ({
   };
 
   const handleAddItem = () => {
-    const isEssential = furnitureTier === 'Essential Collection' || furnitureTier === 'Modern';
-    const isElite = furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury';
-
-    // Prioritize a product matching this room
-    const cleanRoomUpper = (room.roomName || '').trim().toUpperCase();
-    const matchingProds = (catalogProducts || []).filter(p => {
-      const pCat = (p.category || '').toUpperCase();
-      return pCat === cleanRoomUpper ||
-        (cleanRoomUpper.includes('BEDROOM') && pCat.includes('BEDROOM')) ||
-        (cleanRoomUpper.includes('MASTER') && pCat.includes('BEDROOM')) ||
-        (cleanRoomUpper.includes('KID') && pCat.includes('BEDROOM'));
-    });
-
-    const defaultProduct = matchingProds[0] || catalogProducts[0] || { name: 'CUSTOM ITEM', signatureRate: 1600 };
-
-    const essentialDesc = defaultProduct.essentialDesc || defaultProduct.defaultDesc || catalogDescriptions[0] || '';
-    const signatureDesc = defaultProduct.signatureDesc || defaultProduct.defaultDesc || catalogDescriptions[0] || '';
-    const eliteDesc = defaultProduct.eliteDesc || defaultProduct.defaultDesc || catalogDescriptions[0] || '';
-
-    let initialRate = defaultProduct.signatureRate || defaultProduct.luxuryModern || 1600;
-    let initialDesc = signatureDesc;
-
-    if (isEssential) {
-      initialRate = defaultProduct.essentialRate || defaultProduct.modern || 1200;
-      initialDesc = essentialDesc;
-    } else if (isElite) {
-      initialRate = defaultProduct.eliteRate || defaultProduct.luxury || 2200;
-      initialDesc = eliteDesc;
-    }
-
-    const defaultW = (defaultProduct.defaultW !== null && defaultProduct.defaultW !== undefined && defaultProduct.defaultW !== '') ? Number(defaultProduct.defaultW) : '';
-    const defaultH = (defaultProduct.defaultH !== null && defaultProduct.defaultH !== undefined && defaultProduct.defaultH !== '') ? Number(defaultProduct.defaultH) : '';
-    const defaultUnit = defaultProduct.defaultUnit || 'Sq.Ft.';
-    let totalArea = 1;
-    if (defaultUnit === 'Sq.Ft.' && defaultW && defaultH && Number(defaultW) > 0 && Number(defaultH) > 0) {
-      const rawSqFt = (Number(defaultW) * Number(defaultH)) / 92903;
-      totalArea = Math.ceil(rawSqFt * 2) / 2;
-    }
-
     const newItem = {
       id: `item_${Date.now()}_${Math.random()}`,
-      productName: defaultProduct.name || 'NEW ITEM',
-      description: initialDesc,
-      essentialDesc,
-      signatureDesc,
-      eliteDesc,
-      essentialRate: defaultProduct.essentialRate || defaultProduct.modern || 1200,
-      signatureRate: defaultProduct.signatureRate || defaultProduct.luxuryModern || 1600,
-      eliteRate: defaultProduct.eliteRate || defaultProduct.luxury || 2200,
-      widthMm: defaultW,
-      heightMm: defaultH,
-      totalArea,
-      unit: defaultUnit,
-      rate: initialRate,
-      amount: Math.round(totalArea * initialRate)
+      productName: '',
+      description: '',
+      essentialDesc: '',
+      signatureDesc: '',
+      eliteDesc: '',
+      essentialRate: 0,
+      signatureRate: 0,
+      eliteRate: 0,
+      widthMm: '',
+      heightMm: '',
+      totalArea: '',
+      unit: 'Sq.Ft.',
+      rate: '',
+      amount: 0
     };
 
     const updatedItems = [...room.items, newItem];
@@ -139,8 +100,8 @@ const EstimateRoomSection = ({
   };
 
   return (
-    <div style={{ marginBottom: '22px' }}>
-      <div style={{ overflowX: 'auto' }}>
+    <div style={{ marginBottom: '22px', position: 'relative' }}>
+      <div style={{ overflow: 'visible' }}>
         <table className="print-room-table editor-sheet-table">
           <thead className="print-room-thead">
             {/* Room Title Row matching Photo 1 Preview */}
@@ -248,14 +209,14 @@ const EstimateRoomSection = ({
 
             {/* Dark Chocolate Header matching Photo 1 Preview */}
             <tr>
-              <th style={{ width: '22%' }}>PRODUCT NAME</th>
-              <th style={{ width: '30%', textAlign: 'center' }}>DISCRIPTION</th>
-              <th style={{ width: '9%', textAlign: 'center' }}>WIDTH</th>
-              <th style={{ width: '9%', textAlign: 'center' }}>HEIGHT</th>
-              <th style={{ width: '8%', textAlign: 'center' }}>AREA</th>
-              <th style={{ width: '7%', textAlign: 'center' }}>UNIT</th>
-              <th style={{ width: '7%', textAlign: 'center' }}>RATE</th>
-              <th style={{ width: '8%', textAlign: 'right' }}>AMOUNT</th>
+              <th style={{ width: '21%' }}>PRODUCT NAME</th>
+              <th style={{ width: '29.5%', textAlign: 'center' }}>DISCRIPTION</th>
+              <th style={{ width: '8.5%', textAlign: 'center' }}>WIDTH</th>
+              <th style={{ width: '8.5%', textAlign: 'center' }}>HEIGHT</th>
+              <th style={{ width: '7.5%', textAlign: 'center' }}>AREA</th>
+              <th style={{ width: '8.5%', textAlign: 'center' }}>UNIT</th>
+              <th style={{ width: '7.5%', textAlign: 'center' }}>RATE</th>
+              <th style={{ width: '9%', textAlign: 'right' }}>AMOUNT</th>
               <th style={{ width: '72px', textAlign: 'center' }}></th>
             </tr>
           </thead>
