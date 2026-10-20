@@ -21,6 +21,16 @@ const Sites = ({ onNavigate }) => {
   const [selectedSite, setSelectedSite] = useState(null);
   const [editingSite, setEditingSite] = useState(null);
   const [stickerSite, setStickerSite] = useState(null);
+  const [siteToDelete, setSiteToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [toast, setToast] = useState(null); // { message: '', type: 'success' | 'error' }
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast((prev) => (prev?.message === message ? null : prev));
+    }, 3500);
+  };
 
   // Map Picker & Geocoding State
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -121,13 +131,14 @@ const Sites = ({ onNavigate }) => {
       if (data.success) {
         setSites([data.site, ...sites]);
         setShowAddModal(false);
+        showToast(`Customer "${data.site?.customerName || 'Site'}" created successfully!`, 'success');
         fetchSites();
       } else {
-        alert(data.message || 'Failed to add site');
+        showToast(data.message || 'Failed to add site', 'error');
       }
     } catch (err) {
       console.error('Error adding site:', err);
-      alert('Unable to connect to backend server');
+      showToast('Unable to connect to backend server', 'error');
     }
   };
 
@@ -188,13 +199,14 @@ const Sites = ({ onNavigate }) => {
           setSelectedSite(data.site);
         }
         setEditingSite(null);
+        showToast('Site details updated successfully', 'success');
         fetchSites();
       } else {
-        alert(data.message || 'Failed to update site');
+        showToast(data.message || 'Failed to update site', 'error');
       }
     } catch (err) {
       console.error('Error updating site:', err);
-      alert('Unable to connect to backend server');
+      showToast('Unable to connect to backend server', 'error');
     }
   };
 
@@ -257,28 +269,56 @@ const Sites = ({ onNavigate }) => {
     }
   };
 
-  const handleDeleteSite = async (siteId) => {
-    const targetSite = sites.find(s => s.id === siteId);
-    const targetId = targetSite?.dbId || siteId;
+  const handleDeleteSite = (siteId) => {
+    const targetSite = sites.find(s => s.id === siteId || s.dbId === siteId);
+    if (targetSite) {
+      setSiteToDelete(targetSite);
+    }
+  };
 
-    if (window.confirm(`Are you sure you want to delete ${targetSite?.customerName || siteId}? This will remove it from database.`)) {
-      try {
-        const res = await fetch(`${API_BASE}/sites/${targetId}`, {
-          method: 'DELETE',
-        });
-        const data = await res.json();
-        if (data.success) {
-          setSites(sites.filter(s => s.id !== siteId && s.dbId !== targetId));
-          if (selectedSite && (selectedSite.id === siteId || selectedSite.dbId === targetId)) {
-            setSelectedSite(null);
-          }
-        } else {
-          alert(data.message || 'Failed to delete site');
+  const handleConfirmDelete = async () => {
+    if (!siteToDelete) return;
+    const targetId = siteToDelete.dbId || siteToDelete.id;
+    try {
+      setIsDeleting(true);
+      const res = await fetch(`${API_BASE}/sites/${targetId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSites(sites.filter(s => s.id !== siteToDelete.id && s.dbId !== targetId));
+        if (selectedSite && (selectedSite.id === siteToDelete.id || selectedSite.dbId === targetId)) {
+          setSelectedSite(null);
         }
-      } catch (err) {
-        console.error('Error deleting site:', err);
-        alert('Unable to connect to backend server');
+        showToast(`Customer "${siteToDelete.customerName}" deleted successfully`, 'success');
+        setSiteToDelete(null);
+      } else {
+        showToast(data.message || 'Failed to delete site', 'error');
       }
+    } catch (err) {
+      console.error('Error deleting site:', err);
+      showToast('Unable to connect to backend server', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleOpenFolder = async (site) => {
+    if (!site) return;
+    const targetId = site.dbId || site.id;
+    try {
+      const res = await fetch(`${API_BASE}/sites/${targetId}/open-folder`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Folder opened for "${site.customerName}"`, 'success');
+      } else {
+        showToast(data.message || 'Could not open folder', 'error');
+      }
+    } catch (err) {
+      console.error('Error opening folder:', err);
+      showToast('Failed to connect to backend server', 'error');
     }
   };
 
@@ -417,6 +457,7 @@ const Sites = ({ onNavigate }) => {
         onEdit={openEditModal}
         onDelete={handleDeleteSite}
         onSticker={setStickerSite}
+        onOpenFolder={handleOpenFolder}
       />
 
       {/* Add Site Modal (Modular) */}
@@ -443,6 +484,8 @@ const Sites = ({ onNavigate }) => {
         openEditModal={openEditModal}
         getStatusBadge={getStatusBadge}
         onNavigate={onNavigate}
+        onOpenFolder={handleOpenFolder}
+        onDelete={handleDeleteSite}
       />
 
       {/* Edit Site Modal (Modular) */}
@@ -496,6 +539,147 @@ const Sites = ({ onNavigate }) => {
           site={stickerSite}
           onClose={() => setStickerSite(null)}
         />
+      )}
+
+      {/* Sleek Floating Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          top: '24px',
+          right: '24px',
+          zIndex: 2000,
+          background: toast.type === 'error' ? '#FEF2F2' : '#F0FDF4',
+          color: toast.type === 'error' ? '#991B1B' : '#166534',
+          border: `1.5px solid ${toast.type === 'error' ? '#FCA5A5' : '#86EFAC'}`,
+          padding: '12px 18px',
+          borderRadius: '10px',
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '13.5px',
+          fontWeight: '600',
+          maxWidth: '420px',
+          boxSizing: 'border-box'
+        }}>
+          <i className={toast.type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'} style={{fontSize: '16px'}}></i>
+          <span style={{flex: 1}}>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: toast.type === 'error' ? '#991B1B' : '#166534',
+              fontSize: '16px',
+              padding: '0 0 0 8px',
+              lineHeight: 1
+            }}
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
+      {/* Custom In-App Delete Confirmation Modal */}
+      {siteToDelete && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)', display: 'flex',
+          justifyContent: 'center', alignItems: 'center', zIndex: 1500,
+          backdropFilter: 'blur(4px)', padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff', borderRadius: '16px',
+            width: '100%', maxWidth: '420px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+            overflow: 'hidden', padding: '28px 24px 22px',
+            textAlign: 'center', boxSizing: 'border-box',
+            border: '1px solid #EAE1D5'
+          }}>
+            {/* Warning Icon Badge */}
+            <div style={{
+              width: '56px', height: '56px', borderRadius: '50%',
+              background: '#FEE2E2', color: '#DC2626',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 16px', fontSize: '24px'
+            }}>
+              <i className="fa-solid fa-trash-can"></i>
+            </div>
+
+            <h3 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: '800', color: '#111827' }}>
+              Delete Customer?
+            </h3>
+            <p style={{ margin: '0 0 18px', fontSize: '13px', color: '#6B7280', lineHeight: '1.45' }}>
+              Are you sure you want to permanently delete this customer from the database?
+            </p>
+
+            {/* Customer Details Preview Card */}
+            <div style={{
+              background: '#FBF9F7', border: '1px solid #EAE1D5', borderRadius: '10px',
+              padding: '12px 14px', marginBottom: '22px', textAlign: 'left',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px'
+            }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontWeight: '700', fontSize: '14px', color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {siteToDelete.customerName}
+                </div>
+                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
+                  {siteToDelete.location || 'Location'} {siteToDelete.phone ? `· ${siteToDelete.phone}` : ''}
+                </div>
+              </div>
+              <span style={{
+                background: 'rgba(165, 106, 48, 0.1)', color: 'var(--gold, #A56A30)',
+                border: '1px solid rgba(165, 106, 48, 0.25)',
+                padding: '4px 8px', borderRadius: '6px', fontWeight: '800', fontSize: '12px',
+                whiteSpace: 'nowrap'
+              }}>
+                {siteToDelete.id}
+              </span>
+            </div>
+
+            {/* Actions: Cancel & Confirm Delete */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setSiteToDelete(null)}
+                disabled={isDeleting}
+                style={{
+                  flex: 1, padding: '10px 16px', borderRadius: '8px',
+                  border: '1px solid #D1D5DB', background: '#ffffff',
+                  color: '#374151', cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  fontWeight: '600', fontSize: '13px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                style={{
+                  flex: 1, padding: '10px 16px', borderRadius: '8px',
+                  border: 'none', background: '#DC2626', color: '#ffffff',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  fontWeight: '700', fontSize: '13px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  boxShadow: '0 2px 4px rgba(220, 38, 38, 0.25)',
+                  opacity: isDeleting ? 0.75 : 1
+                }}
+              >
+                {isDeleting ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i> Deleting...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-trash-can"></i> Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </main>

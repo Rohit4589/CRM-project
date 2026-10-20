@@ -1,4 +1,6 @@
 const pool = require('../config/db');
+const projectFolderService = require('../services/projectFolderService');
+const fs = require('fs');
 
 // GET /api/sites
 const getSites = async (req, res) => {
@@ -21,6 +23,7 @@ const getSites = async (req, res) => {
         status, 
         progress, 
         notes,
+        project_folder as "projectFolder",
         created_at
       FROM public.sites
       ORDER BY NULLIF(regexp_replace(site_ref, '[^0-9]', '', 'g'), '')::int DESC NULLS LAST, id DESC;
@@ -54,6 +57,7 @@ const getSites = async (req, res) => {
         status: row.status || 'Running',
         progress: Number(row.progress || 0),
         notes: row.notes || '',
+        projectFolder: row.projectFolder || '',
       };
     });
 
@@ -203,6 +207,23 @@ const addSite = async (req, res) => {
       ? (rawNum < 1000 ? String(rawNum).padStart(3, '0') : String(rawNum))
       : String(row.siteRef || finalSiteRef).replace(/^SITE-/i, '');
 
+    // Automatically create project folder and full subfolder tree on disk
+    let createdFolderPath = '';
+    try {
+      const folderRes = await projectFolderService.createCustomerProjectFolder({
+        siteRef: sRef,
+        customerName: row.customerName,
+        location: row.location,
+        startDate: row.startDate,
+      });
+      if (folderRes && folderRes.success) {
+        createdFolderPath = folderRes.folderPath;
+        await pool.query('UPDATE public.sites SET project_folder = $1 WHERE id = $2', [createdFolderPath, row.id]);
+      }
+    } catch (fErr) {
+      console.error('Failed to create customer project folder:', fErr);
+    }
+
     const newSite = {
       id: sRef,
       siteRef: sRef,
@@ -222,6 +243,7 @@ const addSite = async (req, res) => {
       status: row.status,
       progress: Number(row.progress),
       notes: row.notes,
+      projectFolder: createdFolderPath,
     };
 
     return res.status(201).json({
@@ -366,7 +388,8 @@ const updateSite = async (req, res) => {
         TO_CHAR(target_date, 'YYYY-MM-DD') as "targetDate", 
         status, 
         progress, 
-        notes;
+        notes,
+        project_folder as "projectFolder";
     `;
 
     const result = await pool.query(updateQuery, [
@@ -426,6 +449,7 @@ const updateSite = async (req, res) => {
       status: row.status,
       progress: Number(row.progress),
       notes: row.notes,
+      projectFolder: row.projectFolder || '',
     };
 
     return res.status(200).json({
@@ -517,9 +541,86 @@ const deleteSite = async (req, res) => {
   }
 };
 
+// POST /api/sites/:id/open-folder
+const openSiteFolder = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    let targetDbId = null;
+    const numericParam = parseInt(id, 10);
+    let siteRow = null;
+
+    if (!isNaN(numericParam)) {
+      const r = await pool.query('SELECT * FROM public.sites WHERE id = $1', [numericParam]);
+      if (r.rows.length > 0) siteRow = r.rows[0];
+    }
+    if (!siteRow) {
+      const r = await pool.query('SELECT * FROM public.sites WHERE UPPER(site_ref) = UPPER($1)', [id]);
+      if (r.rows.length > 0) siteRow = r.rows[0];
+    }
+    if (!siteRow) {
+      const strippedDigits = String(id).replace(/[^0-9]/g, '');
+      if (strippedDigits) {
+        const r = await pool.query(
+          'SELECT * FROM public.sites WHERE site_ref = $1 OR site_ref = $2 OR site_ref = $3 OR id = $4',
+          [strippedDigits.padStart(3, '0'), strippedDigits, `SITE-${strippedDigits.padStart(3, '0')}`, parseInt(strippedDigits, 10)]
+        );
+        if (r.rows.length > 0) siteRow = r.rows[0];
+      }
+    }
+
+    if (!siteRow) {
+      return res.status(404).json({ success: false, message: 'Site not found in database' });
+    }
+
+    let folderPath = siteRow.project_folder;
+
+    // If folder path is empty or folder doesn't exist on disk, generate it now!
+    if (!folderPath || !fs.existsSync(folderPath)) {
+      const match = String(siteRow.site_ref || '').match(/\d+/);
+      const rawNum = match ? parseInt(match[0], 10) : siteRow.id;
+      const sRef = !isNaN(rawNum)
+        ? (rawNum < 1000 ? String(rawNum).padStart(3, '0') : String(rawNum))
+        : String(siteRow.site_ref || siteRow.id).replace(/^SITE-/i, '');
+
+      const createRes = await projectFolderService.createCustomerProjectFolder({
+        siteRef: sRef,
+        customerName: siteRow.customer_name,
+        location: siteRow.location,
+        startDate: siteRow.start_date,
+      });
+
+      if (createRes && createRes.success) {
+        folderPath = createRes.folderPath;
+        await pool.query('UPDATE public.sites SET project_folder = $1 WHERE id = $2', [folderPath, siteRow.id]);
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to create folder on disk: ' + (createRes ? createRes.error : 'Unknown error')
+        });
+      }
+    }
+
+    await projectFolderService.openProjectFolder(folderPath);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Folder opened in File Explorer successfully',
+      folderPath
+    });
+  } catch (error) {
+    console.error('Error in openSiteFolder:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to open project folder: ' + error.message
+    });
+  }
+};
+
 module.exports = {
   getSites,
   addSite,
   updateSite,
   deleteSite,
+  openSiteFolder,
 };
