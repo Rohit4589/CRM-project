@@ -1,6 +1,6 @@
 import React from 'react';
 
-const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker }) => {
+const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker, onOpenFolder }) => {
   return (
     <div style={{
       background: '#fff',
@@ -14,6 +14,7 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
     }}>
       <table style={{
         width: '100%',
+        minWidth: '1050px',
         borderCollapse: 'collapse',
         tableLayout: 'fixed',
         margin: 0
@@ -28,13 +29,13 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
             textTransform: 'uppercase',
             letterSpacing: '0.8px'
           }}>
-            <th style={{padding: '12px 14px', width: '10%'}}>Code</th>
-            <th style={{padding: '12px 14px', width: '22%'}}>Client / Site</th>
-            <th style={{padding: '12px 14px', width: '15%'}}>Contact</th>
-            <th style={{padding: '12px 14px', width: '23%'}}>Address</th>
-            <th style={{padding: '12px 14px', width: '9%'}}>Start Date</th>
-            <th style={{padding: '12px 14px', width: '9%'}}>Status</th>
-            <th style={{padding: '12px 18px', width: '12%', textAlign: 'right'}}>Actions</th>
+            <th style={{padding: '12px 14px', width: '8%', minWidth: '70px'}}>Code</th>
+            <th style={{padding: '12px 14px', width: '21%', minWidth: '180px'}}>Client / Site</th>
+            <th style={{padding: '12px 14px', width: '14%', minWidth: '130px'}}>Contact</th>
+            <th style={{padding: '12px 14px', width: '20%', minWidth: '160px'}}>Address</th>
+            <th style={{padding: '12px 14px', width: '9%', minWidth: '95px'}}>Start Date</th>
+            <th style={{padding: '12px 14px', width: '10%', minWidth: '95px'}}>Status</th>
+            <th style={{padding: '12px 14px', width: '18%', minWidth: '190px', textAlign: 'right'}}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -198,7 +199,7 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                 </td>
 
                 {/* Actions - Guaranteed spacing and NEVER cut off */}
-                <td style={{padding: '13px 18px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap'}}>
+                <td style={{padding: '13px 14px', minWidth: '190px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap'}}>
                   <div style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -228,6 +229,31 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                       onMouseOut={(e) => { e.currentTarget.style.background = '#FAF8F5'; e.currentTarget.style.borderColor = '#D1C2AF'; }}
                     >
                       <i className="fa-solid fa-eye"></i>
+                    </button>
+
+                    <button
+                      title="Open Project Folder in File Explorer"
+                      onClick={() => onOpenFolder && onOpenFolder(site)}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        background: '#FAF8F5',
+                        border: '1px solid #D1C2AF',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        color: '#D97706',
+                        fontSize: '11px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.15s ease',
+                        padding: 0,
+                        flexShrink: 0
+                      }}
+                      onMouseOver={(e) => { e.currentTarget.style.background = '#FEF3C7'; e.currentTarget.style.borderColor = '#F59E0B'; }}
+                      onMouseOut={(e) => { e.currentTarget.style.background = '#FAF8F5'; e.currentTarget.style.borderColor = '#D1C2AF'; }}
+                    >
+                      <i className="fa-solid fa-folder-open"></i>
                     </button>
 
                     <button

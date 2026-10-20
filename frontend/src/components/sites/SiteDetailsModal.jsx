@@ -1,6 +1,6 @@
 import React from 'react';
 
-const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getStatusBadge, onNavigate }) => {
+const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getStatusBadge, onNavigate, onOpenFolder, onDelete }) => {
   if (!selectedSite) return null;
 
   return (
@@ -227,8 +227,80 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
             </div>
           )}
 
-          <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px', paddingTop: '14px', borderTop: '1px solid #E5E7EB', flexWrap: 'wrap'}}>
-            {onNavigate && (
+          {/* Project Folder Card */}
+          <div style={{marginBottom: '16px'}}>
+            <h4 style={{margin: '0 0 8px 0', fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: '700'}}>
+              Project Folder (AutoCad, SketchUp, Estimates, Bills)
+            </h4>
+            <div style={{
+              padding: '12px 14px', background: '#FDFBF7', border: '1px solid #EAE1D5',
+              borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: '12px', flexWrap: 'wrap'
+            }}>
+              <div style={{minWidth: 0, flex: 1}}>
+                <div style={{fontSize: '11px', color: '#7A4518', fontWeight: '700', textTransform: 'uppercase', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                  <i className="fa-solid fa-folder-tree" style={{color: '#A56A30'}}></i> Standard Folder Structure
+                </div>
+                <div style={{
+                  fontSize: '11.5px', color: '#4B5563', fontFamily: 'monospace',
+                  wordBreak: 'break-all', lineHeight: '1.4'
+                }}>
+                  {selectedSite.projectFolder || 'Ready to auto-create on disk'}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenFolder && onOpenFolder(selectedSite)}
+                style={{
+                  background: 'rgba(165, 106, 48, 0.1)', color: 'var(--gold, #A56A30)',
+                  border: '1px solid rgba(165, 106, 48, 0.3)', borderRadius: '6px',
+                  padding: '7px 14px', fontWeight: '700', fontSize: '12px', cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: '6px', flexShrink: 0,
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(165, 106, 48, 0.18)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(165, 106, 48, 0.1)'; }}
+              >
+                <i className="fa-solid fa-folder-open"></i> Open in Explorer
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Shortcuts Toolbar */}
+          {onNavigate && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '10px',
+              marginBottom: '16px'
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSite(null);
+                  onNavigate('estimates');
+                }}
+                style={{
+                  padding: '9px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #E2D9CF',
+                  background: '#FAF8F5',
+                  color: '#4A2C17',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '7px',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = '#F3EDE6'; e.currentTarget.style.borderColor = '#9A7B56'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = '#FAF8F5'; e.currentTarget.style.borderColor = '#E2D9CF'; }}
+              >
+                <i className="fa-solid fa-file-invoice-dollar" style={{color: '#A56A30'}}></i> Generate Estimate
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -236,65 +308,108 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
                   onNavigate('salary');
                 }}
                 style={{
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  border: '1px solid #A7F3D0',
-                  background: '#ECFDF5',
-                  color: '#065F46',
+                  padding: '9px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #E2D9CF',
+                  background: '#FAF8F5',
+                  color: '#4A2C17',
                   cursor: 'pointer',
-                  fontWeight: '700',
-                  fontSize: '13px',
+                  fontWeight: '600',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '7px',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = '#F3EDE6'; e.currentTarget.style.borderColor = '#9A7B56'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = '#FAF8F5'; e.currentTarget.style.borderColor = '#E2D9CF'; }}
+              >
+                <i className="fa-solid fa-calculator" style={{color: '#059669'}}></i> View Labor Expenses
+              </button>
+            </div>
+          )}
+
+          {/* Modal Footer */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingTop: '16px',
+            marginTop: '8px',
+            borderTop: '1px solid #EAE1D5',
+            gap: '12px'
+          }}>
+            {/* Delete Customer on Left */}
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const targetId = selectedSite.id || selectedSite.dbId;
+                  setSelectedSite(null);
+                  onDelete(targetId);
+                }}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid #FECACA',
+                  background: '#FEF2F2',
+                  color: '#DC2626',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '12.5px',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  transition: 'all 0.15s ease'
                 }}
+                onMouseOver={(e) => { e.currentTarget.style.background = '#FEE2E2'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = '#FEF2F2'; }}
               >
-                <i className="fa-solid fa-calculator"></i> View Labor Expenses
+                <i className="fa-solid fa-trash-can"></i> Delete Customer
               </button>
-            )}
-            {onNavigate && (
+            ) : <div />}
+
+            {/* Close & Edit Actions on Right */}
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
               <button
-                onClick={() => {
-                  setSelectedSite(null);
-                  onNavigate('estimates');
-                }}
+                type="button"
+                onClick={() => setSelectedSite(null)}
                 style={{
                   padding: '8px 16px',
                   borderRadius: '6px',
-                  border: '1px solid var(--gold, #4A2C17)',
-                  background: 'rgba(74, 44, 23, 0.08)',
-                  color: 'var(--gold, #4A2C17)',
+                  border: '1px solid #D1D5DB',
+                  background: '#ffffff',
+                  color: '#374151',
                   cursor: 'pointer',
-                  fontWeight: '700',
+                  fontWeight: '500',
                   fontSize: '13px',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = '#F3F4F6'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const siteToEdit = selectedSite;
+                  setSelectedSite(null);
+                  openEditModal(siteToEdit);
+                }}
+                className="btn-primary"
+                style={{
+                  fontSize: '13px',
+                  padding: '8px 18px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px'
                 }}
               >
-                <i className="fa-solid fa-file-invoice-dollar"></i> Generate Estimate
+                <i className="fa-solid fa-pen"></i> Edit Site Details
               </button>
-            )}
-            <button
-              onClick={() => {
-                const siteToEdit = selectedSite;
-                setSelectedSite(null);
-                openEditModal(siteToEdit);
-              }}
-              className="btn-primary"
-              style={{fontSize: '13px', padding: '8px 16px'}}
-            >
-              <i className="fa-solid fa-pen"></i> Edit Site Details
-            </button>
-            <button
-              onClick={() => setSelectedSite(null)}
-              style={{
-                padding: '8px 16px', borderRadius: '6px', border: '1px solid #D1D5DB',
-                background: '#fff', color: '#374151', cursor: 'pointer', fontWeight: '500'
-              }}
-            >
-              Close
-            </button>
+            </div>
           </div>
 
         </div>
