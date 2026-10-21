@@ -72,7 +72,8 @@ const createCustomerProjectFolder = async ({ siteRef, customerName, referenceNam
     // Smart drive detection: if target drive (e.g. F:\) is not available on this machine (e.g. testing on laptop),
     // automatically fallback to the local Testing directory.
     const driveMatch = String(baseDir).match(/^([a-zA-Z]:)/);
-    if (driveMatch && !fs.existsSync(driveMatch[1] + '\\')) {
+    const isTargetDriveConnected = Boolean(driveMatch && fs.existsSync(driveMatch[1] + '\\'));
+    if (driveMatch && !isTargetDriveConnected) {
       console.warn(`[ProjectFolderService] Target drive ${driveMatch[1]} not connected on this machine. Falling back to local Testing directory.`);
       baseDir = path.resolve(__dirname, '../../../../Testing');
     }
@@ -83,29 +84,38 @@ const createCustomerProjectFolder = async ({ siteRef, customerName, referenceNam
     }
 
     const folderName = buildProjectFolderName({ siteRef, customerName, referenceName, location, startDate });
+    const canonicalFolderPath = `F:\\1. MODERN INTERIOR\\RUNNING FOLDER\\MODERN-2024-25- RUNNING\\${folderName}`;
     const customerFolderPath = path.join(baseDir, folderName);
 
-    // Create main customer folder
-    if (!fs.existsSync(customerFolderPath)) {
-      fs.mkdirSync(customerFolderPath, { recursive: true });
-    }
-
-    // Create all nested subfolders
-    for (const sub of PROJECT_SUBFOLDERS) {
-      const fullSubPath = path.join(customerFolderPath, sub);
-      if (!fs.existsSync(fullSubPath)) {
-        fs.mkdirSync(fullSubPath, { recursive: true });
+    // Create main customer folder if disk is accessible
+    try {
+      if (!fs.existsSync(customerFolderPath)) {
+        fs.mkdirSync(customerFolderPath, { recursive: true });
       }
+
+      // Create all nested subfolders
+      for (const sub of PROJECT_SUBFOLDERS) {
+        const fullSubPath = path.join(customerFolderPath, sub);
+        if (!fs.existsSync(fullSubPath)) {
+          fs.mkdirSync(fullSubPath, { recursive: true });
+        }
+      }
+      console.log(`[ProjectFolderService] Successfully created project folder: ${customerFolderPath}`);
+    } catch (diskErr) {
+      console.warn(`[ProjectFolderService] Notice: Folder could not be created on server local disk (normal on cloud host):`, diskErr.message);
     }
 
-    console.log(`[ProjectFolderService] Successfully created project folder: ${customerFolderPath}`);
+    // Always return the official Windows F: path for the database so clients know the canonical location
+    const finalStoredPath = isTargetDriveConnected ? customerFolderPath : canonicalFolderPath;
+
     return {
       success: true,
       folderName,
-      folderPath: customerFolderPath
+      folderPath: finalStoredPath,
+      localDiskPath: customerFolderPath
     };
   } catch (error) {
-    console.error('[ProjectFolderService] Error creating customer folder:', error);
+    console.error('[ProjectFolderService] Error in customer folder service:', error);
     return {
       success: false,
       error: error.message

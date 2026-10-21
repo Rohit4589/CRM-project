@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import LocationMapPicker from '../components/LocationMapPicker';
 import { API_BASE } from '../config/api';
+import {
+  checkBridgeStatus,
+  createLocalProjectFolder,
+  openLocalProjectFolder,
+  syncAllLocalFolders
+} from '../services/localBridgeService';
 
 // Modular Feature Components
 import SitesFilterBar from '../components/sites/SitesFilterBar';
@@ -25,11 +31,16 @@ const Sites = ({ onNavigate }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [toast, setToast] = useState(null); // { message: '', type: 'success' | 'error' }
 
-  const showToast = (message, type = 'success') => {
+  // Office CPU F: Drive Bridge State
+  const [bridgeStatus, setBridgeStatus] = useState({ online: false, data: null });
+  const [showBridgeModal, setShowBridgeModal] = useState(false);
+  const [isSyncingFolders, setIsSyncingFolders] = useState(false);
+
+  const showToast = (message, type = 'success', duration = 3500) => {
     setToast({ message, type });
     setTimeout(() => {
       setToast((prev) => (prev?.message === message ? null : prev));
-    }, 3500);
+    }, duration);
   };
 
   // Map Picker & Geocoding State
@@ -75,6 +86,8 @@ const Sites = ({ onNavigate }) => {
   useEffect(() => {
     setStatusFilter('Running');
     fetchSites();
+    // Check if the office CPU folder bridge is running on http://127.0.0.1:5001
+    checkBridgeStatus(1200).then(res => setBridgeStatus(res));
   }, []);
 
   const openAddModal = () => {
@@ -132,6 +145,16 @@ const Sites = ({ onNavigate }) => {
         setSites([data.site, ...sites]);
         setShowAddModal(false);
         showToast(`Customer "${data.site?.customerName || 'Site'}" created successfully!`, 'success');
+        
+        // If local bridge is online on this machine (office CPU), immediately create folder on F: drive
+        if (bridgeStatus.online) {
+          createLocalProjectFolder(data.site || payload).then(bRes => {
+            if (bRes && bRes.success) {
+              showToast(`📁 Created project folders on F:\\ drive!`, 'success', 4000);
+            }
+          });
+        }
+
         fetchSites();
       } else {
         showToast(data.message || 'Failed to add site', 'error');
@@ -307,6 +330,24 @@ const Sites = ({ onNavigate }) => {
     if (!site) return;
     const targetId = site.dbId || site.id;
     try {
+      // 1. Try local bridge first (runs on office CPU with direct F: drive & explorer.exe access)
+      const bStatus = await checkBridgeStatus(800);
+      if (bStatus.online) {
+        setBridgeStatus(bStatus);
+        const localRes = await openLocalProjectFolder({
+          folderPath: site.projectFolder,
+          siteRef: site.siteRef || site.siteCode || site.id,
+          customerName: site.customerName,
+          referenceName: site.refName || site.location,
+          location: site.location
+        });
+        if (localRes.success) {
+          showToast(`📁 Opened folder on F:\\ drive for "${site.customerName}"`, 'success');
+          return;
+        }
+      }
+
+      // 2. Fallback to backend open-folder endpoint
       const res = await fetch(`${API_BASE}/sites/${targetId}/open-folder`, {
         method: 'POST'
       });
@@ -314,11 +355,37 @@ const Sites = ({ onNavigate }) => {
       if (data.success) {
         showToast(`Folder opened for "${site.customerName}"`, 'success');
       } else {
-        showToast(data.message || 'Could not open folder', 'error');
+        setShowBridgeModal(true);
+        showToast(`Office CPU Folder Bridge is offline. Click the F:\\ Bridge button for 1-click startup.`, 'warning', 5000);
       }
     } catch (err) {
       console.error('Error opening folder:', err);
-      showToast('Failed to connect to backend server', 'error');
+      setShowBridgeModal(true);
+      showToast('Office CPU Folder Bridge is offline. Start the bridge to open folders on F:\\ drive.', 'error', 5000);
+    }
+  };
+
+  const handleSyncAllFolders = async () => {
+    try {
+      setIsSyncingFolders(true);
+      const bStatus = await checkBridgeStatus(1000);
+      setBridgeStatus(bStatus);
+      if (!bStatus.online) {
+        setShowBridgeModal(true);
+        showToast('Please start the folder bridge on your office CPU first.', 'warning');
+        return;
+      }
+
+      const res = await syncAllLocalFolders(sites);
+      if (res.success) {
+        showToast(`✅ Successfully created & verified ${res.count} project folders on F:\\ drive!`, 'success', 5000);
+      } else {
+        showToast(res.error || 'Failed to sync folders to F:\\ drive', 'error');
+      }
+    } catch (err) {
+      showToast('Sync error: ' + err.message, 'error');
+    } finally {
+      setIsSyncingFolders(false);
     }
   };
 
@@ -433,7 +500,44 @@ const Sites = ({ onNavigate }) => {
           </p>
         </div>
 
-        <div className="header-actions">
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* F: Drive Folder Bridge Status Pill */}
+          <button
+            type="button"
+            onClick={bridgeStatus.online ? handleSyncAllFolders : () => setShowBridgeModal(true)}
+            title={bridgeStatus.online ? "F:\\ Drive Bridge is connected. Click to sync all site folders to F:\\ drive." : "Click to view instructions on starting the F:\\ Drive Folder Bridge"}
+            disabled={isSyncingFolders}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '8px',
+              fontSize: '12.5px',
+              fontWeight: '700',
+              border: bridgeStatus.online ? '1px solid #A7F3D0' : '1px solid #D1C2AF',
+              background: bridgeStatus.online ? '#ECFDF5' : '#FFFFFF',
+              color: bridgeStatus.online ? '#065F46' : '#7D6C5E',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '7px',
+              cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: bridgeStatus.online ? '#10B981' : '#9CA3AF',
+              boxShadow: bridgeStatus.online ? '0 0 6px #10B981' : 'none'
+            }}></span>
+            <span>
+              {bridgeStatus.online
+                ? (isSyncingFolders ? 'Syncing to F:\\...' : 'F:\\ Drive Connected (Sync All)')
+                : 'F:\\ Bridge Offline'}
+            </span>
+            <i className={`fa-solid ${bridgeStatus.online ? (isSyncingFolders ? 'fa-spinner fa-spin' : 'fa-folder-tree') : 'fa-circle-info'}`} style={{ fontSize: '11px', color: bridgeStatus.online ? '#059669' : '#A56A30' }}></i>
+          </button>
+
           <button className="btn-primary" onClick={openAddModal} style={{boxShadow: '0 2px 8px rgba(74, 44, 23, 0.28)'}}>
             <i className="fa-solid fa-plus"></i> Add Site
           </button>
@@ -676,6 +780,104 @@ const Sites = ({ onNavigate }) => {
                     <i className="fa-solid fa-trash-can"></i> Delete
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Office CPU Folder Bridge Info / Setup Modal */}
+      {showBridgeModal && (
+        <div className="modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.55)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '16px', backdropFilter: 'blur(3px)'
+        }}>
+          <div style={{
+            background: '#ffffff', borderRadius: '14px', maxWidth: '520px', width: '100%',
+            padding: '26px', boxShadow: '0 20px 40px rgba(0,0,0,0.22)', border: '1px solid #E5E7EB'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '10px',
+                  background: 'rgba(165, 106, 48, 0.1)', color: 'var(--gold, #A56A30)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px'
+                }}>
+                  <i className="fa-solid fa-hard-drive"></i>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#111827' }}>
+                    Office CPU F:\ Drive Folder Bridge
+                  </h3>
+                  <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
+                    Save & Open folders directly in File Explorer from the Live CRM
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBridgeModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '18px', color: '#9CA3AF', cursor: 'pointer' }}
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div style={{
+              background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '10px',
+              padding: '14px 16px', marginBottom: '18px', fontSize: '13px', color: '#374151', lineHeight: '1.5'
+            }}>
+              <div style={{ fontWeight: '700', marginBottom: '6px', color: '#111827', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)' }}></i> Target Folder on Office CPU:
+              </div>
+              <code style={{
+                background: '#FFFFFF', border: '1px solid #D1D5DB', borderRadius: '6px',
+                padding: '4px 8px', fontSize: '12px', display: 'block', wordBreak: 'break-all',
+                color: '#4A2C17', fontWeight: '700'
+              }}>
+                F:\1. MODERN INTERIOR\RUNNING FOLDER\MODERN-2024-25- RUNNING
+              </code>
+            </div>
+
+            <div style={{ fontSize: '13.5px', color: '#4B5563', lineHeight: '1.6', marginBottom: '20px' }}>
+              <div style={{ fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
+                How to start the bridge on the office CPU (one-time setup):
+              </div>
+              <ol style={{ margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <li>
+                  Open the project folder on your office CPU (or terminal).
+                </li>
+                <li>
+                  Go to the <strong>local-bridge</strong> folder.
+                </li>
+                <li>
+                  Double-click <strong>start-bridge.bat</strong> (or run <strong>install-to-startup.bat</strong> so it starts automatically every time your CPU turns on).
+                </li>
+                <li>
+                  That's it! All 3 screens will immediately connect and show <span style={{ color: '#059669', fontWeight: '700' }}>🟢 F:\ Drive Connected</span>.
+                </li>
+              </ol>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  const check = await checkBridgeStatus(1000);
+                  setBridgeStatus(check);
+                  if (check.online) {
+                    showToast('🟢 Connected to Office CPU Folder Bridge!', 'success');
+                    setShowBridgeModal(false);
+                  } else {
+                    showToast('Bridge not detected yet on http://127.0.0.1:5001. Please make sure start-bridge.bat is running.', 'error');
+                  }
+                }}
+                className="btn-primary"
+                style={{ padding: '9px 18px', fontSize: '13px', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                <i className="fa-solid fa-arrows-rotate"></i> Check Connection Now
               </button>
             </div>
           </div>
