@@ -843,25 +843,46 @@ const Sites = ({ onNavigate }) => {
 
             <div style={{ fontSize: '13.5px', color: '#4B5563', lineHeight: '1.6', marginBottom: '20px' }}>
               <div style={{ fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
-                How to start the bridge on the office CPU (one-time setup):
+                Setup on your Main PC (No code or developer tools needed!):
               </div>
               <ol style={{ margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <li>
-                  Open the project folder on your office CPU (or terminal).
+                  Click the <strong>Download Bridge (.zip)</strong> button below to save the 8 KB package on your Main PC.
                 </li>
                 <li>
-                  Go to the <strong>local-bridge</strong> folder.
+                  Right-click the downloaded zip and choose <strong>Extract All</strong> (e.g. to your Desktop).
                 </li>
                 <li>
-                  Double-click <strong>start-bridge.bat</strong> (or run <strong>install-to-startup.bat</strong> so it starts automatically every time your CPU turns on).
+                  Double-click <strong>start-bridge.bat</strong> (or run <strong>install-to-startup.bat</strong> so it starts automatically every day).
                 </li>
                 <li>
-                  That's it! All 3 screens will immediately connect and show <span style={{ color: '#059669', fontWeight: '700' }}>🟢 F:\ Drive Connected</span>.
+                  That's it! It runs using Windows native tools (no software to install). All 3 screens will immediately connect and show <span style={{ color: '#059669', fontWeight: '700' }}>🟢 F:\ Drive Connected</span>.
                 </li>
               </ol>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+              <a
+                href="/ModernInterior-FolderBridge.zip"
+                download="ModernInterior-FolderBridge.zip"
+                style={{
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  background: '#FAF8F5',
+                  color: 'var(--gold, #4A2C17)',
+                  border: '1.5px solid var(--gold, #4A2C17)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '7px',
+                  textDecoration: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <i className="fa-solid fa-download"></i> Download Bridge (.zip)
+              </a>
+
               <button
                 type="button"
                 onClick={async () => {
@@ -871,7 +892,7 @@ const Sites = ({ onNavigate }) => {
                     showToast('🟢 Connected to Office CPU Folder Bridge!', 'success');
                     setShowBridgeModal(false);
                   } else {
-                    showToast('Bridge not detected yet on http://127.0.0.1:5001. Please make sure start-bridge.bat is running.', 'error');
+                    showToast('Bridge not detected yet on http://127.0.0.1:5001. Please make sure start-bridge.bat is running on this PC.', 'error');
                   }
                 }}
                 className="btn-primary"
