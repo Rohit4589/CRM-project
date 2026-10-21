@@ -90,9 +90,18 @@ const getAttendance = async (req, res) => {
     const params = [];
     let pIdx = 1;
 
-    if (date && date !== 'all') {
+    // Get latest recorded attendance date in system
+    const maxDateRes = await pool.query(`SELECT TO_CHAR(MAX(attendance_date), 'YYYY-MM-DD') as "latestDate" FROM public.attendance;`);
+    const latestDate = maxDateRes.rows[0]?.latestDate || null;
+
+    let targetDate = date;
+    if (date === 'latest' || date === 'last') {
+      targetDate = latestDate;
+    }
+
+    if (targetDate && targetDate !== 'all') {
       query += ` AND a.attendance_date = $${pIdx}`;
-      params.push(date);
+      params.push(targetDate);
       pIdx++;
     }
 
@@ -181,6 +190,8 @@ const getAttendance = async (req, res) => {
       success: true,
       count: formattedList.length,
       attendance: formattedList,
+      latestDate: latestDate,
+      filterDate: targetDate || null,
     });
   } catch (error) {
     console.error('Error in getAttendance:', error);

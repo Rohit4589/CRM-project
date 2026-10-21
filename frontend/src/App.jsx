@@ -73,7 +73,10 @@ function App() {
     localStorage.setItem('mi_crm_lang', newLang);
   };
 
-  const handleTabChange = (tab) => {
+  const [tabParams, setTabParams] = useState({});
+
+  const handleTabChange = (tab, params = {}) => {
+    setTabParams(params);
     setActiveTab(tab);
   };
 
@@ -120,7 +123,7 @@ function App() {
       case 'employees':
         return <Employees />;
       case 'attendance':
-        return <Attendance lang={lang} />;
+        return <Attendance lang={lang} initialDate={tabParams?.date} />;
       case 'salary':
         return <Salary lang={lang} />;
       case 'reports':
