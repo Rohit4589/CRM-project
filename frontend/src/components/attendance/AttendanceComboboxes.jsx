@@ -40,47 +40,52 @@ export const EmployeeCombobox = ({
   employees = [],
   onChange,
   placeholder = "Type worker name (e.g. 'P', 'Jubair')...",
-  openUpward = false
+  openUpward = false,
+  fallbackText = ''
 }) => {
+  const selectedEmp = employees.find(e => 
+    (value && (String(e.dbId) === String(value) || String(e.id) === String(value) || String(e.empCode) === String(value))) ||
+    (fallbackText && (e.name || e.fullName || '').trim().toLowerCase() === String(fallbackText).trim().toLowerCase())
+  );
+
   const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => {
+    return selectedEmp ? (selectedEmp.name || selectedEmp.fullName || '') : (fallbackText || '');
+  });
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
-  const prevValueRef = useRef(value);
 
-  const selectedEmp = employees.find(e => String(e.dbId || e.id) === String(value));
-
-  // Sync query when external value changes
+  // Sync query when external value, selectedEmp, or fallbackText changes
   useEffect(() => {
-    if (prevValueRef.current !== value) {
-      prevValueRef.current = value;
-      if (selectedEmp) {
-        setQuery(selectedEmp.name || selectedEmp.fullName || '');
-      } else {
-        setQuery('');
-      }
+    if (selectedEmp) {
+      setQuery(selectedEmp.name || selectedEmp.fullName || '');
+    } else if (fallbackText) {
+      setQuery(fallbackText);
+    } else if (!value) {
+      setQuery('');
     }
-  }, [value, selectedEmp]);
+  }, [value, selectedEmp, fallbackText]);
 
   // Click outside listener
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
         setIsOpen(false);
-        // If closed without selecting, revert to currently selected employee's name or empty
+        // If closed without selecting, revert to currently selected employee's name or fallback
         if (selectedEmp) {
           setQuery(selectedEmp.name || selectedEmp.fullName || '');
-        } else {
+        } else if (fallbackText) {
+          setQuery(fallbackText);
+        } else if (!value) {
           setQuery('');
-          if (value) onChange('', 0);
         }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedEmp, value, onChange]);
+  }, [selectedEmp, fallbackText, value]);
 
   // Filter employees
   const filteredEmployees = employees.filter(emp => {
@@ -110,7 +115,6 @@ export const EmployeeCombobox = ({
   const handleSelect = (emp) => {
     const empId = emp.dbId || emp.id;
     const rate = Number(emp.dailySalary || 0);
-    prevValueRef.current = empId;
     setQuery(emp.name || emp.fullName || '');
     setIsOpen(false);
     onChange(empId, rate);
@@ -118,7 +122,6 @@ export const EmployeeCombobox = ({
 
   const handleClear = (e) => {
     e.stopPropagation();
-    prevValueRef.current = '';
     setQuery('');
     setIsOpen(true);
     onChange('', 0);
@@ -192,7 +195,6 @@ export const EmployeeCombobox = ({
             setIsOpen(true);
             // If emptied out, clear selected employee
             if (!val.trim() && value) {
-              prevValueRef.current = '';
               onChange('', 0);
             }
           }}
@@ -352,17 +354,13 @@ export const SiteCombobox = ({
   sites = [],
   onChange,
   placeholder = "Type site # or name (e.g. '204', 'Ceratec')...",
-  openUpward = false
+  openUpward = false,
+  fallbackText = ''
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const containerRef = useRef(null);
-  const inputRef = useRef(null);
-  const listRef = useRef(null);
-  const prevValueRef = useRef(value);
-
-  const selectedSite = sites.find(s => String(s.dbId || s.id) === String(value) || String(s.siteRef) === String(value));
+  const selectedSite = sites.find(s => 
+    (value && (String(s.dbId) === String(value) || String(s.id) === String(value) || String(s.siteRef) === String(value) || String(s.siteCode) === String(value))) ||
+    (fallbackText && (s.customerName || s.name || '').trim().toLowerCase() === String(fallbackText).trim().toLowerCase())
+  );
 
   const formatSiteDisplay = (site) => {
     if (!site) return '';
@@ -371,17 +369,25 @@ export const SiteCombobox = ({
     return `${refPrefix}${site.customerName || site.name || ''}${locSuffix}`.trim();
   };
 
-  // Sync display text when external value changes
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState(() => {
+    return selectedSite ? formatSiteDisplay(selectedSite) : (fallbackText || '');
+  });
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const containerRef = useRef(null);
+  const inputRef = useRef(null);
+  const listRef = useRef(null);
+
+  // Sync display text when external value, selectedSite, or fallbackText changes
   useEffect(() => {
-    if (prevValueRef.current !== value) {
-      prevValueRef.current = value;
-      if (selectedSite) {
-        setQuery(formatSiteDisplay(selectedSite));
-      } else {
-        setQuery('');
-      }
+    if (selectedSite) {
+      setQuery(formatSiteDisplay(selectedSite));
+    } else if (fallbackText) {
+      setQuery(fallbackText);
+    } else if (!value) {
+      setQuery('');
     }
-  }, [value, selectedSite]);
+  }, [value, selectedSite, fallbackText]);
 
   // Click outside listener
   useEffect(() => {
@@ -391,15 +397,16 @@ export const SiteCombobox = ({
         // Reset query back to selected name if closed without selecting
         if (selectedSite) {
           setQuery(formatSiteDisplay(selectedSite));
-        } else {
+        } else if (fallbackText) {
+          setQuery(fallbackText);
+        } else if (!value) {
           setQuery('');
-          if (value) onChange('');
         }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedSite, value, onChange]);
+  }, [selectedSite, fallbackText, value]);
 
   // Filter sites by siteRef (e.g. '204'), name/customerName, or location
   const filteredSites = sites.filter(site => {
@@ -429,7 +436,6 @@ export const SiteCombobox = ({
 
   const handleSelect = (site) => {
     const siteId = site.dbId || site.id;
-    prevValueRef.current = siteId;
     setQuery(formatSiteDisplay(site));
     setIsOpen(false);
     onChange(siteId);
@@ -437,7 +443,6 @@ export const SiteCombobox = ({
 
   const handleClear = (e) => {
     e.stopPropagation();
-    prevValueRef.current = '';
     setQuery('');
     setIsOpen(true);
     onChange('');
@@ -511,7 +516,6 @@ export const SiteCombobox = ({
             setIsOpen(true);
             // If emptied out, clear selected site
             if (!val.trim() && value) {
-              prevValueRef.current = '';
               onChange('');
             }
           }}

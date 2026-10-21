@@ -120,12 +120,18 @@ const EstimatePreviewModal = ({
       }
       return String(estimate.order_no);
     }
-    const m = String(estimate.estimate_number || '').match(/\d+$/);
-    if (m) {
-      const num = parseInt(m[0], 10);
-      return num < 1000 ? String(num).padStart(3, '0') : String(num);
+    const estNum = String(estimate.estimate_number || '').trim();
+    if (estNum) {
+      // Split off revision suffix (e.g. 187-03 -> base order 187)
+      const basePart = estNum.split('-')[0];
+      const m = basePart.match(/\d+/);
+      if (m) {
+        const num = parseInt(m[0], 10);
+        return num < 1000 ? String(num).padStart(3, '0') : String(num);
+      }
+      return basePart;
     }
-    return estimate.estimate_number || '001';
+    return '001';
   })();
 
   // Sanitize illegal Windows filename characters: \ / : * ? " < > |
@@ -137,13 +143,12 @@ const EstimatePreviewModal = ({
   // 2. Customer Name
   const cleanCustomer = sanitize(estimate.customer_name || 'Client');
 
-  // 3. Reference Name (from site location, site name, address society, or site_ref)
+  // 3. Reference Name (from explicit reference_name, site location, or site name)
   const cleanRef = sanitize(
+    estimate.reference_name ||
     estimate.site_location ||
     estimate.location ||
     estimate.site_name ||
-    (estimate.address ? estimate.address.split(',')[0].trim() : '') ||
-    (estimate.site_ref ? String(estimate.site_ref).replace(/^SITE-/i, '') : '') ||
     ''
   );
 
@@ -404,7 +409,7 @@ const EstimatePreviewModal = ({
               <table key={rIdx} className="print-room-table">
                 <thead className="print-room-thead" style={{ display: 'table-row-group' }}>
                   <tr className="print-room-title-row">
-                    <td colSpan="8" style={{ textAlign: 'left', paddingLeft: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <td colSpan="8" style={{ textAlign: 'left', paddingLeft: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#4A2C17', fontWeight: '800', fontSize: '12px' }}>
                       {room.roomName}
                     </td>
                   </tr>
@@ -435,10 +440,23 @@ const EstimatePreviewModal = ({
                     </tr>
                   ))}
                   <tr className="print-room-total-row">
-                    <td colSpan="6" style={{ textAlign: 'right', fontWeight: '700', color: '#000000' }}>
+                    <td colSpan="6" style={{ textAlign: 'right', fontWeight: '800', color: '#4A2C17', padding: '7px 10px', verticalAlign: 'middle' }}>
+                      <span className="print-room-total-badge" style={{
+                        background: '#4A2C17',
+                        color: '#FFFFFF',
+                        padding: '1px 6px',
+                        borderRadius: '3px',
+                        fontSize: '9.5px',
+                        fontWeight: '800',
+                        letterSpacing: '0.5px',
+                        marginRight: '6px',
+                        display: 'inline-block'
+                      }}>
+                        TOTAL
+                      </span>
                       {room.roomName} TOTAL:
                     </td>
-                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', color: '#000000' }}>
+                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', color: '#4A2C17', fontSize: '12px', padding: '7px 10px', verticalAlign: 'middle' }}>
                       ₹{(Number(room.roomTotal) || 0).toLocaleString('en-IN')}
                     </td>
                   </tr>
@@ -450,37 +468,37 @@ const EstimatePreviewModal = ({
             <table className="print-room-table print-summary-table" style={{ width: '100%', marginBottom: '20px' }}>
               <tbody>
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'left', fontWeight: '700', padding: '8px 16px', background: '#FAF8F5', color: '#000000' }}>
+                  <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', padding: '8px 16px', background: '#F5EBE1', color: '#4A2C17' }}>
                     SUB TOTAL:
                   </td>
-                  <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#FAF8F5', color: '#000000' }}>
+                  <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#F5EBE1', color: '#4A2C17' }}>
                     ₹{Number(estimate.sub_total || 0).toLocaleString('en-IN')}
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'left', fontWeight: '700', padding: '8px 16px', background: '#FFFFFF', color: '#000000' }}>
-                    DESIGNING AND CONSULTING FEE ({estimate.design_fee_pct || 10}%):
+                  <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', padding: '8px 16px', background: '#FFFFFF', color: '#4A2C17' }}>
+                    DESIGNING AND CONSULTING FEE ({Number(estimate.design_fee_pct ?? 10)}%):
                   </td>
-                  <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#FFFFFF', color: '#000000' }}>
+                  <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#FFFFFF', color: '#4A2C17' }}>
                     ₹{Number(estimate.design_fee_amount || 0).toLocaleString('en-IN')}
                   </td>
                 </tr>
                 {Number(estimate.gst_pct) > 0 && (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'left', fontWeight: '700', padding: '8px 16px', background: '#FAF8F5', color: '#000000' }}>
-                      GST {estimate.gst_pct}% EXTRA:
+                    <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', padding: '8px 16px', background: '#F5EBE1', color: '#4A2C17' }}>
+                      GST {Number(estimate.gst_pct)}% EXTRA:
                     </td>
-                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#FAF8F5', color: '#000000' }}>
+                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#F5EBE1', color: '#4A2C17' }}>
                       ₹{Number(estimate.gst_amount || 0).toLocaleString('en-IN')}
                     </td>
                   </tr>
                 )}
                 {Number(estimate.round_off) > 0 && (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'left', fontWeight: '700', padding: '8px 16px', background: '#FFFFFF', color: '#000000' }}>
+                    <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', padding: '8px 16px', background: '#FFFFFF', color: '#4A2C17' }}>
                       ROUND OFF / DISCOUNT:
                     </td>
-                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#FFFFFF', color: '#000000' }}>
+                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#FFFFFF', color: '#4A2C17' }}>
                       - ₹{Number(estimate.round_off).toLocaleString('en-IN')}
                     </td>
                   </tr>
@@ -496,100 +514,139 @@ const EstimatePreviewModal = ({
               </tbody>
             </table>
 
-            {/* Side-by-side 50/50 Section: Material Specifications (Left) & Terms & Conditions (Right) */}
-            {/* 1. Dedicated Header Row (Both titles aligned to the same horizontal line) */}
-            <div className="print-specs-terms-header-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '6px', width: '100%', alignItems: 'end' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '12px', margin: 0, lineHeight: '1.35', letterSpacing: '0.2px' }}>
-                  {materialSpecs ? materialSpecs.title : 'Material Specifications'}:
-                </h5>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                <h5 className="print-section-h5" style={{ color: '#000000', fontWeight: '800', fontSize: '12px', margin: 0, lineHeight: '1.35', letterSpacing: '0.2px' }}>
-                  Terms &amp; Conditions:
-                </h5>
-              </div>
-            </div>
+            {/* Material Specifications & Terms & Conditions Section (Conditional on include_material_specs) */}
+            {estimate.include_material_specs !== false ? (
+              <>
+                {/* 1. Dedicated Header Row (Both titles aligned to the same horizontal line) */}
+                <div className="print-specs-terms-header-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '6px', width: '100%', alignItems: 'end' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                    <h5 className="print-section-h5" style={{ color: '#4A2C17', fontWeight: '800', fontSize: '12px', margin: 0, lineHeight: '1.35', letterSpacing: '0.2px' }}>
+                      {materialSpecs ? materialSpecs.title : 'Material Specifications'}:
+                    </h5>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                    <h5 className="print-section-h5" style={{ color: '#4A2C17', fontWeight: '800', fontSize: '12px', margin: 0, lineHeight: '1.35', letterSpacing: '0.2px' }}>
+                      Terms &amp; Conditions:
+                    </h5>
+                  </div>
+                </div>
 
-            {/* 2. Dedicated Cards Row (Both cards start at the exact same level & end at the exact same level) */}
-            <div className="print-specs-terms-cards-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', width: '100%', alignItems: 'stretch' }}>
-              {/* Left Card: Material Specifications */}
-              <div
-                className="print-bank-card print-specs-card"
-                style={{
-                  background: '#FAF8F5',
-                  border: '1px solid #DCD4CA',
-                  borderRadius: '6px',
-                  padding: '8px 10px',
-                  fontSize: '10px',
-                  color: '#000000',
-                  lineHeight: '1.28',
-                  boxSizing: 'border-box',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  height: '100%'
-                }}
-              >
-                {materialSpecs && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    {materialSpecs.items.map((it, idx) => (
-                      <div key={idx} style={{ lineHeight: '1.28' }}>
-                        <strong style={{ color: '#000000', fontWeight: '800' }}>{it.label} </strong>
-                        <span style={{ color: '#000000', fontWeight: '600' }}>{it.text}</span>
-                      </div>
-                    ))}
+                {/* 2. Dedicated Cards Row (50/50 side-by-side) */}
+                <div className="print-specs-terms-cards-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', width: '100%', alignItems: 'stretch' }}>
+                  {/* Left Card: Material Specifications */}
+                  <div
+                    className="print-bank-card print-specs-card"
+                    style={{
+                      background: '#FAF8F5',
+                      border: '1px solid #DCD4CA',
+                      borderRadius: '6px',
+                      padding: '8px 10px',
+                      fontSize: '10px',
+                      color: '#000000',
+                      lineHeight: '1.28',
+                      boxSizing: 'border-box',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      height: '100%'
+                    }}
+                  >
+                    {materialSpecs && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {materialSpecs.items.map((it, idx) => (
+                          <div key={idx} style={{ lineHeight: '1.28' }}>
+                            <strong style={{ color: '#000000', fontWeight: '800' }}>{it.label} </strong>
+                            <span style={{ color: '#000000', fontWeight: '600' }}>{it.text}</span>
+                          </div>
+                        ))}
 
-                    {materialSpecs.note && (
-                      <div style={{ marginTop: '3px', paddingTop: '3px', borderTop: '1px dashed #DCD4CA', lineHeight: '1.28' }}>
-                        <strong style={{ color: '#000000', fontWeight: '800' }}>Exclusions: </strong>
-                        <span style={{ color: '#000000', fontWeight: '600' }}>{materialSpecs.note}</span>
-                      </div>
-                    )}
+                        {materialSpecs.note && (
+                          <div style={{ marginTop: '3px', paddingTop: '3px', borderTop: '1px dashed #DCD4CA', lineHeight: '1.28' }}>
+                            <strong style={{ color: '#000000', fontWeight: '800' }}>Exclusions: </strong>
+                            <span style={{ color: '#000000', fontWeight: '600' }}>{materialSpecs.note}</span>
+                          </div>
+                        )}
 
-                    {materialSpecs.additionalCharges && (
-                      <div style={{ marginTop: '2px', lineHeight: '1.28' }}>
-                        <strong style={{ color: '#000000', fontWeight: '800' }}>Note / Additional Charges: </strong>
-                        <span style={{ color: '#000000', fontWeight: '600' }}>{materialSpecs.additionalCharges}</span>
+                        {materialSpecs.additionalCharges && (
+                          <div style={{ marginTop: '2px', lineHeight: '1.28' }}>
+                            <strong style={{ color: '#000000', fontWeight: '800' }}>Note / Additional Charges: </strong>
+                            <span style={{ color: '#000000', fontWeight: '600' }}>{materialSpecs.additionalCharges}</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Right Card: Terms & Conditions */}
-              <div
-                className="print-bank-card print-terms-card"
-                style={{
-                  background: '#FAF8F5',
-                  border: '1px solid #DCD4CA',
-                  borderRadius: '6px',
-                  padding: '8px 10px',
-                  fontSize: '10px',
-                  color: '#000000',
-                  lineHeight: '1.28',
-                  boxSizing: 'border-box',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%'
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3.5px' }}>
-                  {termsClauses.map((item, idx) => (
-                    <div key={idx} style={{ marginBottom: '0px', lineHeight: '1.28' }}>
-                      {item.title && (
-                        <div style={{ color: '#000000', fontWeight: '800', fontSize: '10px', marginBottom: '1px', lineHeight: '1.25' }}>
-                          {item.title}
+                  {/* Right Card: Terms & Conditions */}
+                  <div
+                    className="print-bank-card print-terms-card"
+                    style={{
+                      background: '#FAF8F5',
+                      border: '1px solid #DCD4CA',
+                      borderRadius: '6px',
+                      padding: '8px 10px',
+                      fontSize: '10px',
+                      color: '#000000',
+                      lineHeight: '1.28',
+                      boxSizing: 'border-box',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%'
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3.5px' }}>
+                      {termsClauses.map((item, idx) => (
+                        <div key={idx} style={{ marginBottom: '0px', lineHeight: '1.28' }}>
+                          {item.title && (
+                            <div style={{ color: '#000000', fontWeight: '800', fontSize: '10px', marginBottom: '1px', lineHeight: '1.25' }}>
+                              {item.title}
+                            </div>
+                          )}
+                          <div style={{ color: '#000000', fontWeight: '600', lineHeight: '1.28' }}>
+                            {item.desc}
+                          </div>
                         </div>
-                      )}
-                      <div style={{ color: '#000000', fontWeight: '600', lineHeight: '1.28' }}>
-                        {item.desc}
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* When Material Specifications is OFF -> Terms & Conditions expands across the full width */
+              <div style={{ width: '100%', marginTop: '6px' }}>
+                <h5 className="print-section-h5" style={{ color: '#4A2C17', fontWeight: '800', fontSize: '12px', margin: '0 0 6px 0', lineHeight: '1.35', letterSpacing: '0.2px' }}>
+                  Terms &amp; Conditions:
+                </h5>
+                <div
+                  className="print-bank-card print-terms-card"
+                  style={{
+                    background: '#FAF8F5',
+                    border: '1px solid #DCD4CA',
+                    borderRadius: '6px',
+                    padding: '10px 14px',
+                    fontSize: '10px',
+                    color: '#000000',
+                    lineHeight: '1.32',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px' }}>
+                    {termsClauses.map((item, idx) => (
+                      <div key={idx} style={{ marginBottom: '0px', lineHeight: '1.3' }}>
+                        {item.title && (
+                          <div style={{ color: '#000000', fontWeight: '800', fontSize: '10px', marginBottom: '2px', lineHeight: '1.25' }}>
+                            {item.title}
+                          </div>
+                        )}
+                        <div style={{ color: '#000000', fontWeight: '600', lineHeight: '1.3' }}>
+                          {item.desc}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* UNBREAKABLE CLOSING BLOCK:
                 Bank Details + Payment Terms + Signatures stay together.

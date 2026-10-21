@@ -334,9 +334,9 @@ exports.createEstimate = async (req, res) => {
         estimate_number, site_id, customer_name, phone, email, address, date,
         project_type, furniture_level, collection_tier, rooms_data, sub_total, design_fee_pct,
         design_fee_amount, gst_pct, gst_amount, round_off, final_total,
-        bank_details, notes, terms_conditions, payment_terms, status
+        bank_details, notes, terms_conditions, payment_terms, status, include_material_specs
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
       ) RETURNING *
     `;
 
@@ -363,15 +363,28 @@ exports.createEstimate = async (req, res) => {
       notes || DEFAULT_NOTE,
       terms_conditions || DEFAULT_TERMS_CONDITIONS,
       payment_terms || DEFAULT_PAYMENT_TERMS,
-      initialStatus
+      initialStatus,
+      req.body.include_material_specs !== false
     ];
 
     const result = await pool.query(insertQuery, values);
 
+    // Fetch full joined estimate details including site_ref and location
+    const insertedId = result.rows[0].id;
+    const fetchJoined = await pool.query(
+      `SELECT e.*, s.site_ref, s.customer_name as site_customer_name, s.status as site_status,
+              s.location, s.location as site_location,
+              COALESCE(s.status, e.status, 'Running') as order_status
+       FROM estimates e
+       LEFT JOIN sites s ON e.site_id = s.id
+       WHERE e.id = $1`,
+      [insertedId]
+    );
+
     res.status(201).json({
       success: true,
       message: 'Estimate created successfully',
-      estimate: result.rows[0]
+      estimate: fetchJoined.rows[0] || result.rows[0]
     });
   } catch (error) {
     console.error('Error creating estimate:', error);
@@ -441,8 +454,9 @@ exports.updateEstimate = async (req, res) => {
         terms_conditions = $20,
         payment_terms = $21,
         status = $22,
+        include_material_specs = $23,
         updated_at = NOW()
-      WHERE id = $23
+      WHERE id = $24
       RETURNING *
     `;
 
@@ -469,6 +483,7 @@ exports.updateEstimate = async (req, res) => {
       terms_conditions,
       payment_terms,
       status,
+      req.body.include_material_specs !== false,
       id
     ];
 
@@ -483,10 +498,22 @@ exports.updateEstimate = async (req, res) => {
       await pool.query(`UPDATE sites SET status = $1 WHERE id = $2`, [status, sId]).catch(e => console.error('Error syncing site status:', e));
     }
 
+    // Fetch full joined estimate details including site_ref and location
+    const updatedId = result.rows[0].id;
+    const fetchJoined = await pool.query(
+      `SELECT e.*, s.site_ref, s.customer_name as site_customer_name, s.status as site_status,
+              s.location, s.location as site_location,
+              COALESCE(s.status, e.status, 'Running') as order_status
+       FROM estimates e
+       LEFT JOIN sites s ON e.site_id = s.id
+       WHERE e.id = $1`,
+      [updatedId]
+    );
+
     res.json({
       success: true,
       message: 'Estimate updated successfully',
-      estimate: result.rows[0]
+      estimate: fetchJoined.rows[0] || result.rows[0]
     });
   } catch (error) {
     console.error('Error updating estimate:', error);

@@ -1071,6 +1071,178 @@ const bulkApproveAttendance = async (req, res) => {
   }
 };
 
+// POST /api/attendance/bulk-update
+// Admin updates, creates, and deletes attendance records for a specific date in one transaction
+const bulkUpdateAttendance = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { originalDate, newDate, records = [], deletedIds = [] } = req.body;
+
+    if (!originalDate) {
+      return res.status(400).json({ success: false, message: 'Original attendance date is required.' });
+    }
+
+    const targetDate = newDate || originalDate;
+
+    await client.query('BEGIN');
+
+    // 1. Process deleted records
+    if (Array.isArray(deletedIds) && deletedIds.length > 0) {
+      const validDeletedIds = deletedIds.map(Number).filter(id => !isNaN(id) && id > 0);
+      if (validDeletedIds.length > 0) {
+        await client.query('DELETE FROM public.attendance WHERE id = ANY($1::int[])', [validDeletedIds]);
+      }
+    }
+
+    // 2. Fetch all users and sites to resolve names/rates
+    const allUsers = await client.query('SELECT id, full_name, emp_code, role_title, daily_rate FROM public.users');
+    const userMap = new Map(allUsers.rows.map(u => [u.id, u]));
+
+    const allSites = await client.query('SELECT id, customer_name, site_ref FROM public.sites');
+    const siteMap = new Map(allSites.rows.map(s => [s.id, s]));
+
+    const savedRecords = [];
+
+    // 3. Process each record in the list
+    for (const rec of records) {
+      if (!rec.userId) continue;
+
+      const userId = Number(rec.userId);
+      const siteId = rec.siteId ? Number(rec.siteId) : null;
+      const inTime = rec.inTime || '09:00 AM';
+      const outTime = rec.outTime || '06:00 PM';
+      const isGift = inTime === 'EXTRA' || inTime === 'GIFT' || outTime === 'ADDED' || outTime === 'BONUS';
+      const workHours = (rec.workHours !== undefined && rec.workHours !== null && !isNaN(Number(rec.workHours)))
+        ? Number(rec.workHours)
+        : (isGift ? 0 : calculateHours(inTime, outTime));
+      const dayValue = (rec.dayValue !== undefined && rec.dayValue !== null && !isNaN(Number(rec.dayValue)))
+        ? Number(rec.dayValue)
+        : 1.0;
+      const attStatus = rec.status || 'Approved';
+      const notes = rec.notes || '';
+
+      const uData = userMap.get(userId) || {};
+      const empName = uData.full_name || 'Staff Member';
+      const empCode = uData.emp_code || String(userId + 100);
+      const empRole = uData.role_title || 'Carpenter';
+      const empRate = Number(uData.daily_rate || 0);
+
+      const sData = siteId ? siteMap.get(siteId) : null;
+      const siteName = sData ? sData.customer_name : (isGift ? 'Extra Attendance' : null);
+      const siteRef = sData ? sData.site_ref : (isGift ? 'EXTRA' : null);
+
+      if (rec.id && !String(rec.id).startsWith('new_')) {
+        // Update existing record
+        const updateQuery = `
+          UPDATE public.attendance
+          SET
+            user_id = $1,
+            site_id = $2,
+            attendance_date = $3,
+            in_time = $4,
+            out_time = $5,
+            work_hours = $6,
+            day_value = $7,
+            status = $8,
+            notes = $9,
+            employee_name = $10,
+            emp_code = $11,
+            employee_role = $12,
+            daily_rate = $13,
+            site_name = $14,
+            site_ref = $15,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = $16
+          RETURNING *;
+        `;
+        const updateValues = [
+          userId,
+          siteId,
+          targetDate,
+          inTime,
+          outTime,
+          workHours,
+          dayValue,
+          attStatus,
+          notes,
+          empName,
+          empCode,
+          empRole,
+          empRate,
+          siteName,
+          siteRef,
+          Number(rec.id),
+        ];
+        const updateRes = await client.query(updateQuery, updateValues);
+        if (updateRes.rows.length > 0) {
+          savedRecords.push(updateRes.rows[0]);
+        }
+      } else {
+        // Insert new record added during group edit
+        const insertQuery = `
+          INSERT INTO public.attendance (
+            user_id,
+            site_id,
+            attendance_date,
+            in_time,
+            out_time,
+            work_hours,
+            day_value,
+            status,
+            notes,
+            employee_name,
+            emp_code,
+            employee_role,
+            daily_rate,
+            site_name,
+            site_ref
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          RETURNING *;
+        `;
+        const insertValues = [
+          userId,
+          siteId,
+          targetDate,
+          inTime,
+          outTime,
+          workHours,
+          dayValue,
+          attStatus,
+          notes,
+          empName,
+          empCode,
+          empRole,
+          empRate,
+          siteName,
+          siteRef,
+        ];
+        const insertRes = await client.query(insertQuery, insertValues);
+        savedRecords.push(insertRes.rows[0]);
+      }
+    }
+
+    await client.query('COMMIT');
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully updated attendance for ${savedRecords.length} worker(s) on ${targetDate}!`,
+      count: savedRecords.length,
+      records: savedRecords,
+      targetDate,
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error in bulkUpdateAttendance:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update attendance records',
+      error: error.message,
+    });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getAttendance,
   markAttendance,
@@ -1083,4 +1255,5 @@ module.exports = {
   bulkApproveAttendance,
   awardBonusAttendance,
   bulkMarkAttendance,
+  bulkUpdateAttendance,
 };
