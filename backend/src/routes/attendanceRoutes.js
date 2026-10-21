@@ -12,12 +12,14 @@ const {
   bulkApproveAttendance,
   awardBonusAttendance,
   bulkMarkAttendance,
+  bulkUpdateAttendance,
 } = require('../controllers/attendanceController');
 
 // Admin & General attendance routes
 router.get('/', getAttendance);
 router.post('/', markAttendance);
 router.post('/bulk-mark', bulkMarkAttendance);
+router.post('/bulk-update', bulkUpdateAttendance);
 router.post('/bonus', awardBonusAttendance);
 router.put('/:id', updateAttendance);
 router.delete('/:id', deleteAttendance);

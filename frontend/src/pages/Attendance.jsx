@@ -80,6 +80,35 @@ const Attendance = ({ lang = 'en' }) => {
     }
   };
 
+  // Parse time to HH:MM format for <input type="time">
+  const parseToTimeInput = (tStr) => {
+    if (!tStr || tStr === '--:--' || tStr === 'GIFT' || tStr === 'BONUS' || tStr === 'EXTRA' || tStr === 'ADDED') return '09:00';
+    try {
+      const isPm = tStr.toUpperCase().includes('PM');
+      const clean = tStr.replace(/(AM|PM)/gi, '').trim();
+      const parts = clean.split(':');
+      let h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1] || '0', 10);
+      if (isPm && h < 12) h += 12;
+      if (!isPm && h === 12) h = 0;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    } catch {
+      return '09:00';
+    }
+  };
+
+  // Format time strings (e.g. 09:00 -> 09:00 AM)
+  const formatTimeAmPm = (tStr) => {
+    if (!tStr) return '--:--';
+    if (tStr.includes('AM') || tStr.includes('PM') || tStr === 'EXTRA' || tStr === 'GIFT' || tStr === 'ADDED' || tStr === 'BONUS') return tStr;
+    const parts = tStr.split(':').map(Number);
+    const h = parts[0] || 0;
+    const m = parts[1] || 0;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 || 12;
+    return `${String(displayH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')} ${ampm}`;
+  };
+
   const [dateFilter, setDateFilter] = useState(getTodayStr());
   const [showAllDates, setShowAllDates] = useState(false);
   const [siteFilter, setSiteFilter] = useState('All');
@@ -97,6 +126,14 @@ const Attendance = ({ lang = 'en' }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  // Group / Date Edit Attendance Modal state
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [bulkEditDate, setBulkEditDate] = useState(getTodayStr());
+  const [bulkEditNewDate, setBulkEditNewDate] = useState(getTodayStr());
+  const [bulkEditRows, setBulkEditRows] = useState([]);
+  const [bulkEditDeletedIds, setBulkEditDeletedIds] = useState([]);
+  const [bulkEditLoading, setBulkEditLoading] = useState(false);
 
   // Attendance Mode: 'single' | 'bulk'
   const [attendanceMode, setAttendanceMode] = useState('single');
@@ -723,6 +760,220 @@ const Attendance = ({ lang = 'en' }) => {
     }
   };
 
+  // ==========================================================
+  // Group / Date Edit Attendance Handlers
+  // ==========================================================
+  const handleOpenBulkEditModal = async (initialDate) => {
+    const targetDate = initialDate || dateFilter || getTodayStr();
+    setBulkEditDate(targetDate);
+    setBulkEditNewDate(targetDate);
+    setBulkEditDeletedIds([]);
+    setApiError('');
+    setShowBulkEditModal(true);
+    await loadBulkEditDataForDate(targetDate);
+  };
+
+  const loadBulkEditDataForDate = async (targetDate) => {
+    try {
+      setBulkEditLoading(true);
+      const res = await fetch(`${API_BASE}/attendance?date=${targetDate}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.attendance) && data.attendance.length > 0) {
+        const rows = data.attendance.map((log) => {
+          const emp = employees.find(e => 
+            String(e.dbId) === String(log.userId) || 
+            String(e.id) === String(log.userId) || 
+            String(e.empCode) === String(log.empId) ||
+            ((e.name || e.fullName) && log.name && (e.name || e.fullName).trim().toLowerCase() === log.name.trim().toLowerCase())
+          );
+          const dailyRate = Number(log.dailyRate || emp?.dailySalary || 0);
+          const empName = log.name || log.employeeName || (emp ? (emp.name || emp.fullName) : '');
+          const site = sites.find(s => 
+            String(s.dbId) === String(log.siteId) || 
+            String(s.id) === String(log.siteId) || 
+            String(s.siteRef) === String(log.siteRef) ||
+            ((s.customerName || s.name) && log.customerName && (s.customerName || s.name).trim().toLowerCase() === log.customerName.trim().toLowerCase())
+          );
+          const siteName = log.customerName || log.siteName || (site ? (site.customerName || site.name) : '');
+          return {
+            id: log.id,
+            userId: String(log.userId || (emp ? (emp.dbId || emp.id) : '')),
+            employeeName: empName,
+            siteId: String(log.siteId || (site ? (site.dbId || site.id) : '')),
+            siteName: siteName,
+            dayValue: String(log.dayValue !== undefined && log.dayValue !== null ? log.dayValue : '1.0'),
+            dailyRate: dailyRate,
+            status: log.status || 'Approved',
+            notes: log.notes || ''
+          };
+        });
+        setBulkEditRows(rows);
+      } else {
+        const defaultSite = sites.length > 0 ? String(sites[0].dbId || sites[0].id) : '';
+        const defaultSiteName = sites.length > 0 ? (sites[0].customerName || sites[0].name || '') : '';
+        setBulkEditRows([
+          {
+            id: `new_${Date.now()}`,
+            userId: '',
+            employeeName: '',
+            siteId: defaultSite,
+            siteName: defaultSiteName,
+            dayValue: '1.0',
+            dailyRate: 0,
+            status: 'Approved',
+            notes: ''
+          }
+        ]);
+      }
+    } catch (err) {
+      console.error('Error loading attendance for date:', err);
+      setApiError(`Failed to load attendance records for ${targetDate}`);
+    } finally {
+      setBulkEditLoading(false);
+    }
+  };
+
+  const handleBulkEditDateChange = async (newDate) => {
+    setBulkEditDate(newDate);
+    setBulkEditNewDate(newDate);
+    setBulkEditDeletedIds([]);
+    await loadBulkEditDataForDate(newDate);
+  };
+
+  const handleAddBulkEditRow = () => {
+    const defaultSite = sites.length > 0 ? String(sites[0].dbId || sites[0].id) : '';
+    const defaultSiteName = sites.length > 0 ? (sites[0].customerName || sites[0].name || '') : '';
+    setBulkEditRows(prev => [
+      ...prev,
+      {
+        id: `new_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: '',
+        employeeName: '',
+        siteId: defaultSite,
+        siteName: defaultSiteName,
+        dayValue: '1.0',
+        dailyRate: 0,
+        status: 'Approved',
+        notes: ''
+      }
+    ]);
+  };
+
+  const handleRemoveBulkEditRow = (rowId) => {
+    if (typeof rowId === 'number' || (!String(rowId).startsWith('new_') && !isNaN(Number(rowId)))) {
+      setBulkEditDeletedIds(prev => [...prev, Number(rowId)]);
+    }
+    setBulkEditRows(prev => prev.filter(r => r.id !== rowId));
+  };
+
+  const handleBulkEditRowChange = (rowId, field, value) => {
+    setBulkEditRows(prev => prev.map(r => {
+      if (r.id !== rowId) return r;
+
+      if (field === 'userId') {
+        const emp = employees.find(e => String(e.dbId) === String(value) || String(e.id) === String(value) || String(e.empCode) === String(value));
+        const rate = Number(emp?.dailySalary || 0);
+        const name = emp ? (emp.name || emp.fullName) : '';
+        return { ...r, userId: value, employeeName: name, dailyRate: rate };
+      }
+
+      if (field === 'siteId') {
+        const site = sites.find(s => String(s.dbId) === String(value) || String(s.id) === String(value) || String(s.siteRef) === String(value) || String(s.siteCode) === String(value));
+        const sName = site ? (site.customerName || site.name) : '';
+        return { ...r, siteId: value, siteName: sName };
+      }
+
+      if (field === 'dayValue') {
+        return {
+          ...r,
+          dayValue: value
+        };
+      }
+
+      return { ...r, [field]: value };
+    }));
+  };
+
+  const handleSaveBulkEdit = async (e) => {
+    e.preventDefault();
+    if (!bulkEditDate) {
+      setApiError('Please select an attendance date to edit.');
+      return;
+    }
+
+    if (bulkEditRows.length === 0 && bulkEditDeletedIds.length === 0) {
+      setApiError('No attendance records to save.');
+      return;
+    }
+
+    const emptyWorker = bulkEditRows.find(r => !r.userId);
+    if (emptyWorker) {
+      setApiError('Please select a worker for every row, or remove unused rows.');
+      return;
+    }
+
+    setSaving(true);
+    setApiError('');
+
+    try {
+      const recordsPayload = bulkEditRows.map(r => {
+        const dVal = parseFloat(r.dayValue) || 1.0;
+        const slot = getTimeSlotForDayValue(r.dayValue);
+        const inTimeStr = slot ? formatTimeAmPm(slot.inTime) : '09:00 AM';
+        const outTimeStr = slot ? formatTimeAmPm(slot.outTime) : '06:00 PM';
+        const { hours } = calculateHoursAndDayValue(slot ? slot.inTime : '09:00', slot ? slot.outTime : '18:00');
+
+        let sId = r.siteId;
+        const matched = sites.find(s => s.id === sId || s.dbId === sId || s.siteRef === sId);
+        if (matched) sId = matched.dbId || matched.id;
+
+        return {
+          id: r.id,
+          userId: Number(r.userId),
+          siteId: sId ? Number(sId) : null,
+          inTime: inTimeStr,
+          outTime: outTimeStr,
+          workHours: hours,
+          dayValue: dVal,
+          status: 'Approved',
+          notes: r.notes || ''
+        };
+      });
+
+      const res = await fetch(`${API_BASE}/attendance/bulk-update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalDate: bulkEditDate,
+          newDate: bulkEditNewDate || bulkEditDate,
+          records: recordsPayload,
+          deletedIds: bulkEditDeletedIds
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setApiError(data.message || 'Failed to update attendance records.');
+        setSaving(false);
+        return;
+      }
+
+      setShowBulkEditModal(false);
+      const finalDate = bulkEditNewDate || bulkEditDate;
+      setDateFilter(finalDate);
+      setShowAllDates(false);
+      setSuccessMessage(data.message || `Successfully updated attendance records for ${finalDate}!`);
+      setTimeout(() => setSuccessMessage(''), 6000);
+      window.dispatchEvent(new Event('attendance-changed'));
+      fetchData(finalDate, false);
+    } catch (err) {
+      console.error('Error saving bulk edit attendance:', err);
+      setApiError('Server error while saving attendance changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Delete Attendance
   const handleDeleteAttendance = async (id) => {
     try {
@@ -992,6 +1243,31 @@ const Attendance = ({ lang = 'en' }) => {
           >
             <i className="fa-solid fa-plus" style={{ color: '#FFFFFF', fontSize: '13px' }}></i>
             Add Attendance
+          </button>
+
+          <button
+            onClick={() => handleOpenBulkEditModal()}
+            title="Edit all attendance records for a specific date in one group sheet"
+            style={{
+              padding: '9px 18px',
+              borderRadius: '7px',
+              fontSize: '13px',
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+              background: '#FFFFFF',
+              color: 'var(--gold, #4A2C17)',
+              border: '1.5px solid var(--gold, #4A2C17)',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(74, 44, 23, 0.12)',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#FAF8F5'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+          >
+            <i className="fa-solid fa-pen-to-square" style={{ color: 'var(--gold, #4A2C17)', fontSize: '13px' }}></i>
+            Edit Attendance
           </button>
         </div>
       </div>
@@ -3237,7 +3513,424 @@ const Attendance = ({ lang = 'en' }) => {
         </div>
       )}
 
+      {/* ========================================================== */}
+      {/* GROUP / DATE EDIT ATTENDANCE MODAL                         */}
+      {/* ========================================================== */}
+      {showBulkEditModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(3px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1400,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '1120px',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+            overflow: 'hidden',
+            maxHeight: '92vh',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '18px 24px',
+              borderBottom: '1px solid #E5E7EB',
+              background: '#FAF8F5',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#1F1A17', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="fa-solid fa-pen-to-square" style={{ color: 'var(--gold, #4A2C17)' }}></i>
+                  Edit Attendance by Date
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#5C4E43' }}>
+                  Select any date to view and edit all employee attendance records together, adjust sites, hajeri values, or change the attendance date.
+                </p>
+              </div>
 
+              <button
+                type="button"
+                onClick={() => setShowBulkEditModal(false)}
+                aria-label="Close modal"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '18px',
+                  color: '#8C7B6D',
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#1F1A17'; e.currentTarget.style.background = 'rgba(74, 44, 23, 0.08)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = '#8C7B6D'; e.currentTarget.style.background = 'transparent'; }}
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSaveBulkEdit} style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {apiError && (
+                <div style={{
+                  background: '#FEF2F2',
+                  border: '1px solid #FECACA',
+                  color: '#991B1B',
+                  borderRadius: '6px',
+                  padding: '10px 14px',
+                  fontSize: '13px'
+                }}>
+                  {apiError}
+                </div>
+              )}
+
+              {/* Date Selection & Fast-Tools Strip */}
+              <div style={{
+                background: '#FAF8F5',
+                border: '1.5px solid #EAE0D2',
+                borderRadius: '10px',
+                padding: '14px 18px',
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'space-between',
+                gap: '16px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap' }}>
+                  {/* Select Date to Edit */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#4A2C17', textTransform: 'uppercase', marginBottom: '5px', letterSpacing: '0.4px' }}>
+                      <i className="fa-solid fa-calendar-day" style={{ marginRight: '5px', color: '#4A2C17' }}></i>
+                      1. Select Date to Edit *
+                    </label>
+                    <input
+                      type="date"
+                      value={bulkEditDate}
+                      onChange={(e) => handleBulkEditDateChange(e.target.value)}
+                      required
+                      style={{
+                        padding: '7px 12px',
+                        borderRadius: '6px',
+                        border: '1.5px solid #D1C2AF',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        outline: 'none',
+                        color: '#4A2C17',
+                        background: '#FFFFFF',
+                        cursor: 'pointer'
+                      }}
+                    />
+                  </div>
+
+                  {/* Move/Shift Date To */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#4A2C17', textTransform: 'uppercase', marginBottom: '5px', letterSpacing: '0.4px' }}>
+                      <i className="fa-solid fa-arrows-rotate" style={{ marginRight: '5px', color: '#4A2C17' }}></i>
+                      2. Shift Date to (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={bulkEditNewDate}
+                      onChange={(e) => setBulkEditNewDate(e.target.value)}
+                      style={{
+                        padding: '7px 12px',
+                        borderRadius: '6px',
+                        border: bulkEditNewDate !== bulkEditDate ? '2px solid #D97706' : '1.5px solid #D1C2AF',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        outline: 'none',
+                        color: bulkEditNewDate !== bulkEditDate ? '#B45309' : '#4A2C17',
+                        background: bulkEditNewDate !== bulkEditDate ? '#FEF3C7' : '#FFFFFF',
+                        cursor: 'pointer'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Add Row Button */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleAddBulkEditRow}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '7px',
+                      border: 'none',
+                      background: 'var(--gold, #4A2C17)',
+                      color: '#FFFFFF',
+                      fontSize: '12.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 6px rgba(74, 44, 23, 0.25)'
+                    }}
+                  >
+                    <i className="fa-solid fa-plus"></i> Add Employee Row
+                  </button>
+                </div>
+              </div>
+
+              {/* Table Container */}
+              <div style={{
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                minHeight: '260px',
+                maxHeight: '440px',
+                overflowY: 'auto'
+              }}>
+                {bulkEditLoading ? (
+                  <div style={{ padding: '50px 20px', textAlign: 'center', color: '#4A2C17' }}>
+                    <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '26px', color: '#4A2C17' }}></i>
+                    <div style={{ marginTop: '12px', fontWeight: '700', fontSize: '13px' }}>
+                      Loading attendance records for {formatToDMY(bulkEditDate)}...
+                    </div>
+                  </div>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
+                    <thead style={{ background: '#FAF8F5', position: 'sticky', top: 0, zIndex: 2, borderBottom: '1.5px solid #E5E7EB' }}>
+                      <tr>
+                        <th style={{ padding: '10px 10px', width: '38px', textAlign: 'center', color: '#4A2C17', fontWeight: '700' }}>#</th>
+                        <th style={{ padding: '10px 12px', width: '260px', color: '#4A2C17', fontWeight: '700' }}>Employee *</th>
+                        <th style={{ padding: '10px 12px', width: '280px', color: '#4A2C17', fontWeight: '700' }}>Assigned Site *</th>
+                        <th style={{ padding: '10px 12px', width: '180px', color: '#4A2C17', fontWeight: '700' }}>Day Value (Hajeri) *</th>
+                        <th style={{ padding: '10px 12px', width: '115px', textAlign: 'right', color: '#4A2C17', fontWeight: '700' }}>Day Salary</th>
+                        <th style={{ padding: '10px 12px', minWidth: '150px', color: '#4A2C17', fontWeight: '700' }}>Notes</th>
+                        <th style={{ padding: '10px 8px', width: '42px', textAlign: 'center' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bulkEditRows.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" style={{ padding: '40px 20px', textAlign: 'center', color: '#6B7280' }}>
+                            <i className="fa-solid fa-calendar-xmark" style={{ fontSize: '28px', color: '#D1D5DB', marginBottom: '8px', display: 'block' }}></i>
+                            No attendance records exist on <strong>{formatToDMY(bulkEditDate)}</strong>.
+                            <div style={{ marginTop: '8px' }}>
+                              <button
+                                type="button"
+                                onClick={handleAddBulkEditRow}
+                                style={{
+                                  background: 'var(--gold, #4A2C17)',
+                                  color: '#fff',
+                                  border: 'none',
+                                  padding: '7px 14px',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  fontWeight: '700',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <i className="fa-solid fa-plus"></i> Add First Employee
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        bulkEditRows.map((row, idx) => {
+                          const estSalary = Math.round((parseFloat(row.dayValue) || 0) * (row.dailyRate || 0));
+                          return (
+                            <tr
+                              key={row.id}
+                              style={{
+                                borderBottom: '1px solid #F3F4F6',
+                                background: idx % 2 === 0 ? '#FFFFFF' : '#FAFAFA'
+                              }}
+                            >
+                              {/* Row Index */}
+                              <td style={{ padding: '8px 10px', textAlign: 'center', color: '#9CA3AF', fontWeight: '600' }}>
+                                {idx + 1}
+                              </td>
+
+                              {/* Employee Select */}
+                              <td style={{ padding: '8px 10px', position: 'relative' }}>
+                                <EmployeeCombobox
+                                  value={row.userId}
+                                  employees={employees}
+                                  fallbackText={row.employeeName}
+                                  onChange={(empId, empRate) => {
+                                    handleBulkEditRowChange(row.id, 'userId', empId);
+                                  }}
+                                  openUpward={idx >= bulkEditRows.length - 2 && bulkEditRows.length > 2}
+                                />
+                              </td>
+
+                              {/* Site Select */}
+                              <td style={{ padding: '8px 10px', position: 'relative' }}>
+                                <SiteCombobox
+                                  value={row.siteId}
+                                  sites={sites}
+                                  fallbackText={row.siteName}
+                                  onChange={(siteId) => {
+                                    handleBulkEditRowChange(row.id, 'siteId', siteId);
+                                  }}
+                                  openUpward={idx >= bulkEditRows.length - 2 && bulkEditRows.length > 2}
+                                />
+                              </td>
+
+                              {/* Day Value (Hajeri) */}
+                              <td style={{ padding: '8px 8px', position: 'relative' }}>
+                                <DayValueCombobox
+                                  value={row.dayValue}
+                                  onChange={(newVal) => handleBulkEditRowChange(row.id, 'dayValue', newVal)}
+                                  openUpward={idx >= bulkEditRows.length - 2 && bulkEditRows.length > 2}
+                                />
+                              </td>
+
+                              {/* Day Salary */}
+                              <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '4px 8px',
+                                  borderRadius: '5px',
+                                  background: '#ECFDF5',
+                                  color: '#065F46',
+                                  fontSize: '12px',
+                                  fontWeight: '800'
+                                }}>
+                                  ₹{estSalary.toLocaleString('en-IN')}
+                                </span>
+                              </td>
+
+                              {/* Notes */}
+                              <td style={{ padding: '8px 8px' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Work details..."
+                                  value={row.notes}
+                                  onChange={(e) => handleBulkEditRowChange(row.id, 'notes', e.target.value)}
+                                  style={{
+                                    width: '100%',
+                                    padding: '5px 8px',
+                                    borderRadius: '5px',
+                                    border: '1px solid #D1D5DB',
+                                    fontSize: '11.5px'
+                                  }}
+                                />
+                              </td>
+
+                              {/* Delete Row Action */}
+                              <td style={{ padding: '8px 6px', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveBulkEditRow(row.id)}
+                                  title="Delete this attendance record"
+                                  style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: '#EF4444',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    padding: '4px 6px'
+                                  }}
+                                >
+                                  <i className="fa-regular fa-trash-can"></i>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Summary & Save Bar */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '14px 18px',
+                background: '#FAF8F5',
+                border: '1px solid #EAE0D2',
+                borderRadius: '10px',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}>
+                {/* Summary Badges */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: '12px', color: '#4B5563' }}>
+                    Workers: <strong style={{ color: '#4A2C17', fontSize: '13px' }}>{bulkEditRows.length}</strong>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#4B5563' }}>
+                    Total Day Value: <strong style={{ color: '#047857', fontSize: '13px' }}>
+                      {bulkEditRows.reduce((acc, r) => acc + (parseFloat(r.dayValue) || 0), 0).toFixed(2)} Days
+                    </strong>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#4B5563' }}>
+                    Total Wages: <strong style={{ color: '#B45309', fontSize: '13px' }}>
+                      ₹{bulkEditRows.reduce((acc, r) => acc + Math.round((parseFloat(r.dayValue) || 0) * (r.dailyRate || 0)), 0).toLocaleString('en-IN')}
+                    </strong>
+                  </div>
+                  {bulkEditDeletedIds.length > 0 && (
+                    <div style={{ fontSize: '12px', color: '#DC2626', fontWeight: '700' }}>
+                      ({bulkEditDeletedIds.length} record(s) queued for deletion)
+                    </div>
+                  )}
+                </div>
+
+                {/* Submit / Cancel Buttons */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowBulkEditModal(false)}
+                    disabled={saving}
+                    style={{
+                      padding: '9px 18px',
+                      borderRadius: '7px',
+                      border: '1px solid #D1D5DB',
+                      background: '#fff',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: saving ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={saving || bulkEditLoading}
+                    style={{
+                      padding: '9px 22px',
+                      borderRadius: '7px',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      cursor: (saving || bulkEditLoading) ? 'not-allowed' : 'pointer',
+                      background: 'var(--gold, #4A2C17)',
+                      color: '#fff',
+                      border: 'none',
+                      boxShadow: '0 2px 8px rgba(74, 44, 23, 0.25)'
+                    }}
+                  >
+                    {saving ? (
+                      <span><i className="fa-solid fa-spinner fa-spin"></i> Saving All Changes...</span>
+                    ) : (
+                      <span><i className="fa-solid fa-check"></i> Save All Changes</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </main>
   );

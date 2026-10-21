@@ -47,9 +47,19 @@ const EstimateEditorModal = ({
     }
     return estimate.rooms_data || [];
   });
-  const [designFeePct, setDesignFeePct] = useState(estimate.design_fee_pct ?? 10);
-  const [gstPct, setGstPct] = useState(estimate.gst_pct ?? 0);
-  const [roundOff, setRoundOff] = useState(estimate.round_off ?? 0);
+  const [designFeePct, setDesignFeePct] = useState(() => {
+    const v = estimate.design_fee_pct;
+    return v !== undefined && v !== null && v !== '' ? Number(v) : 10;
+  });
+  const [gstPct, setGstPct] = useState(() => {
+    const v = estimate.gst_pct;
+    return v !== undefined && v !== null && v !== '' ? Number(v) : 0;
+  });
+  const [roundOff, setRoundOff] = useState(() => {
+    const v = estimate.round_off;
+    return v !== undefined && v !== null && v !== '' ? Number(v) : 0;
+  });
+  const [includeMaterialSpecs, setIncludeMaterialSpecs] = useState(estimate.include_material_specs !== false);
   const [notes, setNotes] = useState(estimate.notes || catalog?.defaultNote || '');
   const [termsConditions, setTermsConditions] = useState(() => {
     const raw = estimate.terms_conditions;
@@ -189,6 +199,7 @@ const EstimateEditorModal = ({
 
     const draft = {
       ...estimate,
+      include_material_specs: includeMaterialSpecs,
       customer_name: customerName,
       phone,
       email,
@@ -260,6 +271,10 @@ const EstimateEditorModal = ({
       site_id: estimate.site_id,
       order_no: estimate.order_no || estimate.site_ref,
       site_ref: estimate.site_ref || estimate.order_no,
+      location: estimate.location || estimate.site_location || '',
+      site_location: estimate.site_location || estimate.location || '',
+      reference_name: estimate.reference_name || estimate.location || estimate.site_location || '',
+      include_material_specs: includeMaterialSpecs,
       customer_name: customerName,
       phone,
       email,
@@ -270,9 +285,9 @@ const EstimateEditorModal = ({
       collection_tier: furnitureLevel,
       status,
       rooms_data: rooms,
-      design_fee_pct: designFeePct,
-      gst_pct: gstPct,
-      round_off: roundOff,
+      design_fee_pct: Number(designFeePct || 0),
+      gst_pct: Number(gstPct || 0),
+      round_off: Number(roundOff || 0),
       notes,
       terms_conditions: termsConditions,
       payment_terms: paymentTerms,
@@ -664,6 +679,8 @@ const EstimateEditorModal = ({
             bankDetails={bankDetails}
             setBankDetails={setBankDetails}
             furnitureTier={furnitureLevel}
+            includeMaterialSpecs={includeMaterialSpecs}
+            setIncludeMaterialSpecs={setIncludeMaterialSpecs}
           />
 
           <div className="estimate-modal-footer">

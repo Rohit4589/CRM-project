@@ -432,7 +432,8 @@ const Estimates = ({ onNavigate }) => {
       notes: catalog?.defaultNote,
       terms_conditions: catalog?.defaultTerms,
       payment_terms: catalog?.defaultPaymentTerms,
-      bank_details: catalog?.defaultBankDetails
+      bank_details: catalog?.defaultBankDetails,
+      include_material_specs: true
     };
 
     setEditingEstimate(draftEstimate);
@@ -478,7 +479,8 @@ const Estimates = ({ onNavigate }) => {
       notes: sourceEst.notes || catalog?.defaultNote,
       terms_conditions: sourceEst.terms_conditions || catalog?.defaultTerms,
       payment_terms: sourceEst.payment_terms || catalog?.defaultPaymentTerms,
-      bank_details: sourceEst.bank_details || catalog?.defaultBankDetails
+      bank_details: sourceEst.bank_details || catalog?.defaultBankDetails,
+      include_material_specs: sourceEst.include_material_specs !== false
     };
 
     setEditingEstimate(draftRevision);
@@ -504,7 +506,15 @@ const Estimates = ({ onNavigate }) => {
         await fetchEstimates();
         // Automatically open preview modal to show the final sheet
         if (data.estimate) {
-          setPreviewEstimate(data.estimate);
+          setPreviewEstimate({
+            ...formData,
+            ...data.estimate,
+            site_ref: data.estimate.site_ref || formData.site_ref || (formData.order_no ? String(formData.order_no) : ''),
+            location: data.estimate.location || formData.location || '',
+            site_location: data.estimate.site_location || formData.site_location || data.estimate.location || formData.location || '',
+            reference_name: data.estimate.reference_name || formData.reference_name || data.estimate.location || formData.location || '',
+            include_material_specs: data.estimate.include_material_specs !== undefined ? (data.estimate.include_material_specs !== false) : (formData.include_material_specs !== false)
+          });
         }
       } else {
         alert(data.message || 'Failed to save estimate');
@@ -600,6 +610,7 @@ const Estimates = ({ onNavigate }) => {
       {/* Editor Modal */}
       {editingEstimate && (
         <EstimateEditorModal
+          key={editingEstimate.id ? `estimate-${editingEstimate.id}` : `new-${editingEstimate.order_no || Date.now()}`}
           estimate={editingEstimate}
           catalog={catalog}
           onSave={handleSaveEstimate}
