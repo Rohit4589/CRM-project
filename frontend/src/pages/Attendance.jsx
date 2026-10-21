@@ -3,7 +3,7 @@ import { API_BASE } from '../config/api';
 import { getTranslation } from '../utils/translations';
 import { EmployeeCombobox, SiteCombobox, DayValueCombobox } from '../components/attendance/AttendanceComboboxes';
 
-const Attendance = ({ lang = 'en' }) => {
+const Attendance = ({ lang = 'en', initialDate = null }) => {
   const t = (key) => getTranslation(lang, key);
   // Main data state
   const [attendanceLogs, setAttendanceLogs] = useState([]);
@@ -14,6 +14,17 @@ const Attendance = ({ lang = 'en' }) => {
   const getTodayStr = () => {
     const d = new Date();
     return d.toISOString().split('T')[0];
+  };
+
+  const getYesterdayStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  };
+
+  const isYesterday = (dStr) => {
+    if (!dStr) return false;
+    return getYesterdayStr() === dStr;
   };
 
   const formatToDMY = (dateStr) => {
@@ -109,7 +120,9 @@ const Attendance = ({ lang = 'en' }) => {
     return `${String(displayH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')} ${ampm}`;
   };
 
-  const [dateFilter, setDateFilter] = useState(getTodayStr());
+  const [latestDate, setLatestDate] = useState('');
+  const [dateFilter, setDateFilter] = useState(initialDate || getTodayStr());
+  const [hasAutoSwitched, setHasAutoSwitched] = useState(Boolean(initialDate));
   const [showAllDates, setShowAllDates] = useState(false);
   const [siteFilter, setSiteFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -197,6 +210,30 @@ const Attendance = ({ lang = 'en' }) => {
 
       if (empRes.success) setEmployees(empRes.employees || []);
       if (siteRes.success) setSites(siteRes.sites || []);
+
+      if (attRes.latestDate) {
+        setLatestDate(attRes.latestDate);
+      }
+
+      // If user opened attendance with no specific date (defaulted to today),
+      // and today has 0 attendance records, but there is a latestDate in DB (e.g. yesterday):
+      // automatically show that last day's attendance so the screen is never blank!
+      if (!initialDate && !hasAutoSwitched && !overrideDate && overrideAll === undefined && !showAllDates) {
+        const logs = attRes.attendance || [];
+        if (logs.length === 0 && attRes.latestDate && attRes.latestDate !== targetDate) {
+          setHasAutoSwitched(true);
+          setDateFilter(attRes.latestDate);
+          setBulkEditDate(attRes.latestDate);
+          setBulkEditNewDate(attRes.latestDate);
+          const latestRes = await fetch(`${API_BASE}/attendance?date=${attRes.latestDate}`).then(r => r.json()).catch(() => ({ success: false }));
+          if (latestRes.success && Array.isArray(latestRes.attendance)) {
+            setAttendanceLogs(latestRes.attendance);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       if (attRes.success) setAttendanceLogs(attRes.attendance || []);
       else setAttendanceLogs([]);
     } catch (err) {
@@ -208,8 +245,14 @@ const Attendance = ({ lang = 'en' }) => {
   };
 
   useEffect(() => {
+    if (initialDate && initialDate !== dateFilter) {
+      setDateFilter(initialDate);
+      setShowAllDates(false);
+      fetchData(initialDate, false);
+      return;
+    }
     fetchData();
-  }, [dateFilter, showAllDates]);
+  }, [dateFilter, showAllDates, initialDate]);
 
   // Open Add Days in Unified Attendance Modal
   const handleOpenGiftModal = (preselectedEmp = null) => {
@@ -1179,6 +1222,37 @@ const Attendance = ({ lang = 'en' }) => {
             <i className="fa-solid fa-layer-group"></i> All Dates
           </button>
 
+          {/* Last Attendance Button */}
+          <button
+            onClick={() => {
+              const target = latestDate || getYesterdayStr();
+              setDateFilter(target);
+              setShowAllDates(false);
+              fetchData(target, false);
+            }}
+            title={latestDate ? `Show last completed attendance from ${formatToDMY(latestDate)}` : 'Show last attendance'}
+            style={{
+              padding: '9px 14px',
+              border: (!showAllDates && (dateFilter === latestDate || (!latestDate && dateFilter === getYesterdayStr()))) ? '2px solid #5C3D24' : '1px solid #D1C2AF',
+              borderRadius: '7px',
+              background: (!showAllDates && (dateFilter === latestDate || (!latestDate && dateFilter === getYesterdayStr()))) ? '#F3EDE6' : '#fff',
+              color: (!showAllDates && (dateFilter === latestDate || (!latestDate && dateFilter === getYesterdayStr()))) ? '#5C3D24' : '#5C4E43',
+              fontWeight: '700',
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <i className="fa-solid fa-clock-rotate-left"></i>
+            <span>
+              {latestDate && isYesterday(latestDate) ? 'Yesterday' : 'Last Attendance'}
+              {latestDate ? ` (${formatToDMY(latestDate)})` : ''}
+            </span>
+          </button>
+
+          {/* Today Button */}
           <button
             onClick={() => {
               const today = getTodayStr();
@@ -1188,10 +1262,10 @@ const Attendance = ({ lang = 'en' }) => {
             }}
             style={{
               padding: '9px 14px',
-              border: (!showAllDates && dateFilter === getTodayStr()) ? '2px solid #5C3D24' : '1px solid #D1C2AF',
+              border: (!showAllDates && dateFilter === getTodayStr() && (dateFilter !== latestDate || showAllDates)) ? '2px solid #5C3D24' : '1px solid #D1C2AF',
               borderRadius: '7px',
-              background: (!showAllDates && dateFilter === getTodayStr()) ? '#F3EDE6' : '#fff',
-              color: (!showAllDates && dateFilter === getTodayStr()) ? '#5C3D24' : '#5C4E43',
+              background: (!showAllDates && dateFilter === getTodayStr() && (dateFilter !== latestDate || showAllDates)) ? '#F3EDE6' : '#fff',
+              color: (!showAllDates && dateFilter === getTodayStr() && (dateFilter !== latestDate || showAllDates)) ? '#5C3D24' : '#5C4E43',
               fontWeight: '700',
               fontSize: '13px',
               cursor: 'pointer',
@@ -1213,7 +1287,7 @@ const Attendance = ({ lang = 'en' }) => {
             }}
             style={{
               padding: '8px 12px',
-              border: (!showAllDates && dateFilter !== getTodayStr()) ? '2px solid var(--gold, #A56A30)' : '1px solid #D1D5DB',
+              border: (!showAllDates && dateFilter !== getTodayStr()) ? '2px solid var(--gold, #A56A30)' : '1px solid #D1C2AF',
               borderRadius: '7px',
               outline: 'none',
               fontSize: '13px',
@@ -1622,6 +1696,30 @@ const Attendance = ({ lang = 'en' }) => {
                     {showAllDates ? 'No attendance has been logged yet.' : `No attendance recorded for ${formatToDMY(dateFilter)}. Click below to mark attendance or view all logged dates.`}
                   </p>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {latestDate && !showAllDates && dateFilter !== latestDate && (
+                      <button
+                        onClick={() => {
+                          setShowAllDates(false);
+                          setDateFilter(latestDate);
+                          fetchData(latestDate, false);
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          background: 'var(--gold, #A56A30)',
+                          color: '#fff',
+                          border: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <i className="fa-solid fa-clock-rotate-left"></i> View Last Attendance ({formatToDMY(latestDate)})
+                      </button>
+                    )}
                     {!showAllDates && (
                       <button
                         onClick={() => {

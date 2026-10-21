@@ -8,7 +8,9 @@ const Dashboard = ({ onNavigate, user, lang = 'hi' }) => {
   const [employeeCount, setEmployeeCount] = useState(0);
   const [siteStats, setSiteStats] = useState({ total: 0, active: 0 });
   const [activeSitesList, setActiveSitesList] = useState([]);
-  const [todayAttendance, setTodayAttendance] = useState([]);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [attendanceDate, setAttendanceDate] = useState('');
+  const [isLatestFallback, setIsLatestFallback] = useState(false);
   const [presentMonthPayroll, setPresentMonthPayroll] = useState(0);
   const [presentMonthDays, setPresentMonthDays] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -19,6 +21,30 @@ const Dashboard = ({ onNavigate, user, lang = 'hi' }) => {
     const yr = d.getFullYear();
     const mon = String(d.getMonth() + 1).padStart(2, '0');
     return `${yr}-${mon}`;
+  };
+
+  const formatToDMY = (dateStr) => {
+    if (!dateStr) return '--';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [y, m, d] = dateStr.split('-');
+      return `${d}-${m}-${y}`;
+    }
+    return dateStr;
+  };
+
+  const isYesterday = (dStr) => {
+    if (!dStr) return false;
+    const yDate = new Date();
+    yDate.setDate(yDate.getDate() - 1);
+    return yDate.toISOString().split('T')[0] === dStr;
+  };
+
+  const getAttendanceLabel = () => {
+    if (!isLatestFallback) return t('todayAttendance');
+    if (isYesterday(attendanceDate)) {
+      return lang === 'hi' ? 'कल की हाजिरी (Yesterday)' : (lang === 'mr' ? 'कालची हजेरी (Yesterday)' : "Yesterday's Attendance");
+    }
+    return t('lastAttendance') || "Last Day Attendance";
   };
 
   useEffect(() => {
@@ -61,8 +87,22 @@ const Dashboard = ({ onNavigate, user, lang = 'hi' }) => {
           setActiveSitesList(activeList);
         }
 
-        if (attRes.success) {
-          setTodayAttendance(attRes.attendance || []);
+        // Attendance snapshot: if today has no records, show the last completed work day's attendance
+        if (attRes.success && Array.isArray(attRes.attendance) && attRes.attendance.length > 0) {
+          setAttendanceRecords(attRes.attendance);
+          setAttendanceDate(today);
+          setIsLatestFallback(false);
+        } else {
+          const latestRes = await fetch(`${API_BASE}/attendance?date=latest`).then(r => r.json()).catch(() => ({ success: false }));
+          if (latestRes.success && Array.isArray(latestRes.attendance) && latestRes.attendance.length > 0) {
+            setAttendanceRecords(latestRes.attendance);
+            setAttendanceDate(latestRes.latestDate || latestRes.filterDate || '');
+            setIsLatestFallback(true);
+          } else {
+            setAttendanceRecords([]);
+            setAttendanceDate(today);
+            setIsLatestFallback(false);
+          }
         }
       } catch (err) {
         console.error('Error fetching dashboard metrics:', err);
@@ -91,7 +131,7 @@ const Dashboard = ({ onNavigate, user, lang = 'hi' }) => {
     });
   };
 
-  const presentCount = todayAttendance.length;
+  const presentCount = attendanceRecords.length;
   const absentCount = Math.max(0, employeeCount - presentCount);
 
   return (
@@ -187,10 +227,28 @@ const Dashboard = ({ onNavigate, user, lang = 'hi' }) => {
         {/* Real Attendance Snapshot (1st - 100% Width) */}
         <div className="dash-card">
           <div className="dash-card-header">
-            <div className="dash-card-title">
-              <i className="fa-solid fa-clipboard-user"></i> {t('todayAttendance')}
+            <div className="dash-card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <i className="fa-solid fa-clipboard-user"></i>
+              <span>{getAttendanceLabel()}</span>
+              {attendanceDate && (
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: isLatestFallback ? '#FEF3C7' : '#ECFDF5',
+                  color: isLatestFallback ? '#92400E' : '#065F46',
+                  border: isLatestFallback ? '1px solid #FDE68A' : '1px solid #A7F3D0',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <i className="fa-regular fa-calendar-check" style={{ fontSize: '10px' }}></i>
+                  {formatToDMY(attendanceDate)}
+                </span>
+              )}
             </div>
-            <button className="dash-card-action" onClick={() => onNavigate && onNavigate('attendance')}>
+            <button className="dash-card-action" onClick={() => onNavigate && onNavigate('attendance', { date: attendanceDate })}>
               {t('details')}
             </button>
           </div>
@@ -212,7 +270,7 @@ const Dashboard = ({ onNavigate, user, lang = 'hi' }) => {
             </div>
 
             {/* Recent Check-ins */}
-            {todayAttendance.length === 0 ? (
+            {attendanceRecords.length === 0 ? (
               <div style={{ padding: '24px 16px', textAlign: 'center', color: '#7D6C5E' }}>
                 <i className="fa-regular fa-calendar-check" style={{ fontSize: '26px', color: '#D1C2AF', marginBottom: '8px' }}></i>
                 <div style={{ fontSize: '13px', fontWeight: '500' }}>{t('noAttendanceToday')}</div>
@@ -235,17 +293,19 @@ const Dashboard = ({ onNavigate, user, lang = 'hi' }) => {
               </div>
             ) : (
               <div className="dash-attendance-list">
-                {todayAttendance.slice(0, 5).map(log => (
+                {attendanceRecords.slice(0, 6).map(log => (
                   <div key={log.id} className="dash-attendance-item">
                     <div className="dash-attendance-info">
                       <div className="dash-attendance-name">{log.name}</div>
-                      <div className="dash-attendance-site">{log.siteName || log.siteRef}</div>
+                      <div className="dash-attendance-site">{log.siteName || log.customerName || log.siteRef}</div>
                     </div>
                     <div className="dash-attendance-time">
                       <div className="dash-attendance-badge in">
-                        <i className="fa-solid fa-arrow-right-to-bracket" style={{ fontSize: '10px' }}></i> {log.inTime}
+                        <i className="fa-solid fa-clock" style={{ fontSize: '10px' }}></i> {log.valueText || `${log.dayValue} Day`}
                       </div>
-                      <div className="dash-attendance-loc">{log.valueText}</div>
+                      <div className="dash-attendance-loc" style={{ fontWeight: '700', color: '#065F46' }}>
+                        ₹{(Math.round((parseFloat(log.dayValue) || 1) * (Number(log.dailyRate) || 0))).toLocaleString('en-IN')}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -253,7 +313,7 @@ const Dashboard = ({ onNavigate, user, lang = 'hi' }) => {
             )}
           </div>
           <div className="dash-card-footer">
-            <button className="dash-view-all" onClick={() => onNavigate && onNavigate('attendance')}>
+            <button className="dash-view-all" onClick={() => onNavigate && onNavigate('attendance', { date: attendanceDate })}>
               {t('viewAll')} <i className="fa-solid fa-arrow-right" style={{ fontSize: '10px' }}></i>
             </button>
           </div>
