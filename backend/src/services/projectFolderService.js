@@ -47,30 +47,25 @@ const PROJECT_SUBFOLDERS = [
 
 /**
  * Formats standard project folder name:
- * MI-[FY]-[ORDER_NO]- [CUSTOMER_NAME]- [LOCATION]
- * e.g., "MI-2026-27-203- SUJATA WARADE- KHATROD"
+ * [ORDER_NO] - [CUSTOMER_NAME] - [REFERENCE_NAME]
+ * e.g., "187 - Pranjal Spaces - Ravet"
  */
-const buildProjectFolderName = ({ siteRef, customerName, location, startDate }) => {
-  const fy = getFinancialYear(startDate || new Date());
-  const cleanOrder = sanitizeFolderName(siteRef || '').replace(/^MI-\d{4}-\d{2}-/i, '');
-  const cleanName = sanitizeFolderName(customerName || '').toUpperCase();
-  const cleanLoc = sanitizeFolderName(location || '').toUpperCase();
+const buildProjectFolderName = ({ siteRef, customerName, referenceName, location, startDate }) => {
+  const cleanOrder = sanitizeFolderName(siteRef || '').replace(/^MI-\d{4}-\d{2}-/i, '').trim();
+  const cleanName = sanitizeFolderName(customerName || '').trim();
+  const cleanRef = sanitizeFolderName(referenceName || location || '').trim();
 
-  let nameParts = [`MI-${fy}-${cleanOrder}`];
-  if (cleanName) {
-    nameParts.push(cleanName);
+  const parts = [cleanOrder, cleanName];
+  if (cleanRef && cleanRef.toLowerCase() !== cleanName.toLowerCase()) {
+    parts.push(cleanRef);
   }
-  if (cleanLoc && cleanLoc !== cleanName) {
-    nameParts.push(cleanLoc);
-  }
-
-  return nameParts.join('- ');
+  return parts.filter(Boolean).join(' - ');
 };
 
 /**
  * Creates customer folder and all nested subfolders on disk
  */
-const createCustomerProjectFolder = async ({ siteRef, customerName, location, startDate }) => {
+const createCustomerProjectFolder = async ({ siteRef, customerName, referenceName, location, startDate }) => {
   try {
     let baseDir = process.env.CUSTOMER_PROJECTS_DIR || 'F:\\1. MODERN INTERIOR\\RUNNING FOLDER\\MODERN-2024-25- RUNNING';
 
@@ -87,7 +82,7 @@ const createCustomerProjectFolder = async ({ siteRef, customerName, location, st
       fs.mkdirSync(baseDir, { recursive: true });
     }
 
-    const folderName = buildProjectFolderName({ siteRef, customerName, location, startDate });
+    const folderName = buildProjectFolderName({ siteRef, customerName, referenceName, location, startDate });
     const customerFolderPath = path.join(baseDir, folderName);
 
     // Create main customer folder

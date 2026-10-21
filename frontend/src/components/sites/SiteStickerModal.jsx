@@ -10,7 +10,7 @@ const SiteStickerModal = ({ site, onClose }) => {
   const [bwLogo, setBwLogo] = useState('');
 
   // Form fields for sticker execution
-  const [refName, setRefName] = useState(site?.refName || '');
+  const [refName, setRefName] = useState(site?.location || '');
   const [supervisionBy, setSupervisionBy] = useState(''); // '' means handwritten pen line
   const [siteHead, setSiteHead] = useState(''); // '' means handwritten pen line
   const [completeStatus, setCompleteStatus] = useState(''); // '' means handwritten pen line
@@ -101,7 +101,7 @@ const SiteStickerModal = ({ site, onClose }) => {
 
   const effectiveLogo = bwLogo || '/logo.png';
   const totalSheets = Math.max(1, Math.ceil(quantity / 2));
-  const effectiveRefName = (refName || site.refName || '').trim();
+  const effectiveRefName = (refName !== undefined && refName !== null && refName !== '' ? refName : (site?.location || '')).trim();
 
   // Print execution: prints all sheets on 150mm x 100mm landscape roll
   const handlePrint = () => {
@@ -138,9 +138,9 @@ const SiteStickerModal = ({ site, onClose }) => {
               <span class="field-val phone-highlight">${site.phone || '-'}</span>
             </div>
 
-            <div class="field-row">
-              <span class="field-label">Address:-</span>
-              <span class="field-val addr-val">${site.fullAddress || site.location || '-'}</span>
+            <div class="address-flow-row">
+              <span class="address-label">Address:-</span>
+              <span class="address-val">${site.fullAddress || site.location || '-'}</span>
             </div>
           </div>
 
@@ -407,7 +407,7 @@ const SiteStickerModal = ({ site, onClose }) => {
           }
           .field-row {
             display: flex;
-            align-items: flex-start;
+            align-items: baseline;
             line-height: 1.35;
           }
           .field-label {
@@ -415,20 +415,18 @@ const SiteStickerModal = ({ site, onClose }) => {
             font-weight: 700;
             color: #111111;
             white-space: nowrap;
-            width: 120px;
-            min-width: 120px;
-            flex-shrink: 0;
             letter-spacing: 0.2px;
+            margin-right: 5px;
+            flex-shrink: 0;
           }
           .field-val {
             font-size: 13.5px;
             font-weight: 600;
             color: #000000;
             word-break: break-word;
-            flex: 1;
           }
           .cus-name-highlight {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 900;
           }
           .phone-highlight {
@@ -439,6 +437,26 @@ const SiteStickerModal = ({ site, onClose }) => {
             font-size: 12.5px;
             font-weight: 600;
             line-height: 1.35;
+          }
+          .address-flow-row {
+            display: block;
+            line-height: 1.35;
+            margin-top: 1px;
+          }
+          .address-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #111111;
+            letter-spacing: 0.2px;
+            display: inline;
+            margin-right: 4px;
+          }
+          .address-val {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #000000;
+            display: inline;
+            word-break: break-word;
           }
           .section-divider {
             border-top: 1px solid #94a3b8;
@@ -570,53 +588,53 @@ const SiteStickerModal = ({ site, onClose }) => {
         {/* Top Section: Customer Info */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {/* Date */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', lineHeight: '1.35' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', width: '120px', minWidth: '120px', flexShrink: 0, letterSpacing: '0.2px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1.35' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', letterSpacing: '0.2px', marginRight: '5px', flexShrink: 0 }}>
               Date:-
             </span>
-            <span style={{ fontSize: '14px', fontWeight: '700', color: '#000', flex: 1 }}>
+            <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#000' }}>
               {siteCreatedDMY}
             </span>
           </div>
 
           {/* Customer Name */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', lineHeight: '1.35' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', width: '120px', minWidth: '120px', flexShrink: 0, letterSpacing: '0.2px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1.35' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', letterSpacing: '0.2px', marginRight: '5px', flexShrink: 0 }}>
               Cus. Name:-
             </span>
-            <span style={{ fontSize: '16px', fontWeight: '900', color: '#000', wordBreak: 'break-word', flex: 1 }}>
+            <span style={{ fontSize: '15px', fontWeight: '900', color: '#000', wordBreak: 'break-word', flex: 1 }}>
               {site.customerName || '-'}
             </span>
           </div>
 
           {/* Reference Name (Only if entered during form filling) */}
           {effectiveRefName && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', lineHeight: '1.35' }}>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', width: '120px', minWidth: '120px', flexShrink: 0, letterSpacing: '0.2px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1.35' }}>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', letterSpacing: '0.2px', marginRight: '5px', flexShrink: 0 }}>
                 Ref. Name:-
               </span>
-              <span style={{ fontSize: '13.5px', fontWeight: '600', color: '#000', wordBreak: 'break-word', flex: 1 }}>
+              <span style={{ fontSize: '13.5px', fontWeight: '600', color: '#000', wordBreak: 'break-word' }}>
                 {effectiveRefName}
               </span>
             </div>
           )}
 
           {/* Contact No */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', lineHeight: '1.35' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', width: '120px', minWidth: '120px', flexShrink: 0, letterSpacing: '0.2px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1.35' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', letterSpacing: '0.2px', marginRight: '5px', flexShrink: 0 }}>
               Contact No. :-
             </span>
-            <span style={{ fontSize: '14px', fontWeight: '700', color: '#000', flex: 1 }}>
+            <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>
               {site.phone || '-'}
             </span>
           </div>
 
-          {/* Address */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', lineHeight: '1.35' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', width: '120px', minWidth: '120px', flexShrink: 0, letterSpacing: '0.2px' }}>
+          {/* Address (Flow layout: starts right after 'Address:-' and 2nd line wraps below 'Address') */}
+          <div style={{ display: 'block', lineHeight: '1.35', marginTop: '1px' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', letterSpacing: '0.2px', marginRight: '5px', display: 'inline' }}>
               Address:-
             </span>
-            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#000', lineHeight: '1.35', wordBreak: 'break-word', flex: 1 }}>
+            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#000', display: 'inline', wordBreak: 'break-word' }}>
               {site.fullAddress || site.location || '-'}
             </span>
           </div>
@@ -628,50 +646,50 @@ const SiteStickerModal = ({ site, onClose }) => {
         {/* Bottom Section: Supervision & Completion */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {/* Supervision By */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', lineHeight: '1.35' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', width: '120px', minWidth: '120px', flexShrink: 0, letterSpacing: '0.2px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1.35' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', letterSpacing: '0.2px', marginRight: '5px', flexShrink: 0 }}>
               Supervision By:-
             </span>
             {supervisionBy ? (
               <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#000', flex: 1 }}>{supervisionBy}</span>
             ) : (
-              <div style={{ flex: 1, borderBottom: '1px solid #94a3b8', height: '16px', minWidth: '70px', marginBottom: '2px' }} />
+              <div style={{ flex: 1, borderBottom: '1px solid #94a3b8', height: '1px', alignSelf: 'flex-end', marginBottom: '3px', minWidth: '60px' }} />
             )}
           </div>
 
           {/* Site Head */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', lineHeight: '1.35' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', width: '120px', minWidth: '120px', flexShrink: 0, letterSpacing: '0.2px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1.35' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', letterSpacing: '0.2px', marginRight: '5px', flexShrink: 0 }}>
               Site Head:-
             </span>
             {siteHead ? (
               <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#000', flex: 1 }}>{siteHead}</span>
             ) : (
-              <div style={{ flex: 1, borderBottom: '1px solid #94a3b8', height: '16px', minWidth: '70px', marginBottom: '2px' }} />
+              <div style={{ flex: 1, borderBottom: '1px solid #94a3b8', height: '1px', alignSelf: 'flex-end', marginBottom: '3px', minWidth: '60px' }} />
             )}
           </div>
 
           {/* Complete Status */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', lineHeight: '1.35' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', width: '120px', minWidth: '120px', flexShrink: 0, letterSpacing: '0.2px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1.35' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', letterSpacing: '0.2px', marginRight: '5px', flexShrink: 0 }}>
               Complete Status:-
             </span>
             {completeStatus ? (
               <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#000', flex: 1 }}>{completeStatus}</span>
             ) : (
-              <div style={{ flex: 1, borderBottom: '1px solid #94a3b8', height: '16px', minWidth: '70px', marginBottom: '2px' }} />
+              <div style={{ flex: 1, borderBottom: '1px solid #94a3b8', height: '1px', alignSelf: 'flex-end', marginBottom: '3px', minWidth: '60px' }} />
             )}
           </div>
 
           {/* Complete Date */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', lineHeight: '1.35' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', width: '120px', minWidth: '120px', flexShrink: 0, letterSpacing: '0.2px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: '1.35' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111', letterSpacing: '0.2px', marginRight: '5px', flexShrink: 0 }}>
               Complete Date:-
             </span>
             {resolvedCompleteDate ? (
               <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#000', flex: 1 }}>{resolvedCompleteDate}</span>
             ) : (
-              <div style={{ flex: 1, borderBottom: '1px solid #94a3b8', height: '16px', minWidth: '70px', marginBottom: '2px' }} />
+              <div style={{ flex: 1, borderBottom: '1px solid #94a3b8', height: '1px', alignSelf: 'flex-end', marginBottom: '3px', minWidth: '60px' }} />
             )}
           </div>
         </div>
@@ -819,7 +837,7 @@ const SiteStickerModal = ({ site, onClose }) => {
               </div>
               <input
                 type="text"
-                placeholder="Enter Name"
+                placeholder="e.g. Kothrud, Ravet..."
                 value={refName}
                 onChange={(e) => setRefName(e.target.value)}
                 style={{
