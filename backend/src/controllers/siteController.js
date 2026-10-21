@@ -213,6 +213,7 @@ const addSite = async (req, res) => {
       const folderRes = await projectFolderService.createCustomerProjectFolder({
         siteRef: sRef,
         customerName: row.customerName,
+        referenceName: row.location || row.refName,
         location: row.location,
         startDate: row.startDate,
       });
