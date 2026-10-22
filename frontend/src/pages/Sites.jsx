@@ -428,6 +428,7 @@ const Sites = ({ onNavigate }) => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'Running':
+      case 'Sent':
         return (
           <span style={{
             background: '#e6f4ea',

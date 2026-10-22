@@ -3,6 +3,7 @@ import { toTitleCase } from '../../utils/autoCapitalize';
 
 const STANDARD_REF_SOURCES = [
   'Existing Customer',
+  'Referred by Existing Customer',
   'Walk-in',
   'Google',
   'Instagram / Social Media',
@@ -52,7 +53,7 @@ const AddSiteModal = ({
   // Primary Contact Person helper
   const primaryContactName = (formData.contactPersons && formData.contactPersons.length > 0)
     ? (formData.contactPersons[0].name || '')
-    : (formData.refFrom !== 'Existing Customer' ? (formData.refName || '') : '');
+    : (formData.refFrom !== 'Existing Customer' && formData.refFrom !== 'Referred by Existing Customer' ? (formData.refName || '') : '');
 
   const handleContactPersonNameChange = (name) => {
     const currentPersons = Array.isArray(formData.contactPersons) ? [...formData.contactPersons] : [];
@@ -62,10 +63,26 @@ const AddSiteModal = ({
       currentPersons.push({ name, phone: formData.phone || '' });
     }
     const updates = { ...formData, contactPersons: currentPersons };
-    if (formData.refFrom !== 'Existing Customer') {
+    if (formData.refFrom !== 'Existing Customer' && formData.refFrom !== 'Referred by Existing Customer') {
       updates.refName = name;
     }
     setFormData(updates);
+  };
+
+  const handleSelectExistingCustomerProfile = (selectedId) => {
+    const site = existingSites.find(s => String(s.id || s.dbId || s.siteCode) === String(selectedId));
+    if (!site) return;
+    setFormData({
+      ...formData,
+      customerName: site.customerName || formData.customerName,
+      phone: site.phone || formData.phone,
+      email: site.email || formData.email,
+      contactPersons: (Array.isArray(site.contactPersons) && site.contactPersons.length > 0)
+        ? site.contactPersons
+        : formData.contactPersons,
+      refFrom: 'Existing Customer',
+      refName: `Order #${site.siteCode || site.siteRef || site.id}`
+    });
   };
 
   const handlePhoneChange = (phone) => {
@@ -298,7 +315,8 @@ const AddSiteModal = ({
                     }}
                   >
                     <option value="">-- Referral Source --</option>
-                    <option value="Existing Customer">Existing Customer</option>
+                    <option value="Existing Customer">Existing Customer (Repeat Order)</option>
+                    <option value="Referred by Existing Customer">Referred by Existing Customer</option>
                     <option value="Walk-in">Walk-in</option>
                     <option value="Google">Google</option>
                     <option value="Instagram / Social Media">Instagram / Social Media</option>
@@ -342,18 +360,66 @@ const AddSiteModal = ({
                 </div>
               </div>
 
-              {/* Conditional Existing Customer Selector */}
+              {/* 1. Existing Customer (Repeat Order Auto-fill) */}
               {formData.refFrom === 'Existing Customer' && (
                 <div style={{
                   marginBottom: '12px',
                   padding: '10px 12px',
                   backgroundColor: '#F0FDF4',
                   borderRadius: '6px',
-                  border: '1px solid #BBF7D0'
+                  border: '1.5px solid #86EFAC'
                 }}>
-                  <label style={{display: 'block', marginBottom: '4px', color: '#166534', fontWeight: '600', fontSize: '12px'}}>
-                    Referred By Customer
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <label style={{ display: 'block', color: '#166534', fontWeight: '700', fontSize: '12px' }}>
+                      <i className="fa-solid fa-user-check" style={{ marginRight: '6px' }}></i>
+                      Select Existing Customer Profile (Auto-fill)
+                    </label>
+                    <span style={{ fontSize: '10px', color: '#15803D', fontWeight: '700', background: '#DCFCE7', padding: '1px 6px', borderRadius: '4px' }}>
+                      Repeat Order
+                    </span>
+                  </div>
+                  <select
+                    onChange={(e) => handleSelectExistingCustomerProfile(e.target.value)}
+                    style={{
+                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      border: '1.5px solid #16A34A', boxSizing: 'border-box', outline: 'none',
+                      backgroundColor: '#FFFFFF', fontSize: '13px'
+                    }}
+                  >
+                    <option value="">-- Choose Existing Customer To Auto-Fill --</option>
+                    {existingSites.map((site) => {
+                      const label = getSiteRefLabel(site);
+                      return (
+                        <option key={site.id || site.dbId || site.siteCode} value={site.id || site.dbId || site.siteCode}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <div style={{ fontSize: '10.5px', color: '#166534', marginTop: '4px' }}>
+                    Auto-fills name, mobile &amp; details.
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Referred by Existing Customer */}
+              {formData.refFrom === 'Referred by Existing Customer' && (
+                <div style={{
+                  marginBottom: '12px',
+                  padding: '10px 12px',
+                  backgroundColor: '#FEF3C7',
+                  borderRadius: '6px',
+                  border: '1.5px solid #FCD34D'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <label style={{ display: 'block', color: '#92400E', fontWeight: '700', fontSize: '12px' }}>
+                      <i className="fa-solid fa-bullhorn" style={{ marginRight: '6px' }}></i>
+                      Who Referred This Customer?
+                    </label>
+                    <span style={{ fontSize: '10px', color: '#B45309', fontWeight: '700', background: '#FDE68A', padding: '1px 6px', borderRadius: '4px' }}>
+                      Referral Source
+                    </span>
+                  </div>
                   <select
                     value={
                       isCustomRefName ? '__CUSTOM__' :
@@ -369,12 +435,13 @@ const AddSiteModal = ({
                         setFormData({ ...formData, refName: '' });
                       } else {
                         setIsCustomRefName(false);
-                        setFormData({ ...formData, refName: val });
+                        const found = existingSites.find(s => getSiteRefLabel(s) === val);
+                        setFormData({ ...formData, refName: found ? found.customerName : val });
                       }
                     }}
                     style={{
                       width: '100%', padding: '8px 11px', borderRadius: '6px',
-                      border: '1.5px solid #16A34A', boxSizing: 'border-box', outline: 'none',
+                      border: '1.5px solid #D97706', boxSizing: 'border-box', outline: 'none',
                       backgroundColor: '#FFFFFF', fontSize: '13px'
                     }}
                   >
@@ -397,7 +464,7 @@ const AddSiteModal = ({
                       onChange={(e) => setFormData({ ...formData, refName: toTitleCase(e.target.value) })}
                       style={{
                         marginTop: '6px', width: '100%', padding: '7px 10px', borderRadius: '6px',
-                        border: '1.5px solid #15803D', boxSizing: 'border-box', outline: 'none',
+                        border: '1.5px solid #D97706', boxSizing: 'border-box', outline: 'none',
                         fontSize: '12.5px', backgroundColor: '#FFFFFF'
                       }}
                       autoFocus

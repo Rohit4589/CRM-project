@@ -52,7 +52,18 @@ const EstimatePreviewModal = ({
   };
 
   const activeTier = resolveCollectionTier(estimate.collection_tier, estimate.furniture_level);
-  const materialSpecs = getMaterialSpecsForCollection(activeTier);
+  const materialSpecs = (() => {
+    if (estimate.material_specs) {
+      if (typeof estimate.material_specs === 'string') {
+        try {
+          return JSON.parse(estimate.material_specs);
+        } catch (e) {}
+      } else if (typeof estimate.material_specs === 'object') {
+        return estimate.material_specs;
+      }
+    }
+    return getMaterialSpecsForCollection(activeTier);
+  })();
 
   // Parse Terms & Conditions into structured clauses
   const parseTerms = (text) => {
@@ -440,24 +451,11 @@ const EstimatePreviewModal = ({
                     </tr>
                   ))}
                   <tr className="print-room-total-row">
-                    <td colSpan="6" style={{ textAlign: 'right', fontWeight: '800', color: '#4A2C17', padding: '7px 10px', verticalAlign: 'middle' }}>
-                      <span className="print-room-total-badge" style={{
-                        background: '#4A2C17',
-                        color: '#FFFFFF',
-                        padding: '1px 6px',
-                        borderRadius: '3px',
-                        fontSize: '9.5px',
-                        fontWeight: '800',
-                        letterSpacing: '0.5px',
-                        marginRight: '6px',
-                        display: 'inline-block'
-                      }}>
-                        TOTAL
-                      </span>
-                      {room.roomName} TOTAL:
+                    <td colSpan="6" style={{ textAlign: 'right', fontWeight: '800', color: '#4A2C17', padding: '9px 12px', verticalAlign: 'middle', textTransform: 'uppercase', letterSpacing: '0.4px', fontSize: '13.5px' }}>
+                      <span style={{ fontSize: '13.5px', fontWeight: '800', color: '#4A2C17' }}>{room.roomName} TOTAL:</span>
                     </td>
-                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', color: '#4A2C17', fontSize: '12px', padding: '7px 10px', verticalAlign: 'middle' }}>
-                      ₹{(Number(room.roomTotal) || 0).toLocaleString('en-IN')}
+                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '900', color: '#4A2C17', fontSize: '16px', padding: '9px 12px', verticalAlign: 'middle', letterSpacing: '0.3px' }}>
+                      <span style={{ fontSize: '16px', fontWeight: '900', color: '#4A2C17' }}>₹{(Number(room.roomTotal) || 0).toLocaleString('en-IN')}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -467,48 +465,48 @@ const EstimatePreviewModal = ({
             {/* Totals Summary Table - Full Width matching tables above */}
             <table className="print-room-table print-summary-table" style={{ width: '100%', marginBottom: '20px' }}>
               <tbody>
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', padding: '8px 16px', background: '#F5EBE1', color: '#4A2C17' }}>
-                    SUB TOTAL:
+                <tr className="print-sub-total-row">
+                  <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', fontSize: '14px', padding: '10px 16px', background: '#F5EBE1', color: '#4A2C17', letterSpacing: '0.4px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: '800', color: '#4A2C17' }}>SUB TOTAL:</span>
                   </td>
-                  <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#F5EBE1', color: '#4A2C17' }}>
-                    ₹{Number(estimate.sub_total || 0).toLocaleString('en-IN')}
+                  <td colSpan="2" style={{ textAlign: 'right', fontWeight: '900', fontSize: '17px', padding: '10px 12px', background: '#F5EBE1', color: '#4A2C17', letterSpacing: '0.3px' }}>
+                    <span style={{ fontSize: '17px', fontWeight: '900', color: '#4A2C17' }}>₹{Number(estimate.sub_total || 0).toLocaleString('en-IN')}</span>
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', padding: '8px 16px', background: '#FFFFFF', color: '#4A2C17' }}>
+                  <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', fontSize: '12px', padding: '8px 16px', background: '#FFFFFF', color: '#4A2C17' }}>
                     DESIGNING AND CONSULTING FEE ({Number(estimate.design_fee_pct ?? 10)}%):
                   </td>
-                  <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#FFFFFF', color: '#4A2C17' }}>
+                  <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', fontSize: '13.5px', padding: '8px 12px', background: '#FFFFFF', color: '#4A2C17' }}>
                     ₹{Number(estimate.design_fee_amount || 0).toLocaleString('en-IN')}
                   </td>
                 </tr>
                 {Number(estimate.gst_pct) > 0 && (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', padding: '8px 16px', background: '#F5EBE1', color: '#4A2C17' }}>
+                    <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', fontSize: '12px', padding: '8px 16px', background: '#F5EBE1', color: '#4A2C17' }}>
                       GST {Number(estimate.gst_pct)}% EXTRA:
                     </td>
-                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#F5EBE1', color: '#4A2C17' }}>
+                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', fontSize: '13.5px', padding: '8px 12px', background: '#F5EBE1', color: '#4A2C17' }}>
                       ₹{Number(estimate.gst_amount || 0).toLocaleString('en-IN')}
                     </td>
                   </tr>
                 )}
                 {Number(estimate.round_off) > 0 && (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', padding: '8px 16px', background: '#FFFFFF', color: '#4A2C17' }}>
+                    <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', fontSize: '12px', padding: '8px 16px', background: '#FFFFFF', color: '#4A2C17' }}>
                       ROUND OFF / DISCOUNT:
                     </td>
-                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', padding: '8px 12px', background: '#FFFFFF', color: '#4A2C17' }}>
+                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', fontSize: '13.5px', padding: '8px 12px', background: '#FFFFFF', color: '#4A2C17' }}>
                       - ₹{Number(estimate.round_off).toLocaleString('en-IN')}
                     </td>
                   </tr>
                 )}
                 <tr className="print-grand-total-row">
-                  <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', fontSize: '13px', background: '#4A2C17', color: '#FFFFFF', padding: '10px 16px', border: '1px solid #4A2C17' }}>
-                    FINAL TOTAL:
+                  <td colSpan="6" style={{ textAlign: 'left', fontWeight: '900', fontSize: '15px', background: '#4A2C17', color: '#FFFFFF', padding: '11px 16px', border: '1px solid #4A2C17', letterSpacing: '0.6px' }}>
+                    <span style={{ color: '#FFFFFF', fontWeight: '900', fontSize: '15px' }}>FINAL TOTAL:</span>
                   </td>
-                  <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', fontSize: '14px', background: '#4A2C17', color: '#FFFFFF', padding: '10px 12px', border: '1px solid #4A2C17' }}>
-                    ₹{Number(estimate.final_total || 0).toLocaleString('en-IN')}
+                  <td colSpan="2" style={{ textAlign: 'right', fontWeight: '900', fontSize: '18px', background: '#4A2C17', color: '#FFFFFF', padding: '11px 12px', border: '1px solid #4A2C17', letterSpacing: '0.4px' }}>
+                    <span style={{ color: '#FFFFFF', fontWeight: '900', fontSize: '18px' }}>₹{Number(estimate.final_total || 0).toLocaleString('en-IN')}</span>
                   </td>
                 </tr>
               </tbody>

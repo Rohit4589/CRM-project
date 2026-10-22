@@ -90,16 +90,22 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
                 <div style={{fontSize: '13px'}}>
                   <span style={{color: '#6B7280'}}>Source: </span>
                   <span style={{
-                    background: '#FEF3C7', color: '#92400E', padding: '2px 8px',
-                    borderRadius: '4px', fontWeight: '600', fontSize: '12px'
+                    background: selectedSite.refFrom === 'Existing Customer' ? '#DCFCE7' : '#FEF3C7',
+                    color: selectedSite.refFrom === 'Existing Customer' ? '#15803D' : '#92400E',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontWeight: '700',
+                    fontSize: '12px'
                   }}>
-                    {selectedSite.refFrom}
+                    {selectedSite.refFrom === 'Existing Customer' ? 'Existing Customer (Repeat Order)' : selectedSite.refFrom}
                   </span>
                 </div>
               )}
               {selectedSite.refName && (
                 <div style={{fontSize: '13px'}}>
-                  <span style={{color: '#6B7280'}}>Referred By: </span>
+                  <span style={{color: '#6B7280'}}>
+                    {selectedSite.refFrom === 'Existing Customer' ? 'Previous Order Ref: ' : 'Referred By: '}
+                  </span>
                   <strong style={{color: '#111827'}}>{selectedSite.refName}</strong>
                 </div>
               )}

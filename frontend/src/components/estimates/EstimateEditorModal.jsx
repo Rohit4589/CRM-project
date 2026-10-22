@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import EstimateRoomSection from './EstimateRoomSection';
 import EstimateSummaryFooter from './EstimateSummaryFooter';
 import AddRoomModal from './AddRoomModal';
+import { getMaterialSpecsForCollection } from '../../data/collectionSpecs';
 
 const EstimateEditorModal = ({
   estimate,
@@ -60,6 +61,26 @@ const EstimateEditorModal = ({
     return v !== undefined && v !== null && v !== '' ? Number(v) : 0;
   });
   const [includeMaterialSpecs, setIncludeMaterialSpecs] = useState(estimate.include_material_specs !== false);
+  const [materialSpecs, setMaterialSpecs] = useState(() => {
+    if (estimate.material_specs) {
+      if (typeof estimate.material_specs === 'string') {
+        try {
+          return JSON.parse(estimate.material_specs);
+        } catch (e) {}
+      } else if (typeof estimate.material_specs === 'object') {
+        return estimate.material_specs;
+      }
+    }
+    const defaultSpecs = getMaterialSpecsForCollection(
+      estimate.collection_tier || estimate.furniture_level || 'Signature Collection'
+    );
+    return JSON.parse(JSON.stringify(defaultSpecs));
+  });
+
+  const handleResetMaterialSpecs = () => {
+    const defaultSpecs = getMaterialSpecsForCollection(furnitureLevel);
+    setMaterialSpecs(JSON.parse(JSON.stringify(defaultSpecs)));
+  };
   const [notes, setNotes] = useState(estimate.notes || catalog?.defaultNote || '');
   const [termsConditions, setTermsConditions] = useState(() => {
     const raw = estimate.terms_conditions;
@@ -100,6 +121,10 @@ const EstimateEditorModal = ({
   const handleTierChange = (newTier) => {
     const oldTier = furnitureLevel;
     setFurnitureLevel(newTier);
+    const newDefaultSpecs = getMaterialSpecsForCollection(newTier);
+    if (newDefaultSpecs) {
+      setMaterialSpecs(JSON.parse(JSON.stringify(newDefaultSpecs)));
+    }
     if (!catalog?.products) return;
 
     const isOldEssential = oldTier === 'Essential Collection' || oldTier === 'Modern';
@@ -200,6 +225,7 @@ const EstimateEditorModal = ({
     const draft = {
       ...estimate,
       include_material_specs: includeMaterialSpecs,
+      material_specs: materialSpecs,
       customer_name: customerName,
       phone,
       email,
@@ -207,6 +233,7 @@ const EstimateEditorModal = ({
       date,
       project_type: projectType,
       furniture_level: furnitureLevel,
+      collection_tier: furnitureLevel,
       status,
       rooms_data: rooms,
       sub_total: subTotal,
@@ -275,6 +302,7 @@ const EstimateEditorModal = ({
       site_location: estimate.site_location || estimate.location || '',
       reference_name: estimate.reference_name || estimate.location || estimate.site_location || '',
       include_material_specs: includeMaterialSpecs,
+      material_specs: materialSpecs,
       customer_name: customerName,
       phone,
       email,
@@ -681,6 +709,9 @@ const EstimateEditorModal = ({
             furnitureTier={furnitureLevel}
             includeMaterialSpecs={includeMaterialSpecs}
             setIncludeMaterialSpecs={setIncludeMaterialSpecs}
+            materialSpecs={materialSpecs}
+            setMaterialSpecs={setMaterialSpecs}
+            onResetMaterialSpecs={handleResetMaterialSpecs}
           />
 
           <div className="estimate-modal-footer">

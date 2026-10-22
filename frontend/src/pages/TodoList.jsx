@@ -75,20 +75,10 @@ const TodoList = ({ onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Active', 'Completed'
 
-  // Selected Date for planning (defaults to current date YYYY-MM-DD)
-  const [selectedDate, setSelectedDate] = useState(() => {
-    return new Date().toISOString().split('T')[0];
-  });
+  // Today's date string for created tasks
+  const todayDateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // Today's friendly display date
-  const selectedDateFormatted = new Date(selectedDate).toLocaleDateString('en-IN', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  });
-
-  // Live database tasks list for the selected date
+  // Live persistent database tasks list across all sites
   // All tasks: [ { id, siteId, taskDate, title, priority, assignedEmployeeId, assignedEmployeeName, dueTime, isCompleted } ]
   const [allTasks, setAllTasks] = useState([]);
 
@@ -140,10 +130,10 @@ const TodoList = ({ onNavigate }) => {
     fetchInitialData();
   }, []);
 
-  // 2. Fetch tasks for selectedDate from backend database
-  const fetchTasksForDate = async (dateStr) => {
+  // 2. Fetch all site tasks from backend database (site-centric & persistent)
+  const fetchAllTasks = async () => {
     try {
-      const res = await fetch(`${API_BASE}/site-tasks?date=${dateStr}`);
+      const res = await fetch(`${API_BASE}/site-tasks`);
       const data = await res.json();
       if (data.success && data.tasks) {
         setAllTasks(data.tasks);
@@ -154,8 +144,8 @@ const TodoList = ({ onNavigate }) => {
   };
 
   useEffect(() => {
-    fetchTasksForDate(selectedDate);
-  }, [selectedDate]);
+    fetchAllTasks();
+  }, []);
 
   // Support ESC key to close modal
   useEffect(() => {
@@ -215,11 +205,11 @@ const TodoList = ({ onNavigate }) => {
       const data = await res.json();
       if (!data.success) {
         // Revert on failure
-        fetchTasksForDate(selectedDate);
+        fetchAllTasks();
       }
     } catch (err) {
       console.error('Error toggling task:', err);
-      fetchTasksForDate(selectedDate);
+      fetchAllTasks();
     }
   };
 
@@ -239,7 +229,7 @@ const TodoList = ({ onNavigate }) => {
       t => t.title.toLowerCase().trim() === cleanTitle.toLowerCase()
     );
     if (isDuplicate) {
-      setFormError('This task is already in the checklist for today.');
+      setFormError('This task is already in the checklist for this site.');
       return;
     }
 
@@ -253,7 +243,7 @@ const TodoList = ({ onNavigate }) => {
     const newTaskObj = {
       id: 'staged_' + Date.now(),
       siteId: Number(activeSite.dbId || activeSite.id),
-      taskDate: selectedDate,
+      taskDate: todayDateStr,
       title: cleanTitle,
       priority: newTaskPriority,
       assignedEmployeeId: newTaskEmployeeId ? Number(newTaskEmployeeId) : null,
@@ -329,16 +319,16 @@ const TodoList = ({ onNavigate }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           siteId: siteRawId,
-          taskDate: selectedDate,
+          taskDate: todayDateStr,
           tasks: modalTasks
         })
       });
 
       const data = await res.json();
       if (data.success) {
-        setToastNotice({ type: 'success', text: "Today's plan saved successfully to database!" });
+        setToastNotice({ type: 'success', text: "Site tasks saved successfully to database!" });
         // Refresh master tasks list
-        await fetchTasksForDate(selectedDate);
+        await fetchAllTasks();
         setTimeout(() => {
           closeModal();
         }, 800);
@@ -420,22 +410,16 @@ const TodoList = ({ onNavigate }) => {
             <i className="fa-solid fa-list-check"></i>
           </div>
           <div>
-            <h1 className="todo-page-title">Daily Site To-Do List & Work Planner</h1>
+            <h1 className="todo-page-title">Site Tasks & Work Planner</h1>
             <p className="todo-page-subtitle">
-              Plan and assign today's tasks for each active site. Click <strong style={{ color: 'var(--gold, #4A2C17)' }}>+ Work</strong> to open the planner.
+              Manage and track tasks for each active project site. Tasks stay active until marked completed. Click <strong style={{ color: 'var(--gold, #4A2C17)' }}>+ Work</strong> to plan or update site work.
             </p>
           </div>
         </div>
 
         <div className="today-badge-pill">
-          <i className="fa-regular fa-calendar-days"></i>
-          <span>Schedule Date:</span>
-          <input 
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            title="Change plan date"
-          />
+          <i className="fa-solid fa-layer-group"></i>
+          <span>All Site Tasks ({allTasks.length})</span>
         </div>
       </div>
 
@@ -456,7 +440,7 @@ const TodoList = ({ onNavigate }) => {
             <i className="fa-solid fa-clock-rotate-left"></i>
           </div>
           <div className="todo-stat-info">
-            <h4>Pending Tasks ({selectedDateFormatted})</h4>
+            <h4>Pending Tasks</h4>
             <div className="stat-number">{pendingTasksCount}</div>
           </div>
         </div>
@@ -513,10 +497,10 @@ const TodoList = ({ onNavigate }) => {
           <table className="todo-table">
             <thead>
               <tr>
-                <th style={{ width: '130px', textAlign: 'center' }}>Daily Plan</th>
+                <th style={{ width: '130px', textAlign: 'center' }}>Site Work</th>
                 <th>Site Code</th>
                 <th>Client / Site</th>
-                <th>Today's Scheduled Tasks Checklist</th>
+                <th>Site Tasks Checklist</th>
                 <th style={{ textAlign: 'center', width: '130px' }}>Status</th>
               </tr>
             </thead>
@@ -552,7 +536,7 @@ const TodoList = ({ onNavigate }) => {
                         <button 
                           className="btn-clean-plus"
                           onClick={() => openSiteModal(site)}
-                          title={`Plan today's work for ${site.customerName || 'Site'}`}
+                          title={`Plan site work for ${site.customerName || 'Site'}`}
                         >
                           <i className="fa-solid fa-plus"></i>
                           <span>Work</span>
@@ -597,7 +581,7 @@ const TodoList = ({ onNavigate }) => {
                             style={{ fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic', cursor: 'pointer' }}
                             onClick={() => openSiteModal(site)}
                           >
-                            + No tasks planned for today. Click to plan work...
+                            + No tasks added for this site. Click to add work...
                           </span>
                         ) : (
                           <div className="interactive-tasks-wrap">
@@ -680,8 +664,8 @@ const TodoList = ({ onNavigate }) => {
                     </span>
                     <span>·</span>
                     <span>
-                      <i className="fa-regular fa-calendar" style={{ color: 'var(--coffee-medium, #8C5521)' }}></i>
-                      {selectedDateFormatted}
+                      <i className="fa-solid fa-list-check" style={{ color: 'var(--coffee-medium, #8C5521)' }}></i>
+                      {modalTotal} Tasks Total
                     </span>
                   </div>
                 </div>
@@ -725,7 +709,7 @@ const TodoList = ({ onNavigate }) => {
               <div className="task-add-card">
                 <div className="task-add-card-header">
                   <i className="fa-solid fa-plus-circle"></i>
-                  <span>Add Today's Work</span>
+                  <span>Add Site Work / Task</span>
                 </div>
 
                 <form onSubmit={handleAddTaskToModal}>
@@ -809,7 +793,7 @@ const TodoList = ({ onNavigate }) => {
 
               {/* 3. Today's Work Checklist Section */}
               <div className="task-list-section-header">
-                <h4>Today's Work Checklist ({modalTotal})</h4>
+                <h4>Site Work Checklist ({modalTotal})</h4>
                 <span>{modalDone} Finished</span>
               </div>
 
@@ -933,7 +917,7 @@ const TodoList = ({ onNavigate }) => {
             {/* 5. Footer Actions */}
             <div className="task-modal-footer">
               <div className="task-modal-footer-summary">
-                {modalDone} of {modalTotal} tasks completed for today
+                {modalDone} of {modalTotal} tasks completed
               </div>
 
               <div className="task-modal-footer-buttons">
@@ -960,7 +944,7 @@ const TodoList = ({ onNavigate }) => {
                   ) : (
                     <>
                       <i className="fa-solid fa-cloud-arrow-up"></i>
-                      <span>Save Today's Plan</span>
+                      <span>Save Site Tasks</span>
                     </>
                   )}
                 </button>

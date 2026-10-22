@@ -290,6 +290,7 @@ exports.createEstimate = async (req, res) => {
       terms_conditions,
       payment_terms,
       bank_details,
+      material_specs,
       status = 'Draft'
     } = req.body;
 
@@ -334,9 +335,10 @@ exports.createEstimate = async (req, res) => {
         estimate_number, site_id, customer_name, phone, email, address, date,
         project_type, furniture_level, collection_tier, rooms_data, sub_total, design_fee_pct,
         design_fee_amount, gst_pct, gst_amount, round_off, final_total,
-        bank_details, notes, terms_conditions, payment_terms, status, include_material_specs
+        bank_details, notes, terms_conditions, payment_terms, status, include_material_specs,
+        material_specs
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
       ) RETURNING *
     `;
 
@@ -364,7 +366,8 @@ exports.createEstimate = async (req, res) => {
       terms_conditions || DEFAULT_TERMS_CONDITIONS,
       payment_terms || DEFAULT_PAYMENT_TERMS,
       initialStatus,
-      req.body.include_material_specs !== false
+      req.body.include_material_specs !== false,
+      material_specs ? JSON.stringify(material_specs) : null
     ];
 
     const result = await pool.query(insertQuery, values);
@@ -416,6 +419,7 @@ exports.updateEstimate = async (req, res) => {
       terms_conditions,
       payment_terms,
       bank_details,
+      material_specs,
       status
     } = req.body;
 
@@ -455,8 +459,9 @@ exports.updateEstimate = async (req, res) => {
         payment_terms = $21,
         status = $22,
         include_material_specs = $23,
+        material_specs = $24,
         updated_at = NOW()
-      WHERE id = $24
+      WHERE id = $25
       RETURNING *
     `;
 
@@ -484,6 +489,7 @@ exports.updateEstimate = async (req, res) => {
       payment_terms,
       status,
       req.body.include_material_specs !== false,
+      material_specs !== undefined ? JSON.stringify(material_specs) : null,
       id
     ];
 
@@ -493,7 +499,8 @@ exports.updateEstimate = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Estimate not found' });
     }
 
-    if (status && (site_id || result.rows[0].site_id)) {
+    const VALID_SITE_STATUSES = ['Running', 'Completed', 'On Hold'];
+    if (status && VALID_SITE_STATUSES.includes(status) && (site_id || result.rows[0].site_id)) {
       const sId = site_id ? parseInt(site_id, 10) : result.rows[0].site_id;
       await pool.query(`UPDATE sites SET status = $1 WHERE id = $2`, [status, sId]).catch(e => console.error('Error syncing site status:', e));
     }
@@ -545,8 +552,9 @@ exports.updateEstimateStatus = async (req, res) => {
 
     const est = result.rows[0];
 
-    // If estimate is linked to a site, update site status so both tabs match!
-    if (est.site_id) {
+    // If estimate is linked to a site, update site status so both tabs match (for valid site statuses)!
+    const VALID_SITE_STATUSES = ['Running', 'Completed', 'On Hold'];
+    if (est.site_id && VALID_SITE_STATUSES.includes(status)) {
       await pool.query(
         `UPDATE sites SET status = $1 WHERE id = $2`,
         [status, est.site_id]
