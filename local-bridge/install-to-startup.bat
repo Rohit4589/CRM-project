@@ -21,12 +21,13 @@ if exist "%SHORTCUT_PATH%" (
     echo [SUCCESS] Auto-startup shortcut created successfully!
     echo Location: "%SHORTCUT_PATH%"
     echo.
-    echo The Modern Interior Folder Bridge will now start
-    echo automatically every time this PC powers on.
+    echo Starting the Folder Bridge right now...
+    start "" wscript.exe "%VBS_TARGET%"
+    echo [RUNNING] Modern Interior Folder Bridge is now active in the background!
     echo.
 ) else (
     echo [WARNING] Could not create startup shortcut automatically.
-    echo You can manually copy "start-bridge.bat" into your Startup folder.
+    echo You can double-click "start-bridge.bat" to start it manually.
 )
 
 pause

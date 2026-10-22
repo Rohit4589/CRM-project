@@ -1,36 +1,40 @@
 /**
  * Modern Interior CRM - Local Folder Bridge Client
  * 
- * Communicates with the local bridge service running on the office CPU (http://127.0.0.1:5001)
+ * Communicates with the local bridge service running on the office CPU (port 5001)
  * to create folders on the physical F:\ drive and open Windows File Explorer.
  */
 
-const BRIDGE_URL = 'http://127.0.0.1:5001';
+const CANDIDATE_URLS = ['http://127.0.0.1:5001', 'http://localhost:5001'];
+let activeBridgeUrl = CANDIDATE_URLS[0];
 
 /**
  * Quick ping to see if the office CPU bridge is running
  * @param {number} timeoutMs
  * @returns {Promise<{online: boolean, data?: any}>}
  */
-export async function checkBridgeStatus(timeoutMs = 1200) {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+export async function checkBridgeStatus(timeoutMs = 1500) {
+  for (const url of CANDIDATE_URLS) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    const res = await fetch(`${BRIDGE_URL}/api/status`, {
-      method: 'GET',
-      signal: controller.signal
-    });
-    clearTimeout(timer);
+      const res = await fetch(`${url}/api/status`, {
+        method: 'GET',
+        signal: controller.signal
+      });
+      clearTimeout(timer);
 
-    if (res.ok) {
-      const data = await res.json();
-      return { online: true, data };
+      if (res.ok) {
+        const data = await res.json();
+        activeBridgeUrl = url;
+        return { online: true, data };
+      }
+    } catch {
+      // Try next candidate URL
     }
-    return { online: false };
-  } catch {
-    return { online: false };
   }
+  return { online: false };
 }
 
 /**
@@ -40,7 +44,7 @@ export async function checkBridgeStatus(timeoutMs = 1200) {
  */
 export async function createLocalProjectFolder(siteData) {
   try {
-    const res = await fetch(`${BRIDGE_URL}/api/create-folder`, {
+    const res = await fetch(`${activeBridgeUrl}/api/create-folder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -68,7 +72,7 @@ export async function createLocalProjectFolder(siteData) {
  */
 export async function openLocalProjectFolder(params) {
   try {
-    const res = await fetch(`${BRIDGE_URL}/api/open-folder`, {
+    const res = await fetch(`${activeBridgeUrl}/api/open-folder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -97,7 +101,7 @@ export async function openLocalProjectFolder(params) {
  */
 export async function syncAllLocalFolders(sites) {
   try {
-    const res = await fetch(`${BRIDGE_URL}/api/sync-all-sites`, {
+    const res = await fetch(`${activeBridgeUrl}/api/sync-all-sites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sites })
