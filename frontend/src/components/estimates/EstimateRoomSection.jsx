@@ -242,37 +242,21 @@ const EstimateRoomSection = ({
 
             {/* Room Total Row matching Photo 1 Preview */}
             <tr className="print-room-total-row editor-sheet-total-row">
-              <td colSpan="6" style={{ verticalAlign: 'middle', padding: '8px 12px' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="print-room-total-badge" style={{
-                    background: '#4A2C17',
-                    color: '#FFFFFF',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    fontWeight: '800',
-                    letterSpacing: '0.6px',
-                    textTransform: 'uppercase',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}>
-                    <i className="fa-solid fa-calculator" style={{ fontSize: '9px' }}></i>
-                    TOTAL
-                  </span>
-                  <span style={{
-                    fontWeight: '800',
-                    fontSize: '12px',
-                    color: '#4A2C17',
-                    letterSpacing: '0.4px',
-                    textTransform: 'uppercase'
-                  }}>
-                    {room.roomName} TOTAL:
-                  </span>
-                </div>
+              <td colSpan="6" style={{ verticalAlign: 'middle', padding: '9px 12px' }}>
+                <span style={{
+                  fontWeight: '800',
+                  fontSize: '13.5px',
+                  color: '#4A2C17',
+                  letterSpacing: '0.4px',
+                  textTransform: 'uppercase'
+                }}>
+                  {room.roomName} TOTAL:
+                </span>
               </td>
-              <td colSpan="3" style={{ textAlign: 'right', fontWeight: '800', color: '#4A2C17', fontSize: '13px', padding: '8px 12px', verticalAlign: 'middle' }}>
-                ₹{(Number(room.roomTotal) || 0).toLocaleString('en-IN')}
+              <td colSpan="3" style={{ textAlign: 'right', fontWeight: '900', color: '#4A2C17', fontSize: '16px', padding: '9px 12px', verticalAlign: 'middle', letterSpacing: '0.3px' }}>
+                <span style={{ fontSize: '16px', fontWeight: '900', color: '#4A2C17' }}>
+                  ₹{(Number(room.roomTotal) || 0).toLocaleString('en-IN')}
+                </span>
               </td>
             </tr>
           </tbody>

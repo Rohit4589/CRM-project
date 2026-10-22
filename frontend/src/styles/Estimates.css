@@ -1230,11 +1230,17 @@
 .print-room-total-row td {
   background: #F5EBE1 !important;
   font-weight: 800 !important;
-  font-size: 11.5px !important;
+  font-size: 13.5px !important;
   color: #4A2C17 !important;
   border-top: 1.5px solid #4A2C17 !important;
   border-bottom: 1.5px solid #4A2C17 !important;
-  padding: 7px 10px !important;
+  padding: 8px 12px !important;
+}
+
+.print-room-total-row td:last-child,
+.print-room-total-row td:last-child * {
+  font-size: 16px !important;
+  font-weight: 900 !important;
 }
 
 /* Editor Sheet Table - Exact Match to Estimate Preview (Photo 1) */
@@ -1348,10 +1354,35 @@
   font-size: 12px;
 }
 
+.print-summary-table .print-sub-total-row td,
+.print-sub-total-row td {
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  background: #F5EBE1 !important;
+  color: #4A2C17 !important;
+}
+
+.print-summary-table .print-sub-total-row td:last-child,
+.print-sub-total-row td:last-child,
+.print-summary-table .print-sub-total-row td:last-child *,
+.print-sub-total-row td:last-child * {
+  font-size: 17px !important;
+  font-weight: 900 !important;
+  color: #4A2C17 !important;
+}
+
+.print-summary-table .print-grand-total-row td,
 .print-grand-total-row td {
   background: #4A2C17 !important;
   color: #FFFFFF !important;
   border: 1px solid #4A2C17 !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+.print-summary-table .print-grand-total-row td *,
+.print-grand-total-row td * {
+  color: #FFFFFF !important;
 }
 
 .print-footer-info {
@@ -1684,11 +1715,50 @@
     color: #FFFFFF !important;
   }
 
-  /* Ensure room titles, room totals, and summary totals use brand chocolate */
+  /* Ensure room titles, room totals, and summary rows (except grand total) use brand chocolate */
   .estimate-printable-sheet .print-room-title-row td,
   .estimate-printable-sheet .print-room-total-row td,
-  .estimate-printable-sheet .print-summary-table td {
+  .estimate-printable-sheet .print-summary-table tr:not(.print-grand-total-row) td {
     color: #4A2C17 !important;
+  }
+
+  /* Sub total row: prominent size and bold weight in print */
+  .estimate-printable-sheet .print-summary-table .print-sub-total-row td,
+  .estimate-printable-sheet .print-sub-total-row td {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    background: #F5EBE1 !important;
+    color: #4A2C17 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .estimate-printable-sheet .print-summary-table .print-sub-total-row td:last-child,
+  .estimate-printable-sheet .print-summary-table .print-sub-total-row td:last-child *,
+  .estimate-printable-sheet .print-sub-total-row td:last-child,
+  .estimate-printable-sheet .print-sub-total-row td:last-child * {
+    font-size: 17px !important;
+    font-weight: 900 !important;
+    color: #4A2C17 !important;
+  }
+
+  /* Grand total row: crisp white text on chocolate brown background in print */
+  .estimate-printable-sheet .print-summary-table .print-grand-total-row td,
+  .estimate-printable-sheet .print-summary-table .print-grand-total-row td *,
+  .estimate-printable-sheet .print-grand-total-row td,
+  .estimate-printable-sheet .print-grand-total-row td * {
+    background: #4A2C17 !important;
+    color: #FFFFFF !important;
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .estimate-printable-sheet .print-summary-table .print-grand-total-row td:last-child,
+  .estimate-printable-sheet .print-summary-table .print-grand-total-row td:last-child * {
+    font-size: 18px !important;
+    font-weight: 900 !important;
   }
 
   /* Header Brand Section */
@@ -1880,8 +1950,15 @@
     border-bottom: 1.5px solid #4A2C17 !important;
     color: #4A2C17 !important;
     font-weight: 800 !important;
+    font-size: 13.5px !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  .estimate-printable-sheet .print-room-total-row td:last-child,
+  .estimate-printable-sheet .print-room-total-row td:last-child * {
+    font-size: 16px !important;
+    font-weight: 900 !important;
   }
 
   /* 10. Summary table — never split */

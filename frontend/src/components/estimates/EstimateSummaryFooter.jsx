@@ -19,14 +19,65 @@ const EstimateSummaryFooter = ({
   setBankDetails,
   furnitureTier = 'Signature Collection',
   includeMaterialSpecs = true,
-  setIncludeMaterialSpecs
+  setIncludeMaterialSpecs,
+  materialSpecs,
+  setMaterialSpecs,
+  onResetMaterialSpecs
 }) => {
-  const activeSpecs = getMaterialSpecsForCollection(furnitureTier);
+  const activeSpecs = materialSpecs || getMaterialSpecsForCollection(furnitureTier);
   const subTotal = rooms.reduce((sum, r) => sum + (Number(r.roomTotal) || 0), 0);
   const designFeeAmount = Math.round((subTotal * Number(designFeePct || 0)) / 100);
   const taxableAmount = subTotal + designFeeAmount;
   const gstAmount = Math.round((taxableAmount * Number(gstPct || 0)) / 100);
   const finalTotal = Math.round(taxableAmount + gstAmount - Number(roundOff || 0));
+
+  const handleSpecItemChange = (idx, field, val) => {
+    if (!setMaterialSpecs) return;
+    const current = activeSpecs ? JSON.parse(JSON.stringify(activeSpecs)) : { title: `Material Specifications – ${furnitureTier}`, items: [], note: '' };
+    const items = [...(current.items || [])];
+    if (items[idx]) {
+      items[idx][field] = val;
+      setMaterialSpecs({ ...current, items });
+    }
+  };
+
+  const handleAddSpecItem = () => {
+    if (!setMaterialSpecs) return;
+    const current = activeSpecs ? JSON.parse(JSON.stringify(activeSpecs)) : { title: `Material Specifications – ${furnitureTier}`, items: [], note: '' };
+    const items = [...(current.items || [])];
+    items.push({
+      label: `${items.length + 1}. Item:`,
+      text: ''
+    });
+    setMaterialSpecs({ ...current, items });
+  };
+
+  const handleRemoveSpecItem = (idx) => {
+    if (!setMaterialSpecs) return;
+    const current = activeSpecs ? JSON.parse(JSON.stringify(activeSpecs)) : { title: `Material Specifications – ${furnitureTier}`, items: [], note: '' };
+    const items = (current.items || []).filter((_, i) => i !== idx);
+    setMaterialSpecs({ ...current, items });
+  };
+
+  const handleNoteChange = (val) => {
+    if (!setMaterialSpecs) return;
+    const current = activeSpecs ? JSON.parse(JSON.stringify(activeSpecs)) : { title: `Material Specifications – ${furnitureTier}`, items: [], note: '' };
+    setMaterialSpecs({ ...current, note: val });
+  };
+
+  const handleTitleChange = (val) => {
+    if (!setMaterialSpecs) return;
+    const current = activeSpecs ? JSON.parse(JSON.stringify(activeSpecs)) : { title: `Material Specifications – ${furnitureTier}`, items: [], note: '' };
+    setMaterialSpecs({ ...current, title: val });
+  };
+
+  const handleResetSpecs = () => {
+    if (onResetMaterialSpecs) {
+      onResetMaterialSpecs();
+    } else if (setMaterialSpecs) {
+      setMaterialSpecs(JSON.parse(JSON.stringify(getMaterialSpecsForCollection(furnitureTier))));
+    }
+  };
 
   return (
     <div className="grand-totals-card" style={{ marginTop: '20px', background: '#FFFFFF', border: '1px solid #E5D9C5', borderRadius: '12px', padding: '18px 20px', boxShadow: '0 2px 10px rgba(74, 44, 23, 0.04)' }}>
@@ -122,56 +173,202 @@ const EstimateSummaryFooter = ({
               padding: '12px 14px',
               transition: 'all 0.2s ease'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#4A2C17' }}>
-                  {activeSpecs.title}:
-                </span>
-                <span style={{
-                  fontSize: '10px',
-                  background: '#4A2C17',
-                  color: '#FFFFFF',
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  fontWeight: '800',
-                  letterSpacing: '0.4px'
-                }}>
-                  {furnitureTier}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={activeSpecs.title || `Material Specifications – ${furnitureTier}:`}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  style={{
+                    fontSize: '11.5px',
+                    fontWeight: '800',
+                    color: '#4A2C17',
+                    border: 'none',
+                    borderBottom: '1px dashed #C19A6B',
+                    background: 'transparent',
+                    outline: 'none',
+                    padding: '2px 4px',
+                    width: '60%'
+                  }}
+                  title="Click to edit section title"
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={handleResetSpecs}
+                    title="Reset to standard specifications for this collection"
+                    style={{
+                      fontSize: '10px',
+                      background: '#FAF8F5',
+                      border: '1px solid #DCD4CA',
+                      color: '#6B5A4E',
+                      padding: '2px 7px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <i className="fa-solid fa-rotate-left" style={{ fontSize: '9px' }}></i> Reset
+                  </button>
+                  <span style={{
+                    fontSize: '10px',
+                    background: '#4A2C17',
+                    color: '#FFFFFF',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontWeight: '800',
+                    letterSpacing: '0.4px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {furnitureTier}
+                  </span>
+                </div>
               </div>
 
-              {/* 2x2 Grid for Material Items */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '10.5px' }}>
-                {activeSpecs.items.slice(0, 4).map((it, idx) => (
+              {/* Editable Material Items Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 10px', fontSize: '10.5px' }}>
+                {(activeSpecs.items || []).map((it, idx) => (
                   <div
                     key={idx}
                     style={{
                       background: '#FFFFFF',
                       border: '1px solid #EFE8DE',
-                      borderRadius: '5px',
-                      padding: '5px 8px',
-                      lineHeight: '1.35'
+                      borderRadius: '6px',
+                      padding: '6px 8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                     }}
                   >
-                    <strong style={{ color: '#4A2C17', fontWeight: '800' }}>{it.label} </strong>
-                    <span style={{ color: '#4B5563', fontWeight: '500' }}>{it.text}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                      <input
+                        type="text"
+                        value={it.label || ''}
+                        onChange={(e) => handleSpecItemChange(idx, 'label', e.target.value)}
+                        placeholder="e.g. 1. Plywood:"
+                        style={{
+                          fontWeight: '800',
+                          color: '#4A2C17',
+                          fontSize: '11px',
+                          border: 'none',
+                          borderBottom: '1px solid transparent',
+                          outline: 'none',
+                          background: 'transparent',
+                          width: '100%',
+                          padding: '1px 0'
+                        }}
+                        onFocus={(e) => e.target.style.borderBottomColor = '#C19A6B'}
+                        onBlur={(e) => e.target.style.borderBottomColor = 'transparent'}
+                      />
+                      {(activeSpecs.items || []).length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSpecItem(idx)}
+                          title="Remove specification item"
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#9CA3AF',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            padding: '0 2px',
+                            lineHeight: '1'
+                          }}
+                          onMouseEnter={(e) => e.target.style.color = '#DC2626'}
+                          onMouseLeave={(e) => e.target.style.color = '#9CA3AF'}
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+                    <textarea
+                      value={it.text || ''}
+                      onChange={(e) => handleSpecItemChange(idx, 'text', e.target.value)}
+                      placeholder="Specification details..."
+                      rows={2}
+                      style={{
+                        width: '100%',
+                        fontSize: '10.5px',
+                        color: '#374151',
+                        border: '1px solid #EAE0D2',
+                        borderRadius: '4px',
+                        padding: '4px 6px',
+                        outline: 'none',
+                        resize: 'vertical',
+                        fontFamily: 'inherit',
+                        lineHeight: '1.35',
+                        background: '#FAF8F5',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => { e.target.style.borderColor = '#C19A6B'; e.target.style.background = '#FFFFFF'; }}
+                      onBlur={(e) => { e.target.style.borderColor = '#EAE0D2'; e.target.style.background = '#FAF8F5'; }}
+                    />
                   </div>
                 ))}
               </div>
 
-              {activeSpecs.note && (
-                <div style={{
-                  marginTop: '8px',
-                  fontSize: '10px',
-                  color: '#5C5248',
-                  background: '#F5EBE1',
-                  borderRadius: '5px',
-                  padding: '5px 8px',
-                  lineHeight: '1.35',
-                  border: '1px solid #EADDC9'
-                }}>
-                  <strong style={{ color: '#4A2C17' }}>Note: </strong> {activeSpecs.note}
+              {/* Add Specification Item Button */}
+              <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'flex-start' }}>
+                <button
+                  type="button"
+                  onClick={handleAddSpecItem}
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    color: '#4A2C17',
+                    background: '#FDFBF7',
+                    border: '1px dashed #C19A6B',
+                    borderRadius: '4px',
+                    padding: '3px 8px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = '#F5EBE1'}
+                  onMouseLeave={(e) => e.target.style.background = '#FDFBF7'}
+                >
+                  <i className="fa-solid fa-plus" style={{ fontSize: '9px' }}></i> Add Specification
+                </button>
+              </div>
+
+              {/* Note / Exclusions Field */}
+              <div style={{
+                marginTop: '8px',
+                background: '#FAF8F5',
+                borderRadius: '6px',
+                padding: '6px 8px',
+                border: '1px solid #EADDC9'
+              }}>
+                <div style={{ fontSize: '10px', fontWeight: '800', color: '#4A2C17', marginBottom: '3px' }}>
+                  Note / Exclusions:
                 </div>
-              )}
+                <textarea
+                  value={activeSpecs.note || ''}
+                  onChange={(e) => handleNoteChange(e.target.value)}
+                  placeholder="Note or excluded items (e.g. Handles, soft-close hinges...)"
+                  rows={2}
+                  style={{
+                    width: '100%',
+                    fontSize: '10px',
+                    color: '#4B5563',
+                    border: '1px solid #EAE0D2',
+                    borderRadius: '4px',
+                    padding: '4px 6px',
+                    outline: 'none',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    lineHeight: '1.35',
+                    background: '#FFFFFF',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#C19A6B'}
+                  onBlur={(e) => e.target.style.borderColor = '#EAE0D2'}
+                />
+              </div>
             </div>
           ) : (
             <div style={{
@@ -192,7 +389,7 @@ const EstimateSummaryFooter = ({
             </div>
           )}
 
-          {/* Standard Terms & Payment Terms Side-by-Side Cards */}
+          {/* Standard Terms & Payment Terms Side-by-Side Cards (Editable) */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: '12px' }}>
             {/* Standard Terms & Conditions */}
             <div style={{
@@ -203,27 +400,40 @@ const EstimateSummaryFooter = ({
               display: 'flex',
               flexDirection: 'column'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <i className="fa-solid fa-file-contract" style={{ fontSize: '11px', color: '#4A2C17' }}></i>
-                <strong style={{ fontSize: '11px', color: '#4A2C17', fontWeight: '800' }}>
-                  Standard Terms &amp; Conditions
-                </strong>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <i className="fa-solid fa-file-contract" style={{ fontSize: '11px', color: '#4A2C17' }}></i>
+                  <strong style={{ fontSize: '11px', color: '#4A2C17', fontWeight: '800' }}>
+                    Standard Terms &amp; Conditions
+                  </strong>
+                </div>
+                <span style={{ fontSize: '9.5px', color: '#8A5D3B', fontWeight: '600' }}>
+                  Editable
+                </span>
               </div>
-              <div style={{
-                color: '#555555',
-                fontSize: '10.5px',
-                whiteSpace: 'pre-line',
-                maxHeight: '130px',
-                overflowY: 'auto',
-                lineHeight: '1.45',
-                paddingRight: '4px',
-                background: '#FFFFFF',
-                border: '1px solid #EAE0D2',
-                borderRadius: '5px',
-                padding: '6px 8px'
-              }}>
-                {termsConditions}
-              </div>
+              <textarea
+                value={termsConditions}
+                onChange={(e) => setTermsConditions && setTermsConditions(e.target.value)}
+                placeholder="Enter Terms & Conditions..."
+                rows={6}
+                style={{
+                  color: '#2B2520',
+                  fontSize: '10.5px',
+                  lineHeight: '1.45',
+                  background: '#FFFFFF',
+                  border: '1px solid #EAE0D2',
+                  borderRadius: '5px',
+                  padding: '6px 8px',
+                  resize: 'vertical',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  minHeight: '125px',
+                  boxSizing: 'border-box',
+                  width: '100%'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#C19A6B'}
+                onBlur={(e) => e.target.style.borderColor = '#EAE0D2'}
+              />
             </div>
 
             {/* Fixed Mode of Payment */}
@@ -235,27 +445,40 @@ const EstimateSummaryFooter = ({
               display: 'flex',
               flexDirection: 'column'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <i className="fa-solid fa-credit-card" style={{ fontSize: '11px', color: '#4A2C17' }}></i>
-                <strong style={{ fontSize: '11px', color: '#4A2C17', fontWeight: '800' }}>
-                  Fixed Mode of Payment
-                </strong>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <i className="fa-solid fa-credit-card" style={{ fontSize: '11px', color: '#4A2C17' }}></i>
+                  <strong style={{ fontSize: '11px', color: '#4A2C17', fontWeight: '800' }}>
+                    Fixed Mode of Payment
+                  </strong>
+                </div>
+                <span style={{ fontSize: '9.5px', color: '#8A5D3B', fontWeight: '600' }}>
+                  Editable
+                </span>
               </div>
-              <div style={{
-                color: '#555555',
-                fontSize: '10.5px',
-                whiteSpace: 'pre-line',
-                maxHeight: '130px',
-                overflowY: 'auto',
-                lineHeight: '1.45',
-                paddingRight: '4px',
-                background: '#FFFFFF',
-                border: '1px solid #EAE0D2',
-                borderRadius: '5px',
-                padding: '6px 8px'
-              }}>
-                {paymentTerms}
-              </div>
+              <textarea
+                value={paymentTerms}
+                onChange={(e) => setPaymentTerms && setPaymentTerms(e.target.value)}
+                placeholder="Enter Payment Terms..."
+                rows={6}
+                style={{
+                  color: '#2B2520',
+                  fontSize: '10.5px',
+                  lineHeight: '1.45',
+                  background: '#FFFFFF',
+                  border: '1px solid #EAE0D2',
+                  borderRadius: '5px',
+                  padding: '6px 8px',
+                  resize: 'vertical',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  minHeight: '125px',
+                  boxSizing: 'border-box',
+                  width: '100%'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#C19A6B'}
+                onBlur={(e) => e.target.style.borderColor = '#EAE0D2'}
+              />
             </div>
           </div>
         </div>

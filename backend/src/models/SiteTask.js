@@ -189,9 +189,10 @@ class SiteTask {
       const effectiveDate = taskDate || new Date().toISOString().split('T')[0];
       await client.query('BEGIN');
 
+      // Query all existing tasks for this site so tasks persist across days
       const existingRes = await client.query(
-        'SELECT id FROM public.site_tasks WHERE site_id = $1 AND task_date = $2',
-        [Number(siteId), effectiveDate]
+        'SELECT id FROM public.site_tasks WHERE site_id = $1',
+        [Number(siteId)]
       );
       const existingIds = existingRes.rows.map(r => r.id);
       const incomingIds = (tasks || []).filter(t => t.id && typeof t.id === 'number').map(t => t.id);
