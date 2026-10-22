@@ -156,6 +156,7 @@ const sendJson = (res, statusCode, data) => {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+    'Access-Control-Allow-Private-Network': 'true',
   });
   res.end(JSON.stringify(data));
 };
@@ -176,12 +177,13 @@ const parseBody = (req) => {
 };
 
 const server = http.createServer(async (req, res) => {
-  // CORS Preflight
+  // CORS Preflight (including Chrome Private Network Access)
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+      'Access-Control-Allow-Private-Network': 'true',
     });
     return res.end();
   }

@@ -110,10 +110,11 @@ while ($Listener.IsListening) {
         $Request = $Context.Request
         $Response = $Context.Response
 
-        # Add CORS Headers
+        # Add CORS Headers (including Chrome Private Network Access)
         $Response.AddHeader("Access-Control-Allow-Origin", "*")
         $Response.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         $Response.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+        $Response.AddHeader("Access-Control-Allow-Private-Network", "true")
 
         if ($Request.HttpMethod -eq "OPTIONS") {
             $Response.StatusCode = 204
