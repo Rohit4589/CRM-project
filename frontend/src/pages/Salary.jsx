@@ -401,6 +401,159 @@ const Salary = () => {
   const activeEmployee = activeEmployeeId ? salaryRows.find(r => r.id === activeEmployeeId) : null;
   const activeSite = activeSiteId ? siteSalaryRows.find(s => s.id === activeSiteId || s.siteRef === activeSiteId || s.dbId === activeSiteId) : null;
 
+  // Group activeEmployee.attendanceLogs by date for neat multi-site display with sequential timings
+  const employeeGroupedShifts = useMemo(() => {
+    if (!activeEmployee || !activeEmployee.attendanceLogs || activeEmployee.attendanceLogs.length === 0) return [];
+    
+    // Group logs by attendanceDate
+    const dateMap = new Map();
+    activeEmployee.attendanceLogs.forEach(log => {
+      const dateKey = log.attendanceDate ? String(log.attendanceDate).slice(0, 10) : 'NO_DATE';
+      if (!dateMap.has(dateKey)) {
+        dateMap.set(dateKey, []);
+      }
+      dateMap.get(dateKey).push(log);
+    });
+
+    const groups = [];
+    for (const [dateKey, rawLogs] of dateMap.entries()) {
+      // Sort shifts chronologically by ID
+      const sortedLogs = [...rawLogs].sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+      
+      // Calculate sequential non-overlapping timings for multi-site shifts on the same day
+      let resolvedLogs = sortedLogs.map((log, sIdx) => {
+        let inTime = log.inTime || '09:00 AM';
+        let outTime = log.outTime || '06:00 PM';
+        let workHours = Number(log.workHours || 0);
+        const dayVal = parseFloat(log.dayValue) || (log.isBonus ? 0 : 1.0);
+        const isBonus = Boolean(log.isBonus || log.inTime === 'GIFT' || log.inTime === 'EXTRA' || log.outTime === 'BONUS' || log.outTime === 'ADDED');
+        const computedSalary = Math.round(dayVal * (activeEmployee.dailyRate || 0));
+
+        return {
+          ...log,
+          inTime,
+          outTime,
+          workHours,
+          dayVal,
+          daySalary: computedSalary,
+          isBonus,
+          shiftIndex: sIdx,
+          totalShiftsOnDate: sortedLogs.length,
+          shiftTag: ''
+        };
+      });
+
+      // Contractor Hajeri Timing Rules:
+      // 1 Hajeri = 09:00 AM to 06:00 PM (9 hrs)
+      // 1.5 Hajeri = 09:00 AM to 09:00 PM (12 hrs total)
+      // 2.0 Hajeri = 06:00 AM to 09:00 PM (15 hrs total)
+      if (resolvedLogs.length === 1 && !resolvedLogs[0].isBonus) {
+        const v = resolvedLogs[0].dayVal;
+        if (v === 1.5) {
+          resolvedLogs[0].inTime = '09:00 AM';
+          resolvedLogs[0].outTime = '09:00 PM';
+          resolvedLogs[0].workHours = 12;
+        } else if (v === 2.0) {
+          resolvedLogs[0].inTime = '06:00 AM';
+          resolvedLogs[0].outTime = '09:00 PM';
+          resolvedLogs[0].workHours = 15;
+        } else if (v <= 0.5) {
+          resolvedLogs[0].inTime = '09:00 AM';
+          resolvedLogs[0].outTime = '01:00 PM';
+          resolvedLogs[0].workHours = 4;
+        } else {
+          resolvedLogs[0].inTime = '09:00 AM';
+          resolvedLogs[0].outTime = '06:00 PM';
+          resolvedLogs[0].workHours = 9;
+        }
+      } else if (resolvedLogs.length === 2 && !resolvedLogs[0].isBonus && !resolvedLogs[1].isBonus) {
+        const v1 = resolvedLogs[0].dayVal;
+        const v2 = resolvedLogs[1].dayVal;
+
+        if (v1 >= 1.0 && v2 <= 0.5) {
+          // 1.5 Hajeri (1 Day + 0.5 Day): 1st site is Day shift (9 to 6), 2nd site is Evening OT (6 to 9)
+          resolvedLogs[0].inTime = '09:00 AM';
+          resolvedLogs[0].outTime = '06:00 PM';
+          resolvedLogs[0].workHours = 9;
+          resolvedLogs[0].shiftTag = '1st Site (Day Shift)';
+
+          resolvedLogs[1].inTime = '06:00 PM';
+          resolvedLogs[1].outTime = '09:00 PM';
+          resolvedLogs[1].workHours = 3;
+          resolvedLogs[1].shiftTag = '2nd Site (Evening OT)';
+        } else if (v1 <= 0.5 && v2 >= 1.0) {
+          // 1.5 Hajeri (0.5 Day + 1 Day): 1st site is Morning (9 to 1), 2nd site is Afternoon & OT (2 to 9)
+          resolvedLogs[0].inTime = '09:00 AM';
+          resolvedLogs[0].outTime = '01:00 PM';
+          resolvedLogs[0].workHours = 4;
+          resolvedLogs[0].shiftTag = '1st Site (Morning)';
+
+          resolvedLogs[1].inTime = '02:00 PM';
+          resolvedLogs[1].outTime = '09:00 PM';
+          resolvedLogs[1].workHours = 7;
+          resolvedLogs[1].shiftTag = '2nd Site (Afternoon & OT)';
+        } else if (v1 <= 0.5 && v2 <= 0.5) {
+          // 1.0 Hajeri (0.5 Day + 0.5 Day): 1st site Morning (9 to 1), 2nd site Afternoon (2 to 6)
+          resolvedLogs[0].inTime = '09:00 AM';
+          resolvedLogs[0].outTime = '01:00 PM';
+          resolvedLogs[0].workHours = 4;
+          resolvedLogs[0].shiftTag = '1st Site (Morning)';
+
+          resolvedLogs[1].inTime = '02:00 PM';
+          resolvedLogs[1].outTime = '06:00 PM';
+          resolvedLogs[1].workHours = 4;
+          resolvedLogs[1].shiftTag = '2nd Site (Afternoon)';
+        } else if (v1 >= 1.0 && v2 >= 1.0) {
+          // 2.0 Hajeri (1 Day + 1 Day): 06:00 AM to 02:00 PM, then 02:00 PM to 09:00 PM
+          resolvedLogs[0].inTime = '06:00 AM';
+          resolvedLogs[0].outTime = '02:00 PM';
+          resolvedLogs[0].workHours = 8;
+          resolvedLogs[0].shiftTag = '1st Site (Morning)';
+
+          resolvedLogs[1].inTime = '02:00 PM';
+          resolvedLogs[1].outTime = '09:00 PM';
+          resolvedLogs[1].workHours = 7;
+          resolvedLogs[1].shiftTag = '2nd Site (Evening)';
+        }
+      } else if (resolvedLogs.length === 3) {
+        resolvedLogs[0].inTime = '09:00 AM';
+        resolvedLogs[0].outTime = '01:00 PM';
+        resolvedLogs[0].workHours = 4;
+        resolvedLogs[0].shiftTag = '1st Site (Morning)';
+
+        resolvedLogs[1].inTime = '02:00 PM';
+        resolvedLogs[1].outTime = '06:00 PM';
+        resolvedLogs[1].workHours = 4;
+        resolvedLogs[1].shiftTag = '2nd Site (Afternoon)';
+
+        resolvedLogs[2].inTime = '06:00 PM';
+        resolvedLogs[2].outTime = '09:00 PM';
+        resolvedLogs[2].workHours = 3;
+        resolvedLogs[2].shiftTag = '3rd Site (Evening OT)';
+      }
+
+      const totalDateDayValue = resolvedLogs.reduce((sum, l) => sum + (l.isBonus ? 0 : l.dayVal), 0);
+      const totalDateSalary = resolvedLogs.reduce((sum, l) => sum + l.daySalary, 0);
+
+      groups.push({
+        dateKey,
+        formattedDate: dateKey !== 'NO_DATE' ? formatToDMY(dateKey) : 'N/A',
+        shifts: resolvedLogs,
+        totalDayValue: totalDateDayValue,
+        totalDaySalary: totalDateSalary,
+        shiftCount: resolvedLogs.length
+      });
+    }
+
+    return groups;
+  }, [activeEmployee]);
+
+  const totalResolvedHours = useMemo(() => {
+    return employeeGroupedShifts.reduce((acc, g) => {
+      return acc + g.shifts.reduce((sAcc, s) => sAcc + (s.isBonus ? 0 : (Number(s.workHours) || 0)), 0);
+    }, 0);
+  }, [employeeGroupedShifts]);
+
   return (
     <main className="dashboard-content" style={{ padding: '24px 30px', maxWidth: '1600px', margin: '0 auto' }}>
       
@@ -641,7 +794,7 @@ const Salary = () => {
                 </tr>
               </thead>
               <tbody>
-                {activeEmployee.attendanceLogs.length === 0 ? (
+                {employeeGroupedShifts.length === 0 ? (
                   <tr>
                     <td colSpan="6" style={{ padding: '50px 20px', textAlign: 'center', color: '#9CA3AF' }}>
                       <i className="fa-regular fa-calendar-xmark" style={{ fontSize: '32px', color: '#D1D5DB', marginBottom: '10px', display: 'block' }}></i>
@@ -650,143 +803,218 @@ const Salary = () => {
                     </td>
                   </tr>
                 ) : (
-                  activeEmployee.attendanceLogs.map((log, idx) => {
-                    const isBonus = Boolean(log.isBonus || log.inTime === 'GIFT' || log.inTime === 'EXTRA' || log.outTime === 'BONUS' || log.outTime === 'ADDED');
-                    const dayVal = parseFloat(log.dayValue) || (isBonus ? 0 : 1.0);
-                    const daySalary = Math.round(dayVal * activeEmployee.dailyRate);
+                  employeeGroupedShifts.map((group) => {
+                    return group.shifts.map((shift, sIdx) => {
+                      const isFirstShiftOfDate = sIdx === 0;
+                      const isLastShiftOfDate = sIdx === group.shifts.length - 1;
+                      const isMultiSite = group.shifts.length > 1;
 
-                    return (
-                      <tr key={log.id || idx} style={{
-                        borderBottom: '1px solid #F3F4F6',
-                        background: isBonus ? 'rgba(165, 106, 48, 0.03)' : 'transparent'
-                      }}>
-                        <td className="col-date" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
-                          <span style={{ fontWeight: '700', color: '#111827', fontFamily: 'monospace', fontSize: '13px', whiteSpace: 'nowrap' }}>
-                            {formatToDMY(log.attendanceDate)}
-                          </span>
-                          {log.notes && (
-                            <div style={{ fontSize: '11px', color: isBonus ? '#8C5521' : '#6B7280', marginTop: '2px', fontStyle: 'italic', fontWeight: isBonus ? '600' : 'normal' }}>
-                              {log.notes}
-                            </div>
+                      return (
+                        <tr 
+                          key={shift.id || `${group.dateKey}-${sIdx}`} 
+                          style={{
+                            borderBottom: isLastShiftOfDate ? '1.5px solid #CBD5E1' : '1px dashed #E2E8F0',
+                            background: shift.isBonus ? 'rgba(165, 106, 48, 0.03)' : (isMultiSite ? '#FAFCFF' : 'transparent'),
+                            transition: 'background 0.15s ease'
+                          }}
+                        >
+                          {/* DATE COLUMN: Rendered only once per date using rowSpan */}
+                          {isFirstShiftOfDate && (
+                            <td 
+                              className="col-date" 
+                              rowSpan={group.shifts.length} 
+                              style={{ 
+                                padding: '14px 18px', 
+                                verticalAlign: 'top', 
+                                textAlign: 'left',
+                                borderRight: isMultiSite ? '1.5px solid #E2E8F0' : 'transparent',
+                                background: isMultiSite ? '#F8FAFC' : 'inherit'
+                              }}
+                            >
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                <span style={{ fontWeight: '800', color: '#111827', fontFamily: 'monospace', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                                  {group.formattedDate}
+                                </span>
+
+                                {isMultiSite && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
+                                    <span style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      padding: '3px 8px',
+                                      background: '#EFF6FF',
+                                      color: '#1D4ED8',
+                                      border: '1px solid #BFDBFE',
+                                      borderRadius: '12px',
+                                      fontSize: '11px',
+                                      fontWeight: '800',
+                                      width: 'fit-content',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      <i className="fa-solid fa-layer-group" style={{ fontSize: '10px' }}></i>
+                                      {group.shifts.length} Sites ({formatDays(group.totalDayValue)} Days)
+                                    </span>
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#059669', paddingLeft: '2px' }}>
+                                      Day Total: ₹{group.totalDaySalary.toLocaleString('en-IN')}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Date Notes */}
+                                {group.shifts.some(s => s.notes) && (
+                                  <div style={{ fontSize: '11px', color: shift.isBonus ? '#8C5521' : '#6B7280', marginTop: '2px', fontStyle: 'italic', fontWeight: shift.isBonus ? '600' : 'normal' }}>
+                                    {group.shifts.map(s => s.notes).filter(Boolean).join(' • ')}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
                           )}
-                        </td>
 
-                        <td className="col-site" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
-                          {isBonus ? (
-                            <div>
-                              <span style={{
+                          {/* SITE / CUSTOMER COLUMN */}
+                          <td className="col-site" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
+                            {shift.isBonus ? (
+                              <div>
+                                <span style={{
+                                  background: '#F3EDE6',
+                                  color: '#8C5521',
+                                  border: '1px solid #D1C2AF',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  fontWeight: '700',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px'
+                                }}>
+                                  <i className="fa-solid fa-plus" style={{ fontSize: '10px' }}></i>
+                                  Extra Attendance
+                                </span>
+                                <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
+                                  Admin Added
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                {/* Shift Sequence Pill for multi-site dates */}
+                                {isMultiSite && (
+                                  <div style={{ marginBottom: '5px' }}>
+                                    <span style={{
+                                      fontSize: '10.5px',
+                                      fontWeight: '800',
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.4px',
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      background: sIdx === 0 ? '#FEF3C7' : (shift.shiftTag?.includes('Evening') ? '#EDE9FE' : '#E0E7FF'),
+                                      color: sIdx === 0 ? '#92400E' : (shift.shiftTag?.includes('Evening') ? '#6B21A8' : '#3730A3'),
+                                      border: sIdx === 0 ? '1px solid #FDE68A' : (shift.shiftTag?.includes('Evening') ? '1px solid #DDD6FE' : '1px solid #C7D2FE'),
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '5px'
+                                    }}>
+                                      <i className={`fa-solid ${shift.shiftTag?.includes('Evening') ? 'fa-moon' : (sIdx === 0 ? 'fa-sun' : 'fa-cloud-sun')}`} style={{ fontSize: '9px' }}></i>
+                                      {shift.shiftTag || (sIdx === 0 ? '1st Site (Day Shift)' : (sIdx === 1 ? '2nd Site (Evening OT)' : `${sIdx + 1}th Site`))}
+                                    </span>
+                                  </div>
+                                )}
+                                <div style={{ fontWeight: '600', color: '#111827', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', wordBreak: 'break-word' }}>
+                                  <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', fontSize: '12px', flexShrink: 0 }}></i>
+                                  <span>{shift.siteRef}: {shift.customerName}</span>
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#6B7280', paddingLeft: '18px', marginTop: '2px', wordBreak: 'break-word' }}>
+                                  {shift.siteLocation || 'Assigned Site'}
+                                </div>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* TIMINGS (IN / OUT) */}
+                          <td className="col-timings salary-hide-on-print" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
+                            {shift.isBonus ? (
+                              <span className="shift-badge-tag" style={{
                                 background: '#F3EDE6',
                                 color: '#8C5521',
                                 border: '1px solid #D1C2AF',
                                 padding: '3px 8px',
-                                borderRadius: '6px',
+                                borderRadius: '4px',
+                                fontSize: '11.5px',
+                                fontWeight: '700'
+                              }}>
+                                Manual Entry
+                              </span>
+                            ) : (
+                              <div className="shift-timings-wrap" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                                <span className="shift-time-tag" style={{ background: '#ECFDF5', color: '#065F46', padding: '4px 8px', borderRadius: '4px', fontWeight: '700', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                                  IN: {shift.inTime}
+                                </span>
+                                <span style={{ color: '#9CA3AF' }}>→</span>
+                                <span className="shift-time-tag" style={{ background: shift.outTime === '--:--' ? '#F3F4F6' : '#FEF2F2', color: shift.outTime === '--:--' ? '#6B7280' : '#DC2626', padding: '4px 8px', borderRadius: '4px', fontWeight: '700', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                                  OUT: {shift.outTime}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* WORK HOURS */}
+                          <td className="col-hours salary-hide-on-print" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center', fontSize: '13px', fontWeight: '700', color: shift.isBonus ? '#059669' : '#374151' }}>
+                            {shift.isBonus ? '--' : (shift.workHours > 0 ? `${shift.workHours} hrs` : '--')}
+                          </td>
+
+                          {/* DAY VALUE */}
+                          <td className="col-dayval" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
+                            {shift.isBonus ? (
+                              <span className="shift-badge-tag" style={{
+                                background: '#ECFDF5',
+                                color: '#065F46',
+                                border: '1px solid #A7F3D0',
+                                padding: '4px 10px',
+                                borderRadius: '12px',
                                 fontSize: '12px',
-                                fontWeight: '700',
+                                fontWeight: '800',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '5px'
+                                gap: '4px',
+                                whiteSpace: 'nowrap'
                               }}>
                                 <i className="fa-solid fa-plus" style={{ fontSize: '10px' }}></i>
-                                Extra Attendance
+                                {shift.dayVal} Day{shift.dayVal !== 1 ? 's' : ''}
                               </span>
-                              <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
-                                Admin Added
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div style={{ fontWeight: '600', color: '#111827', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', wordBreak: 'break-word' }}>
-                                <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', fontSize: '12px', flexShrink: 0 }}></i>
-                                <span>{log.siteRef}: {log.customerName}</span>
-                              </div>
-                              <div style={{ fontSize: '11px', color: '#6B7280', paddingLeft: '18px', marginTop: '2px', wordBreak: 'break-word' }}>
-                                {log.siteLocation || 'Assigned Site'}
-                              </div>
-                            </>
-                          )}
-                        </td>
-
-                        <td className="col-timings salary-hide-on-print" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
-                          {isBonus ? (
-                            <span className="shift-badge-tag" style={{
-                              background: '#F3EDE6',
-                              color: '#8C5521',
-                              border: '1px solid #D1C2AF',
-                              padding: '3px 8px',
-                              borderRadius: '4px',
-                              fontSize: '11.5px',
-                              fontWeight: '700'
-                            }}>
-                              Manual Entry
-                            </span>
-                          ) : (
-                            <div className="shift-timings-wrap" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                              <span className="shift-time-tag" style={{ background: '#ECFDF5', color: '#065F46', padding: '4px 8px', borderRadius: '4px', fontWeight: '700', whiteSpace: 'nowrap', display: 'inline-block' }}>
-                                IN: {log.inTime}
+                            ) : (
+                              <span className="shift-badge-tag" style={{
+                                background: shift.dayVal >= 1.0 ? '#ECFDF5' : '#FEF3C7',
+                                color: shift.dayVal >= 1.0 ? '#065F46' : '#92400E',
+                                padding: '4px 10px',
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                display: 'inline-block',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {formatDays(shift.dayVal)} Day
                               </span>
-                              <span style={{ color: '#9CA3AF' }}>→</span>
-                              <span className="shift-time-tag" style={{ background: log.outTime === '--:--' ? '#F3F4F6' : '#FEF2F2', color: log.outTime === '--:--' ? '#6B7280' : '#DC2626', padding: '4px 8px', borderRadius: '4px', fontWeight: '700', whiteSpace: 'nowrap', display: 'inline-block' }}>
-                                OUT: {log.outTime}
-                              </span>
-                            </div>
-                          )}
-                        </td>
+                            )}
+                          </td>
 
-                        <td className="col-hours salary-hide-on-print" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center', fontSize: '13px', fontWeight: '700', color: isBonus ? '#059669' : '#374151' }}>
-                          {isBonus ? '--' : (log.workHours > 0 ? `${log.workHours} hrs` : '--')}
-                        </td>
-
-                        <td className="col-dayval" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
-                          {isBonus ? (
-                            <span className="shift-badge-tag" style={{
+                          {/* DAY SALARY */}
+                          <td className="col-salary" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'right' }}>
+                            <span className="shift-salary-tag" style={{
                               background: '#ECFDF5',
                               color: '#065F46',
-                              border: '1px solid #A7F3D0',
-                              padding: '4px 10px',
-                              borderRadius: '12px',
-                              fontSize: '12px',
+                              border: shift.isBonus ? '1.5px solid #10B981' : '1px solid #A7F3D0',
+                              padding: '4px 12px',
+                              borderRadius: '8px',
+                              fontSize: '13px',
                               fontWeight: '800',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              whiteSpace: 'nowrap'
-                            }}>
-                              <i className="fa-solid fa-plus" style={{ fontSize: '10px' }}></i>
-                              {dayVal} Day{dayVal !== 1 ? 's' : ''}
-                            </span>
-                          ) : (
-                            <span className="shift-badge-tag" style={{
-                              background: dayVal >= 1.0 ? '#ECFDF5' : '#FEF3C7',
-                              color: dayVal >= 1.0 ? '#065F46' : '#92400E',
-                              padding: '4px 10px',
-                              borderRadius: '12px',
-                              fontSize: '12px',
-                              fontWeight: '700',
                               display: 'inline-block',
                               whiteSpace: 'nowrap'
                             }}>
-                              {formatDays(dayVal)} Day
+                              {shift.isBonus ? `+₹${shift.daySalary.toLocaleString('en-IN')}` : `₹${shift.daySalary.toLocaleString('en-IN')}`}
                             </span>
-                          )}
-                        </td>
-
-                        <td className="col-salary" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'right' }}>
-                          <span className="shift-salary-tag" style={{
-                            background: '#ECFDF5',
-                            color: '#065F46',
-                            border: isBonus ? '1.5px solid #10B981' : '1px solid #A7F3D0',
-                            padding: '4px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            fontWeight: '800',
-                            display: 'inline-block',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {isBonus ? `+₹${daySalary.toLocaleString('en-IN')}` : `₹${daySalary.toLocaleString('en-IN')}`}
-                          </span>
-                        </td>
-                      </tr>
-                    );
+                          </td>
+                        </tr>
+                      );
+                    });
                   })
                 )}
               </tbody>
@@ -803,7 +1031,7 @@ const Salary = () => {
                       Total
                     </td>
                     <td style={{ padding: '16px 18px', fontSize: '14px', color: '#0F172A', fontWeight: '800', textAlign: 'center' }}>
-                      {activeEmployee.attendanceLogs.reduce((sum, l) => sum + (Number(l.workHours) || 0), 0)} hrs
+                      {totalResolvedHours} hrs
                     </td>
                     <td style={{ padding: '16px 18px', fontSize: '14px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
                       {formatDays(activeEmployee.totalDays)} Days

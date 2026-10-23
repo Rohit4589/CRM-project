@@ -186,6 +186,95 @@ const getAttendance = async (req, res) => {
       };
     });
 
+    // Resolve sequential non-overlapping timings for workers with multiple site shifts on the same day
+    const userDateGroups = new Map();
+    formattedList.forEach((item, idx) => {
+      const uKey = `${item.userId || item.empId}_${item.attendanceDate}`;
+      if (!userDateGroups.has(uKey)) {
+        userDateGroups.set(uKey, []);
+      }
+      userDateGroups.get(uKey).push(idx);
+    });
+
+    for (const [key, indices] of userDateGroups.entries()) {
+      if (indices.length > 1) {
+        // Sort indices by attendance record id ascending (chronological shift order)
+        indices.sort((a, b) => formattedList[a].id - formattedList[b].id);
+
+        if (indices.length === 2) {
+          const s1 = formattedList[indices[0]];
+          const s2 = formattedList[indices[1]];
+          const v1 = parseFloat(s1.dayValue) || 1.0;
+          const v2 = parseFloat(s2.dayValue) || 0.5;
+
+          if (v1 >= 1.0 && v2 <= 0.5) {
+            // Case 1.5 Hajeri (1 Day + 0.5 Day):
+            // 1st site (1 Day) runs 09:00 AM to 06:00 PM (9 hrs)
+            // 2nd site (0.5 Day) runs 06:00 PM to 09:00 PM (3 hrs)
+            s1.inTime = '09:00 AM';
+            s1.outTime = '06:00 PM';
+            s1.workHours = 9;
+
+            s2.inTime = '06:00 PM';
+            s2.outTime = '09:00 PM';
+            s2.workHours = 3;
+          } else if (v1 <= 0.5 && v2 >= 1.0) {
+            // Case 1.5 Hajeri (0.5 Day + 1 Day):
+            // 1st site (0.5 Day) runs 09:00 AM to 01:00 PM (4 hrs)
+            // 1:00 PM to 2:00 PM is lunch break
+            // 2nd site (1 Day) runs 02:00 PM to 09:00 PM (7 hrs)
+            s1.inTime = '09:00 AM';
+            s1.outTime = '01:00 PM';
+            s1.workHours = 4;
+
+            s2.inTime = '02:00 PM';
+            s2.outTime = '09:00 PM';
+            s2.workHours = 7;
+          } else if (v1 <= 0.5 && v2 <= 0.5) {
+            // Case 1.0 Hajeri (0.5 Day + 0.5 Day):
+            // 1st site (0.5 Day) runs 09:00 AM to 01:00 PM (4 hrs)
+            // 1:00 PM to 2:00 PM is lunch break
+            // 2nd site (0.5 Day) runs 02:00 PM to 06:00 PM (4 hrs)
+            s1.inTime = '09:00 AM';
+            s1.outTime = '01:00 PM';
+            s1.workHours = 4;
+
+            s2.inTime = '02:00 PM';
+            s2.outTime = '06:00 PM';
+            s2.workHours = 4;
+          } else if (v1 >= 1.0 && v2 >= 1.0) {
+            // Case 2.0 Hajeri (1 Day + 1 Day):
+            // 06:00 AM to 09:00 PM total
+            // 1st site runs 06:00 AM to 02:00 PM (8 hrs)
+            // 2nd site runs 02:00 PM to 09:00 PM (7 hrs)
+            s1.inTime = '06:00 AM';
+            s1.outTime = '02:00 PM';
+            s1.workHours = 8;
+
+            s2.inTime = '02:00 PM';
+            s2.outTime = '09:00 PM';
+            s2.workHours = 7;
+          }
+        } else if (indices.length === 3) {
+          const s1 = formattedList[indices[0]];
+          const s2 = formattedList[indices[1]];
+          const s3 = formattedList[indices[2]];
+
+          s1.inTime = '09:00 AM';
+          s1.outTime = '01:00 PM';
+          s1.workHours = 4;
+
+          s2.inTime = '02:00 PM';
+          s2.outTime = '06:00 PM';
+          s2.workHours = 4;
+
+          s3.inTime = '06:00 PM';
+          s3.outTime = '09:00 PM';
+          s3.workHours = 3;
+        }
+      }
+    }
+
     return res.status(200).json({
       success: true,
       count: formattedList.length,
@@ -236,14 +325,31 @@ const markAttendance = async (req, res) => {
     const empRole = empData.role_title || 'Carpenter';
     const empRate = Number(empData.daily_rate || 0);
 
-    // Prepare list of sessions
+    // Prepare list of sessions with sequential timings for multi-site shifts
     let sessions = [];
     if (Array.isArray(sites) && sites.length > 0) {
-      sessions = sites.map((s) => ({
-        siteId: s.siteId ? Number(s.siteId) : null,
-        inTime: s.inTime || '09:00 AM',
-        outTime: s.outTime || '06:00 PM',
-      }));
+      sessions = sites.map((s, idx) => {
+        let defIn = '09:00 AM';
+        let defOut = '06:00 PM';
+        if (sites.length > 1) {
+          if (idx === 0) {
+            defIn = '09:00 AM';
+            defOut = '01:00 PM';
+          } else if (idx === 1) {
+            // Shift 2 starts after 1:00 PM - 2:00 PM break
+            defIn = '02:00 PM';
+            defOut = '06:00 PM';
+          } else {
+            defIn = '06:30 PM';
+            defOut = '10:30 PM';
+          }
+        }
+        return {
+          siteId: s.siteId ? Number(s.siteId) : null,
+          inTime: s.inTime || defIn,
+          outTime: s.outTime || defOut,
+        };
+      });
     } else {
       sessions = [{
         siteId: siteId ? Number(siteId) : null,
@@ -360,6 +466,70 @@ const bulkMarkAttendance = async (req, res) => {
     const allSites = await client.query('SELECT id, customer_name, site_ref FROM public.sites');
     const siteMap = new Map(allSites.rows.map(s => [s.id, s]));
 
+    // Group records by userId to resolve sequential timings based on contractor Hajeri rules
+    const userRecMap = new Map();
+    records.forEach((rec) => {
+      if (!rec.userId) return;
+      const uId = Number(rec.userId);
+      if (!userRecMap.has(uId)) userRecMap.set(uId, []);
+      userRecMap.get(uId).push(rec);
+    });
+
+    for (const [uId, uRecs] of userRecMap.entries()) {
+      if (uRecs.length === 2) {
+        const v1 = parseFloat(uRecs[0].dayValue) || 1.0;
+        const v2 = parseFloat(uRecs[1].dayValue) || 0.5;
+        if (v1 >= 1.0 && v2 <= 0.5) {
+          uRecs[0].inTime = '09:00 AM';
+          uRecs[0].outTime = '06:00 PM';
+          uRecs[0].workHours = 9;
+          uRecs[1].inTime = '06:00 PM';
+          uRecs[1].outTime = '09:00 PM';
+          uRecs[1].workHours = 3;
+        } else if (v1 <= 0.5 && v2 >= 1.0) {
+          uRecs[0].inTime = '09:00 AM';
+          uRecs[0].outTime = '01:00 PM';
+          uRecs[0].workHours = 4;
+          uRecs[1].inTime = '02:00 PM';
+          uRecs[1].outTime = '09:00 PM';
+          uRecs[1].workHours = 7;
+        } else if (v1 <= 0.5 && v2 <= 0.5) {
+          uRecs[0].inTime = '09:00 AM';
+          uRecs[0].outTime = '01:00 PM';
+          uRecs[0].workHours = 4;
+          uRecs[1].inTime = '02:00 PM';
+          uRecs[1].outTime = '06:00 PM';
+          uRecs[1].workHours = 4;
+        } else if (v1 >= 1.0 && v2 >= 1.0) {
+          uRecs[0].inTime = '06:00 AM';
+          uRecs[0].outTime = '02:00 PM';
+          uRecs[0].workHours = 8;
+          uRecs[1].inTime = '02:00 PM';
+          uRecs[1].outTime = '09:00 PM';
+          uRecs[1].workHours = 7;
+        }
+      } else if (uRecs.length === 1) {
+        const v = parseFloat(uRecs[0].dayValue) || 1.0;
+        if (v === 1.5) {
+          uRecs[0].inTime = '09:00 AM';
+          uRecs[0].outTime = '09:00 PM';
+          uRecs[0].workHours = 12;
+        } else if (v === 2.0) {
+          uRecs[0].inTime = '06:00 AM';
+          uRecs[0].outTime = '09:00 PM';
+          uRecs[0].workHours = 15;
+        } else if (v <= 0.5) {
+          uRecs[0].inTime = '09:00 AM';
+          uRecs[0].outTime = '01:00 PM';
+          uRecs[0].workHours = 4;
+        } else {
+          uRecs[0].inTime = '09:00 AM';
+          uRecs[0].outTime = '06:00 PM';
+          uRecs[0].workHours = 9;
+        }
+      }
+    }
+
     const insertedRows = [];
 
     for (const rec of records) {
@@ -369,12 +539,13 @@ const bulkMarkAttendance = async (req, res) => {
       const siteId = rec.siteId ? Number(rec.siteId) : null;
       const inTime = rec.inTime || '09:00 AM';
       const outTime = rec.outTime || '06:00 PM';
-      const workHours = (rec.workHours !== undefined && rec.workHours !== null && !isNaN(Number(rec.workHours)))
-        ? Number(rec.workHours)
-        : calculateHours(inTime, outTime);
       const dayValue = (rec.dayValue !== undefined && rec.dayValue !== null && !isNaN(Number(rec.dayValue)))
         ? Number(rec.dayValue)
         : 1.0;
+
+      const workHours = (rec.workHours !== undefined && rec.workHours !== null && !isNaN(Number(rec.workHours)))
+        ? Number(rec.workHours)
+        : calculateHours(inTime, outTime);
       const attStatus = rec.status || status || 'Verified';
       const notes = rec.notes || '';
 
@@ -1113,22 +1284,45 @@ const bulkUpdateAttendance = async (req, res) => {
     const siteMap = new Map(allSites.rows.map(s => [s.id, s]));
 
     const savedRecords = [];
+    const userShiftCounts = new Map();
 
     // 3. Process each record in the list
     for (const rec of records) {
       if (!rec.userId) continue;
 
       const userId = Number(rec.userId);
+      const currentShiftIdx = userShiftCounts.get(userId) || 0;
+      userShiftCounts.set(userId, currentShiftIdx + 1);
+
       const siteId = rec.siteId ? Number(rec.siteId) : null;
-      const inTime = rec.inTime || '09:00 AM';
-      const outTime = rec.outTime || '06:00 PM';
+      let inTime = rec.inTime || '09:00 AM';
+      let outTime = rec.outTime || '06:00 PM';
       const isGift = inTime === 'EXTRA' || inTime === 'GIFT' || outTime === 'ADDED' || outTime === 'BONUS';
-      const workHours = (rec.workHours !== undefined && rec.workHours !== null && !isNaN(Number(rec.workHours)))
-        ? Number(rec.workHours)
-        : (isGift ? 0 : calculateHours(inTime, outTime));
       const dayValue = (rec.dayValue !== undefined && rec.dayValue !== null && !isNaN(Number(rec.dayValue)))
         ? Number(rec.dayValue)
         : 1.0;
+
+      if (!isGift) {
+        if (currentShiftIdx === 0 && dayValue <= 0.5) {
+          if (!rec.outTime || rec.outTime === '06:00 PM' || rec.outTime === '18:00') {
+            outTime = '01:00 PM';
+          }
+        } else if (currentShiftIdx === 1) {
+          if (!rec.inTime || rec.inTime === '09:00 AM' || rec.inTime === '09:00') {
+            inTime = '02:00 PM';
+            outTime = dayValue <= 0.25 ? '04:00 PM' : (dayValue <= 0.5 ? '06:00 PM' : (dayValue <= 0.75 ? '08:00 PM' : '10:00 PM'));
+          }
+        } else if (currentShiftIdx >= 2) {
+          if (!rec.inTime || rec.inTime === '09:00 AM' || rec.inTime === '09:00' || rec.inTime === '02:00 PM') {
+            inTime = '06:30 PM';
+            outTime = '10:30 PM';
+          }
+        }
+      }
+
+      const workHours = (rec.workHours !== undefined && rec.workHours !== null && !isNaN(Number(rec.workHours)))
+        ? Number(rec.workHours)
+        : (isGift ? 0 : calculateHours(inTime, outTime));
       const attStatus = rec.status || 'Approved';
       const notes = rec.notes || '';
 
