@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toTitleCase } from '../../utils/autoCapitalize';
+import { handleFormKeyDown } from '../../utils/formKeyboardNav';
 
 const STANDARD_REF_SOURCES = [
   'Existing Customer',
@@ -156,7 +157,7 @@ const EditSiteModal = ({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} style={{padding: '20px 22px'}}>
+        <form onSubmit={onSubmit} onKeyDown={handleFormKeyDown} style={{padding: '20px 22px'}}>
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',

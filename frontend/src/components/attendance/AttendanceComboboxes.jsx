@@ -41,7 +41,12 @@ export const EmployeeCombobox = ({
   onChange,
   placeholder = "Type worker name (e.g. 'P', 'Jubair')...",
   openUpward = false,
-  fallbackText = ''
+  fallbackText = '',
+  rowIndex,
+  colIndex = 0,
+  onNavigate,
+  onEnterNext,
+  id
 }) => {
   const selectedEmp = employees.find(e => 
     (value && (String(e.dbId) === String(value) || String(e.id) === String(value) || String(e.empCode) === String(value))) ||
@@ -118,6 +123,7 @@ export const EmployeeCombobox = ({
     setQuery(emp.name || emp.fullName || '');
     setIsOpen(false);
     onChange(empId, rate);
+    inputRef.current?.focus();
   };
 
   const handleClear = (e) => {
@@ -130,9 +136,54 @@ export const EmployeeCombobox = ({
 
   const handleKeyDown = (e) => {
     if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        setIsOpen(true);
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
+        if (e.altKey) {
+          setIsOpen(true);
+        } else if (onNavigate) {
+          onNavigate(rowIndex, colIndex, 'down');
+        } else {
+          setIsOpen(true);
+        }
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (e.altKey) {
+          setIsOpen(true);
+        } else if (onNavigate) {
+          onNavigate(rowIndex, colIndex, 'up');
+        } else {
+          setIsOpen(true);
+        }
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        const isAtStart = e.target.selectionStart === 0 && e.target.selectionEnd === 0;
+        const allSelected = e.target.selectionStart === 0 && e.target.selectionEnd === (e.target.value?.length || 0);
+        if ((isAtStart || allSelected) && onNavigate) {
+          e.preventDefault();
+          onNavigate(rowIndex, colIndex, 'left');
+          return;
+        }
+      }
+      if (e.key === 'ArrowRight') {
+        const isAtEnd = e.target.selectionStart === (e.target.value?.length || 0);
+        const allSelected = e.target.selectionStart === 0 && e.target.selectionEnd === (e.target.value?.length || 0);
+        if ((isAtEnd || allSelected) && onNavigate) {
+          e.preventDefault();
+          onNavigate(rowIndex, colIndex, 'right');
+          return;
+        }
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (onEnterNext) {
+          onEnterNext(rowIndex, colIndex);
+        } else if (onNavigate) {
+          onNavigate(rowIndex, colIndex, 'right');
+        }
+        return;
       }
       return;
     }
@@ -147,8 +198,15 @@ export const EmployeeCombobox = ({
       e.preventDefault();
       if (filteredEmployees.length > 0 && highlightedIndex >= 0 && highlightedIndex < filteredEmployees.length) {
         handleSelect(filteredEmployees[highlightedIndex]);
+      } else {
+        setIsOpen(false);
+      }
+    } else if (e.key === 'Tab') {
+      if (filteredEmployees.length > 0 && highlightedIndex >= 0 && highlightedIndex < filteredEmployees.length) {
+        handleSelect(filteredEmployees[highlightedIndex]);
       }
     } else if (e.key === 'Escape') {
+      e.preventDefault();
       setIsOpen(false);
       if (selectedEmp) {
         setQuery(selectedEmp.name || selectedEmp.fullName || '');
@@ -181,12 +239,15 @@ export const EmployeeCombobox = ({
         />
         <input
           ref={inputRef}
+          id={id}
           type="text"
           value={query}
           placeholder={placeholder}
           onFocus={(e) => {
-            setIsOpen(true);
             e.target.select();
+          }}
+          onClick={() => {
+            setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
           onChange={(e) => {
@@ -355,7 +416,12 @@ export const SiteCombobox = ({
   onChange,
   placeholder = "Type site # or name (e.g. '204', 'Ceratec')...",
   openUpward = false,
-  fallbackText = ''
+  fallbackText = '',
+  rowIndex,
+  colIndex = 1,
+  onNavigate,
+  onEnterNext,
+  id
 }) => {
   const selectedSite = sites.find(s => 
     (value && (String(s.dbId) === String(value) || String(s.id) === String(value) || String(s.siteRef) === String(value) || String(s.siteCode) === String(value))) ||
@@ -439,6 +505,7 @@ export const SiteCombobox = ({
     setQuery(formatSiteDisplay(site));
     setIsOpen(false);
     onChange(siteId);
+    inputRef.current?.focus();
   };
 
   const handleClear = (e) => {
@@ -451,9 +518,54 @@ export const SiteCombobox = ({
 
   const handleKeyDown = (e) => {
     if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        setIsOpen(true);
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
+        if (e.altKey) {
+          setIsOpen(true);
+        } else if (onNavigate) {
+          onNavigate(rowIndex, colIndex, 'down');
+        } else {
+          setIsOpen(true);
+        }
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (e.altKey) {
+          setIsOpen(true);
+        } else if (onNavigate) {
+          onNavigate(rowIndex, colIndex, 'up');
+        } else {
+          setIsOpen(true);
+        }
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        const isAtStart = e.target.selectionStart === 0 && e.target.selectionEnd === 0;
+        const allSelected = e.target.selectionStart === 0 && e.target.selectionEnd === (e.target.value?.length || 0);
+        if ((isAtStart || allSelected) && onNavigate) {
+          e.preventDefault();
+          onNavigate(rowIndex, colIndex, 'left');
+          return;
+        }
+      }
+      if (e.key === 'ArrowRight') {
+        const isAtEnd = e.target.selectionStart === (e.target.value?.length || 0);
+        const allSelected = e.target.selectionStart === 0 && e.target.selectionEnd === (e.target.value?.length || 0);
+        if ((isAtEnd || allSelected) && onNavigate) {
+          e.preventDefault();
+          onNavigate(rowIndex, colIndex, 'right');
+          return;
+        }
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (onEnterNext) {
+          onEnterNext(rowIndex, colIndex);
+        } else if (onNavigate) {
+          onNavigate(rowIndex, colIndex, 'right');
+        }
+        return;
       }
       return;
     }
@@ -468,8 +580,15 @@ export const SiteCombobox = ({
       e.preventDefault();
       if (filteredSites.length > 0 && highlightedIndex >= 0 && highlightedIndex < filteredSites.length) {
         handleSelect(filteredSites[highlightedIndex]);
+      } else {
+        setIsOpen(false);
+      }
+    } else if (e.key === 'Tab') {
+      if (filteredSites.length > 0 && highlightedIndex >= 0 && highlightedIndex < filteredSites.length) {
+        handleSelect(filteredSites[highlightedIndex]);
       }
     } else if (e.key === 'Escape') {
+      e.preventDefault();
       setIsOpen(false);
       if (selectedSite) {
         setQuery(formatSiteDisplay(selectedSite));
@@ -502,12 +621,15 @@ export const SiteCombobox = ({
         />
         <input
           ref={inputRef}
+          id={id}
           type="text"
           value={query}
           placeholder={placeholder}
           onFocus={(e) => {
-            setIsOpen(true);
             e.target.select();
+          }}
+          onClick={() => {
+            setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
           onChange={(e) => {
@@ -673,7 +795,12 @@ export const DayValueCombobox = ({
   value = '1.0',
   onChange,
   openUpward = false,
-  style = {}
+  style = {},
+  rowIndex,
+  colIndex = 2,
+  onNavigate,
+  onEnterNext,
+  id
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(String(value ?? '1.0'));
@@ -735,6 +862,7 @@ export const DayValueCombobox = ({
     setInputValue(presetVal);
     setIsOpen(false);
     onChange(presetVal);
+    inputRef.current?.focus();
   };
 
   const handleInputChange = (e) => {
@@ -761,21 +889,45 @@ export const DayValueCombobox = ({
   };
 
   const handleKeyDown = (e) => {
+    if (isOpen) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsOpen(false);
+        return;
+      }
+    }
+
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      const current = parseFloat(inputValue) || 0;
-      const next = (Math.round((current + 0.25) * 100) / 100).toString();
-      setInputValue(next);
-      onChange(next);
+      if (onNavigate) {
+        onNavigate(rowIndex, colIndex, 'up');
+      }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      const current = parseFloat(inputValue) || 0;
-      const next = Math.max(0, Math.round((current - 0.25) * 100) / 100).toString();
-      setInputValue(next);
-      onChange(next);
+      if (onNavigate) {
+        onNavigate(rowIndex, colIndex, 'down');
+      }
+    } else if (e.key === 'ArrowLeft') {
+      const isAtStart = e.target.selectionStart === 0 && e.target.selectionEnd === 0;
+      const allSelected = e.target.selectionStart === 0 && e.target.selectionEnd === (e.target.value?.length || 0);
+      if ((isAtStart || allSelected) && onNavigate) {
+        e.preventDefault();
+        onNavigate(rowIndex, colIndex, 'left');
+      }
+    } else if (e.key === 'ArrowRight') {
+      const isAtEnd = e.target.selectionStart === (e.target.value?.length || 0);
+      const allSelected = e.target.selectionStart === 0 && e.target.selectionEnd === (e.target.value?.length || 0);
+      if ((isAtEnd || allSelected) && onNavigate) {
+        e.preventDefault();
+        onNavigate(rowIndex, colIndex, 'right');
+      }
     } else if (e.key === 'Enter') {
-      inputRef.current?.blur();
+      e.preventDefault();
+      handleBlur();
       setIsOpen(false);
+      if (onEnterNext) {
+        onEnterNext(rowIndex, colIndex);
+      }
     }
   };
 
@@ -795,6 +947,7 @@ export const DayValueCombobox = ({
       >
         <input
           ref={inputRef}
+          id={id}
           type="text"
           inputMode="decimal"
           value={inputValue}

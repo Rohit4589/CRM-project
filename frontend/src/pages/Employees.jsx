@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../config/api';
 import { toTitleCase } from '../utils/autoCapitalize';
+import { handleFormKeyDown } from '../utils/formKeyboardNav';
 
 const Employees = () => {
   const [employees, setEmployees] = useState([]);
@@ -471,7 +472,7 @@ const Employees = () => {
               }}>&times;</button>
             </div>
 
-            <form onSubmit={handleAddEmployee}>
+            <form onSubmit={handleAddEmployee} onKeyDown={handleFormKeyDown}>
 
               {/* Employee ID (3 or 4 digits) */}
               <div style={{ marginBottom: '14px' }}>
@@ -691,7 +692,7 @@ const Employees = () => {
               }}>&times;</button>
             </div>
 
-            <form onSubmit={handleUpdateEmployee}>
+            <form onSubmit={handleUpdateEmployee} onKeyDown={handleFormKeyDown}>
 
               {/* Editable Employee ID (3 or 4 digits) */}
               <div style={{ marginBottom: '14px' }}>
