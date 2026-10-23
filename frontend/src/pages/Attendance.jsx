@@ -704,18 +704,74 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
         return `${String(displayH).padStart(2, '0')}:${String(m || 0).padStart(2, '0')} ${ampm}`;
       };
 
+      // Pre-process bulkRows by userId to apply contractor Hajeri timing rules
+      const userRowsMap = new Map();
+      bulkRows.forEach(r => {
+        const uId = Number(r.userId);
+        if (!userRowsMap.has(uId)) userRowsMap.set(uId, []);
+        userRowsMap.get(uId).push(r);
+      });
+
+      for (const [uId, uRows] of userRowsMap.entries()) {
+        if (uRows.length === 2) {
+          const v1 = parseFloat(uRows[0].dayValue) || 1.0;
+          const v2 = parseFloat(uRows[1].dayValue) || 0.5;
+
+          if (v1 >= 1.0 && v2 <= 0.5) {
+            uRows[0].inTime = '09:00';
+            uRows[0].outTime = '18:00';
+            uRows[1].inTime = '18:00';
+            uRows[1].outTime = '21:00';
+          } else if (v1 <= 0.5 && v2 >= 1.0) {
+            uRows[0].inTime = '09:00';
+            uRows[0].outTime = '13:00';
+            uRows[1].inTime = '14:00';
+            uRows[1].outTime = '21:00';
+          } else if (v1 <= 0.5 && v2 <= 0.5) {
+            uRows[0].inTime = '09:00';
+            uRows[0].outTime = '13:00';
+            uRows[1].inTime = '14:00';
+            uRows[1].outTime = '18:00';
+          } else if (v1 >= 1.0 && v2 >= 1.0) {
+            uRows[0].inTime = '06:00';
+            uRows[0].outTime = '14:00';
+            uRows[1].inTime = '14:00';
+            uRows[1].outTime = '21:00';
+          }
+        } else if (uRows.length === 1) {
+          const v = parseFloat(uRows[0].dayValue) || 1.0;
+          if (v === 1.5) {
+            uRows[0].inTime = '09:00';
+            uRows[0].outTime = '21:00';
+          } else if (v === 2.0) {
+            uRows[0].inTime = '06:00';
+            uRows[0].outTime = '21:00';
+          } else if (v <= 0.5) {
+            uRows[0].inTime = '09:00';
+            uRows[0].outTime = '13:00';
+          } else {
+            uRows[0].inTime = '09:00';
+            uRows[0].outTime = '18:00';
+          }
+        }
+      }
+
       const records = bulkRows.map(r => {
-        const inTimeStr = formatTimeAmPm(r.inTime || '09:00');
-        const outTimeStr = formatTimeAmPm(r.outTime || '18:00');
+        const uId = Number(r.userId);
         const dVal = parseFloat(r.dayValue) || 1.0;
-        const { hours } = calculateHoursAndDayValue(r.inTime || '09:00', r.outTime || '18:00');
+        const inTimeVal = r.inTime || '09:00';
+        const outTimeVal = r.outTime || '18:00';
+
+        const inTimeStr = formatTimeAmPm(inTimeVal);
+        const outTimeStr = formatTimeAmPm(outTimeVal);
+        const { hours } = calculateHoursAndDayValue(inTimeVal, outTimeVal);
 
         let sId = r.siteId;
         const matched = sites.find(s => s.id === sId || s.dbId === sId || s.siteRef === sId);
         if (matched) sId = matched.dbId || matched.id;
 
         return {
-          userId: Number(r.userId),
+          userId: uId,
           siteId: sId ? Number(sId) : null,
           inTime: inTimeStr,
           outTime: outTimeStr,
