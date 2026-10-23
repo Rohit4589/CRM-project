@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../config/api';
 import { getTranslation } from '../utils/translations';
 import { EmployeeCombobox, SiteCombobox, DayValueCombobox } from '../components/attendance/AttendanceComboboxes';
+import { handleFormKeyDown } from '../utils/formKeyboardNav';
 
 const Attendance = ({ lang = 'en', initialDate = null }) => {
   const t = (key) => getTranslation(lang, key);
@@ -555,6 +556,59 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
     setBulkRows(prev => prev.filter(r => r.id !== rowId));
   };
 
+  // Bulk Grid Keyboard Focus & Navigation helpers
+  const focusBulkCell = (rowIdx, colIdx) => {
+    const el = document.getElementById(`bulk-cell-${rowIdx}-${colIdx}`);
+    if (el) {
+      el.focus();
+      if (typeof el.select === 'function') {
+        el.select();
+      }
+      el.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    }
+  };
+
+  const handleBulkNavigate = (rowIdx, colIdx, direction) => {
+    if (direction === 'up') {
+      if (rowIdx > 0) {
+        focusBulkCell(rowIdx - 1, colIdx);
+      }
+    } else if (direction === 'down') {
+      if (rowIdx < bulkRows.length - 1) {
+        focusBulkCell(rowIdx + 1, colIdx);
+      }
+    } else if (direction === 'left') {
+      if (colIdx > 0) {
+        focusBulkCell(rowIdx, colIdx - 1);
+      }
+    } else if (direction === 'right') {
+      if (colIdx < 2) {
+        focusBulkCell(rowIdx, colIdx + 1);
+      }
+    }
+  };
+
+  const handleBulkEnterNext = (rowIdx, colIdx) => {
+    if (colIdx === 0) {
+      // From Employee -> Move to Site
+      focusBulkCell(rowIdx, 1);
+    } else if (colIdx === 1) {
+      // From Site -> Move to Day Value
+      focusBulkCell(rowIdx, 2);
+    } else if (colIdx === 2) {
+      // From Day Value (last field!)
+      if (rowIdx < bulkRows.length - 1) {
+        focusBulkCell(rowIdx + 1, 0);
+      } else {
+        // Last row! Add a new blank row and focus its employee cell
+        handleAddBulkRow();
+        setTimeout(() => {
+          focusBulkCell(rowIdx + 1, 0);
+        }, 50);
+      }
+    }
+  };
+
   // Pre-load all company employees into the bulk grid
   const handleLoadAllWorkers = () => {
     if (!employees || employees.length === 0) return;
@@ -907,6 +961,57 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
       setBulkEditDeletedIds(prev => [...prev, Number(rowId)]);
     }
     setBulkEditRows(prev => prev.filter(r => r.id !== rowId));
+  };
+
+  // Bulk Edit Grid Keyboard Focus & Navigation helpers
+  const focusBulkEditCell = (rowIdx, colIdx) => {
+    const el = document.getElementById(`bulkedit-cell-${rowIdx}-${colIdx}`);
+    if (el) {
+      el.focus();
+      if (typeof el.select === 'function') {
+        el.select();
+      }
+      el.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    }
+  };
+
+  const handleBulkEditNavigate = (rowIdx, colIdx, direction) => {
+    if (direction === 'up') {
+      if (rowIdx > 0) {
+        focusBulkEditCell(rowIdx - 1, colIdx);
+      }
+    } else if (direction === 'down') {
+      if (rowIdx < bulkEditRows.length - 1) {
+        focusBulkEditCell(rowIdx + 1, colIdx);
+      }
+    } else if (direction === 'left') {
+      if (colIdx > 0) {
+        focusBulkEditCell(rowIdx, colIdx - 1);
+      }
+    } else if (direction === 'right') {
+      if (colIdx < 3) {
+        focusBulkEditCell(rowIdx, colIdx + 1);
+      }
+    }
+  };
+
+  const handleBulkEditEnterNext = (rowIdx, colIdx) => {
+    if (colIdx === 0) {
+      focusBulkEditCell(rowIdx, 1);
+    } else if (colIdx === 1) {
+      focusBulkEditCell(rowIdx, 2);
+    } else if (colIdx === 2) {
+      focusBulkEditCell(rowIdx, 3);
+    } else if (colIdx === 3) {
+      if (rowIdx < bulkEditRows.length - 1) {
+        focusBulkEditCell(rowIdx + 1, 0);
+      } else {
+        handleAddBulkEditRow();
+        setTimeout(() => {
+          focusBulkEditCell(rowIdx + 1, 0);
+        }, 50);
+      }
+    }
   };
 
   const handleBulkEditRowChange = (rowId, field, value) => {
@@ -2336,7 +2441,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
 
             {/* Modal Form Body - Single Employee Mode */}
             {attendanceMode === 'single' && (
-              <form onSubmit={handleSaveAttendance} style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              <form onSubmit={handleSaveAttendance} onKeyDown={handleFormKeyDown} style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
                 {apiError && (
                   <div style={{
                     background: '#FEF2F2',
@@ -2801,6 +2906,11 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                               {/* Employee Select (Searchable & Editable Combobox) */}
                               <td style={{ padding: '8px 10px', position: 'relative' }}>
                                 <EmployeeCombobox
+                                  id={`bulk-cell-${idx}-0`}
+                                  rowIndex={idx}
+                                  colIndex={0}
+                                  onNavigate={handleBulkNavigate}
+                                  onEnterNext={handleBulkEnterNext}
                                   value={row.userId}
                                   employees={employees}
                                   onChange={(empId, empRate) => {
@@ -2813,6 +2923,11 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                               {/* Site Select (Searchable & Editable Combobox) */}
                               <td style={{ padding: '8px 10px', position: 'relative' }}>
                                 <SiteCombobox
+                                  id={`bulk-cell-${idx}-1`}
+                                  rowIndex={idx}
+                                  colIndex={1}
+                                  onNavigate={handleBulkNavigate}
+                                  onEnterNext={handleBulkEnterNext}
                                   value={row.siteId}
                                   sites={sites}
                                   onChange={(siteId) => {
@@ -2825,6 +2940,11 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                               {/* Day Value (Hajeri) - Searchable, Editable & Presets */}
                               <td style={{ padding: '8px 10px', position: 'relative', width: '175px' }}>
                                 <DayValueCombobox
+                                  id={`bulk-cell-${idx}-2`}
+                                  rowIndex={idx}
+                                  colIndex={2}
+                                  onNavigate={handleBulkNavigate}
+                                  onEnterNext={handleBulkEnterNext}
                                   value={row.dayValue}
                                   onChange={(newVal) => handleBulkRowChange(row.id, 'dayValue', newVal)}
                                   openUpward={idx >= bulkRows.length - 2 && bulkRows.length > 2}
@@ -2954,7 +3074,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
 
             {/* Form 3: Add Extra Days (Bonus / Overtime Days) */}
             {attendanceMode === 'days' && (
-              <form onSubmit={handleSaveGiftAttendance} style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              <form onSubmit={handleSaveGiftAttendance} onKeyDown={handleFormKeyDown} style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
                 {apiError && (
                   <div style={{
                     background: '#FEF2F2',
@@ -3192,7 +3312,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
               </button>
             </div>
 
-            <form onSubmit={handleUpdateAttendance} style={{ padding: '24px' }}>
+            <form onSubmit={handleUpdateAttendance} onKeyDown={handleFormKeyDown} style={{ padding: '24px' }}>
               {apiError && (
                 <div style={{
                   background: '#FEF2F2',
@@ -3858,6 +3978,11 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                               {/* Employee Select */}
                               <td style={{ padding: '8px 10px', position: 'relative' }}>
                                 <EmployeeCombobox
+                                  id={`bulkedit-cell-${idx}-0`}
+                                  rowIndex={idx}
+                                  colIndex={0}
+                                  onNavigate={handleBulkEditNavigate}
+                                  onEnterNext={handleBulkEditEnterNext}
                                   value={row.userId}
                                   employees={employees}
                                   fallbackText={row.employeeName}
@@ -3871,6 +3996,11 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                               {/* Site Select */}
                               <td style={{ padding: '8px 10px', position: 'relative' }}>
                                 <SiteCombobox
+                                  id={`bulkedit-cell-${idx}-1`}
+                                  rowIndex={idx}
+                                  colIndex={1}
+                                  onNavigate={handleBulkEditNavigate}
+                                  onEnterNext={handleBulkEditEnterNext}
                                   value={row.siteId}
                                   sites={sites}
                                   fallbackText={row.siteName}
@@ -3884,6 +4014,11 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                               {/* Day Value (Hajeri) */}
                               <td style={{ padding: '8px 8px', position: 'relative' }}>
                                 <DayValueCombobox
+                                  id={`bulkedit-cell-${idx}-2`}
+                                  rowIndex={idx}
+                                  colIndex={2}
+                                  onNavigate={handleBulkEditNavigate}
+                                  onEnterNext={handleBulkEditEnterNext}
                                   value={row.dayValue}
                                   onChange={(newVal) => handleBulkEditRowChange(row.id, 'dayValue', newVal)}
                                   openUpward={idx >= bulkEditRows.length - 2 && bulkEditRows.length > 2}
@@ -3908,9 +4043,26 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                               {/* Notes */}
                               <td style={{ padding: '8px 8px' }}>
                                 <input
+                                  id={`bulkedit-cell-${idx}-3`}
                                   type="text"
                                   placeholder="Work details..."
                                   value={row.notes}
+                                  onFocus={(e) => e.target.select()}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'ArrowUp' && idx > 0) {
+                                      e.preventDefault();
+                                      focusBulkEditCell(idx - 1, 3);
+                                    } else if (e.key === 'ArrowDown' && idx < bulkEditRows.length - 1) {
+                                      e.preventDefault();
+                                      focusBulkEditCell(idx + 1, 3);
+                                    } else if (e.key === 'ArrowLeft' && e.target.selectionStart === 0) {
+                                      e.preventDefault();
+                                      focusBulkEditCell(idx, 2);
+                                    } else if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleBulkEditEnterNext(idx, 3);
+                                    }
+                                  }}
                                   onChange={(e) => handleBulkEditRowChange(row.id, 'notes', e.target.value)}
                                   style={{
                                     width: '100%',

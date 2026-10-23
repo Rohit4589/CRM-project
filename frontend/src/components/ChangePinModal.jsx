@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { API_BASE } from '../config/api';
 import { getTranslation } from '../utils/translations';
+import { handleFormKeyDown } from '../utils/formKeyboardNav';
 
 const ChangePinModal = ({ isOpen, onClose, user, lang = 'hi' }) => {
   const [currentPin, setCurrentPin] = useState('');
@@ -143,7 +144,7 @@ const ChangePinModal = ({ isOpen, onClose, user, lang = 'hi' }) => {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown}>
           <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#4B382A', marginBottom: '4px' }}>
               {t.currentPin}
