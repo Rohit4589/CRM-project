@@ -1900,7 +1900,7 @@ const Salary = () => {
           {/* KPI Snapshot Cards for Current View */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
             gap: '14px',
             marginBottom: '20px'
           }}>
@@ -1910,12 +1910,6 @@ const Salary = () => {
                   <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Payroll</div>
                   <div style={{ fontSize: '22px', fontWeight: '800', color: '#059669', marginTop: '4px' }}>
                     ₹{totalEmployeePayroll.toLocaleString('en-IN')}
-                  </div>
-                </div>
-                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Days</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#8C5521', marginTop: '4px' }}>
-                    {formatDays(salaryRows.reduce((sum, r) => sum + r.totalDays, 0))} Days
                   </div>
                 </div>
                 <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
@@ -1931,12 +1925,6 @@ const Salary = () => {
                   <div style={{ fontSize: '11px', color: '#065F46', fontWeight: '800', textTransform: 'uppercase' }}>Total Labor Cost</div>
                   <div style={{ fontSize: '22px', fontWeight: '800', color: '#065F46', marginTop: '4px' }}>
                     ₹{totalSitePayroll.toLocaleString('en-IN')}
-                  </div>
-                </div>
-                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Days</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#8C5521', marginTop: '4px' }}>
-                    {formatDays(totalSiteManDays)} Days
                   </div>
                 </div>
                 <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
