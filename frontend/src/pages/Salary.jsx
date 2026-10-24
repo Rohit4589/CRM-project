@@ -677,35 +677,37 @@ const Salary = () => {
                 </div>
               </div>
 
-              <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{
                   background: '#F3EDE6',
                   color: '#7A4518',
                   border: '1px solid #D1C2AF',
-                  padding: '7px 14px',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: '700'
+                  padding: '6px 12px',
+                  borderRadius: '7px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  whiteSpace: 'nowrap'
                 }}>
-                  <i className="fa-regular fa-calendar" style={{ marginRight: '6px' }}></i>
+                  <i className="fa-regular fa-calendar" style={{ marginRight: '5px' }}></i>
                   {formatMonthName(selectedMonth)}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleOpenGiftModal(activeEmployee)}
                   style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    fontSize: '13px',
+                    padding: '6px 12px',
+                    borderRadius: '7px',
+                    fontSize: '12px',
                     fontWeight: '700',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    gap: '5px',
                     background: '#fff',
                     color: '#374151',
                     border: '1.5px solid #D1C2AF',
                     cursor: 'pointer',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   <i className="fa-solid fa-plus" style={{ color: 'var(--gold, #A56A30)' }}></i> Add Days
@@ -714,13 +716,14 @@ const Salary = () => {
                   onClick={() => window.print()}
                   className="btn-primary"
                   style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    fontSize: '13px',
+                    padding: '6px 14px',
+                    borderRadius: '7px',
+                    fontSize: '12px',
                     fontWeight: '700',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '6px',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   <i className="fa-solid fa-print"></i> Print Statement
@@ -732,34 +735,34 @@ const Salary = () => {
           {/* KPI Summary Cards (Hidden on print to save vertical paper space) */}
           <div className="no-print" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '14px',
-            marginBottom: '22px'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
+            gap: '8px',
+            marginBottom: '14px'
           }}>
-            <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-              <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Logged Shifts</div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: '#111827', marginTop: '4px' }}>
+            <div style={{ background: '#fff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+              <div style={{ fontSize: '10px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Logged Shifts</div>
+              <div style={{ fontSize: '18px', fontWeight: '800', color: '#111827', marginTop: '2px', whiteSpace: 'nowrap' }}>
                 {activeEmployee.attendanceLogs.length} Shifts
               </div>
             </div>
 
-            <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-              <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Day Units</div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: '#8C5521', marginTop: '4px' }}>
+            <div style={{ background: '#fff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+              <div style={{ fontSize: '10px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Day Units</div>
+              <div style={{ fontSize: '18px', fontWeight: '800', color: '#8C5521', marginTop: '2px', whiteSpace: 'nowrap' }}>
                 {formatDays(activeEmployee.totalDays)} Days
               </div>
             </div>
 
-            <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '10px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-              <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Daily Wage Rate</div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--gold, #A56A30)', marginTop: '4px' }}>
+            <div style={{ background: '#fff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1C2AF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+              <div style={{ fontSize: '10px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Daily Wage Rate</div>
+              <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--gold, #A56A30)', marginTop: '2px', whiteSpace: 'nowrap' }}>
                 ₹{activeEmployee.dailyRate.toLocaleString('en-IN')}
               </div>
             </div>
 
-            <div style={{ background: '#ECFDF5', padding: '16px 20px', borderRadius: '10px', border: '1px solid #A7F3D0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-              <div style={{ fontSize: '11px', color: '#065F46', fontWeight: '700', textTransform: 'uppercase' }}>Total Salary Earned</div>
-              <div style={{ fontSize: '24px', fontWeight: '800', color: '#065F46', marginTop: '4px' }}>
+            <div style={{ background: '#ECFDF5', padding: '10px 14px', borderRadius: '8px', border: '1px solid #A7F3D0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+              <div style={{ fontSize: '10px', color: '#065F46', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Salary Earned</div>
+              <div style={{ fontSize: '18px', fontWeight: '800', color: '#065F46', marginTop: '2px', whiteSpace: 'nowrap' }}>
                 ₹{activeEmployee.grossAmount.toLocaleString('en-IN')}
               </div>
             </div>

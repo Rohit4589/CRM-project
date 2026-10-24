@@ -2266,48 +2266,48 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1400,
-          padding: '16px'
+          padding: '8px'
         }}>
           <div style={{
             background: '#fff',
             borderRadius: '12px',
             width: '100%',
-            maxWidth: attendanceMode === 'bulk' ? '980px' : (attendanceMode === 'days' ? '480px' : '680px'),
+            maxWidth: attendanceMode === 'bulk' ? '980px' : (attendanceMode === 'days' ? '460px' : '640px'),
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
             overflow: 'hidden',
-            maxHeight: '90vh',
+            maxHeight: '94vh',
             display: 'flex',
             flexDirection: 'column',
             transition: 'max-width 0.2s ease'
           }}>
             {/* Modal Header */}
             <div style={{
-              padding: '18px 24px 14px 24px',
+              padding: '14px 16px 10px 16px',
               borderBottom: '1px solid #E5E7EB',
               background: '#FAF8F5',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px'
+              gap: '8px'
             }}>
               {/* Row 1: Title, Subtitle and Anchored Top-Right Close Button */}
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
-                gap: '16px'
+                gap: '12px'
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1F1A17', letterSpacing: '-0.01em' }}>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#1F1A17', letterSpacing: '-0.01em' }}>
                     {attendanceMode === 'bulk'
                       ? 'Bulk Daily Attendance'
                       : (attendanceMode === 'days' ? 'Add Attendance Days' : 'Mark Daily Attendance')}
                   </h3>
-                  <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#5C4E43', lineHeight: '1.4' }}>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#5C4E43', lineHeight: '1.3' }}>
                     {attendanceMode === 'bulk'
-                      ? 'Mark attendance for multiple workers across sites with auto-calculated daily wages.'
+                      ? 'Mark attendance for multiple workers with auto-calculated daily wages.'
                       : (attendanceMode === 'days'
                         ? 'Award extra or bonus attendance days (+1, +4 days) directly to worker salary.'
-                        : 'Select employee, date, and site shifts. Use [+] if the worker worked at multiple sites.')}
+                        : 'Select employee, date, and site shifts.')}
                   </p>
                 </div>
 
@@ -2322,7 +2322,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     lineHeight: '1',
                     color: '#8C7B6D',
                     cursor: 'pointer',
-                    padding: '6px 8px',
+                    padding: '4px 6px',
                     borderRadius: '6px',
                     flexShrink: 0,
                     transition: 'all 0.15s ease',
@@ -2337,43 +2337,44 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                 </button>
               </div>
 
-              {/* Row 2: Mode Switcher Tabs (3 Switches: Single, Multiple, Add Days) */}
+              {/* Row 2: Mode Switcher Tabs (3 Compact Switches: Single, Bulk, + Days) */}
               <div style={{
-                display: 'inline-flex',
-                alignSelf: 'flex-start',
+                display: 'flex',
                 background: '#EAE3DA',
-                borderRadius: '8px',
+                borderRadius: '7px',
                 padding: '3px',
-                gap: '4px',
-                maxWidth: '100%',
-                overflowX: 'auto'
+                gap: '3px',
+                width: '100%',
+                boxSizing: 'border-box'
               }}>
-                {/* Switch 1: Single Employee */}
+                {/* Switch 1: Single */}
                 <button
                   type="button"
                   onClick={() => setAttendanceMode('single')}
                   style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
+                    flex: '1 1 0',
+                    padding: '6px 8px',
+                    borderRadius: '5px',
                     border: 'none',
-                    fontSize: '12px',
+                    fontSize: '11.5px',
                     fontWeight: '700',
                     cursor: 'pointer',
                     background: attendanceMode === 'single' ? 'var(--gold, #4A2C17)' : 'transparent',
                     color: attendanceMode === 'single' ? '#FFFFFF' : '#5C4E43',
-                    boxShadow: attendanceMode === 'single' ? '0 2px 6px rgba(74, 44, 23, 0.25)' : 'none',
+                    boxShadow: attendanceMode === 'single' ? '0 2px 5px rgba(74, 44, 23, 0.22)' : 'none',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    justifyContent: 'center',
+                    gap: '4px',
                     transition: 'all 0.15s ease',
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  <i className="fa-solid fa-user" style={{ color: attendanceMode === 'single' ? '#FFFFFF' : '#8C7B6D' }}></i>
-                  Single Employee
+                  <i className="fa-solid fa-user" style={{ fontSize: '10.5px' }}></i>
+                  Single
                 </button>
 
-                {/* Switch 2: Multiple Employees */}
+                {/* Switch 2: Bulk */}
                 <button
                   type="button"
                   onClick={() => {
@@ -2392,27 +2393,29 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     setAttendanceMode('bulk');
                   }}
                   style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
+                    flex: '1 1 0',
+                    padding: '6px 8px',
+                    borderRadius: '5px',
                     border: 'none',
-                    fontSize: '12px',
+                    fontSize: '11.5px',
                     fontWeight: '700',
                     cursor: 'pointer',
                     background: attendanceMode === 'bulk' ? 'var(--gold, #4A2C17)' : 'transparent',
                     color: attendanceMode === 'bulk' ? '#FFFFFF' : '#5C4E43',
-                    boxShadow: attendanceMode === 'bulk' ? '0 2px 6px rgba(74, 44, 23, 0.25)' : 'none',
+                    boxShadow: attendanceMode === 'bulk' ? '0 2px 5px rgba(74, 44, 23, 0.22)' : 'none',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    justifyContent: 'center',
+                    gap: '4px',
                     transition: 'all 0.15s ease',
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  <i className="fa-solid fa-users" style={{ color: attendanceMode === 'bulk' ? '#FFFFFF' : '#8C7B6D' }}></i>
-                  Multiple Employees
+                  <i className="fa-solid fa-users" style={{ fontSize: '10.5px' }}></i>
+                  Bulk
                 </button>
 
-                {/* Switch 3: Add Days */}
+                {/* Switch 3: + Days */}
                 <button
                   type="button"
                   onClick={() => {
@@ -2428,49 +2431,51 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     setAttendanceMode('days');
                   }}
                   style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
+                    flex: '1 1 0',
+                    padding: '6px 8px',
+                    borderRadius: '5px',
                     border: 'none',
-                    fontSize: '12px',
+                    fontSize: '11.5px',
                     fontWeight: '700',
                     cursor: 'pointer',
                     background: attendanceMode === 'days' ? 'var(--gold, #4A2C17)' : 'transparent',
                     color: attendanceMode === 'days' ? '#FFFFFF' : '#5C4E43',
-                    boxShadow: attendanceMode === 'days' ? '0 2px 6px rgba(74, 44, 23, 0.25)' : 'none',
+                    boxShadow: attendanceMode === 'days' ? '0 2px 5px rgba(74, 44, 23, 0.22)' : 'none',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    justifyContent: 'center',
+                    gap: '4px',
                     transition: 'all 0.15s ease',
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  <i className="fa-solid fa-plus" style={{ color: attendanceMode === 'days' ? '#FFFFFF' : '#8C7B6D' }}></i>
-                  Add Days
+                  <i className="fa-solid fa-plus" style={{ fontSize: '10.5px' }}></i>
+                  + Days
                 </button>
               </div>
             </div>
 
             {/* Modal Form Body - Single Employee Mode */}
             {attendanceMode === 'single' && (
-              <form onSubmit={handleSaveAttendance} onKeyDown={handleFormKeyDown} style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              <form onSubmit={handleSaveAttendance} onKeyDown={handleFormKeyDown} style={{ padding: '14px 16px', overflowY: 'auto', flex: 1 }}>
                 {apiError && (
                   <div style={{
                     background: '#FEF2F2',
                     border: '1px solid #FECACA',
                     color: '#991B1B',
                     borderRadius: '6px',
-                    padding: '10px 14px',
-                    marginBottom: '16px',
-                    fontSize: '13px'
+                    padding: '8px 12px',
+                    marginBottom: '12px',
+                    fontSize: '12px'
                   }}>
                     {apiError}
                   </div>
                 )}
 
                 {/* Row 1: Employee & Date */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '18px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '14px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', color: '#374151', marginBottom: '4px' }}>
                       Select Employee <span style={{ color: '#DC2626' }}>*</span>
                     </label>
                     <select
@@ -2479,12 +2484,14 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                       required
                       style={{
                         width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '7px',
+                        padding: '7px 10px',
+                        borderRadius: '6px',
                         border: '1px solid #D1D5DB',
-                        fontSize: '13px',
+                        fontSize: '12.5px',
                         outline: 'none',
-                        background: '#fff'
+                        background: '#fff',
+                        height: '34px',
+                        boxSizing: 'border-box'
                       }}
                     >
                       <option value="" disabled>-- Select Employee --</option>
@@ -2497,7 +2504,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', color: '#374151', marginBottom: '4px' }}>
                       Attendance Date <span style={{ color: '#DC2626' }}>*</span>
                     </label>
                     <input
@@ -2507,32 +2514,33 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                       required
                       style={{
                         width: '100%',
-                        padding: '9px 12px',
-                        borderRadius: '7px',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
                         border: '1px solid #D1D5DB',
-                        fontSize: '13px',
+                        fontSize: '12.5px',
                         outline: 'none',
+                        height: '34px',
                         boxSizing: 'border-box'
                       }}
                     />
                   </div>
                 </div>
 
-                {/* Dynamic Site Sessions Section with '+' Icon */}
+                {/* Dynamic Site Sessions Section with Full-Width Site + Side-by-Side Times */}
                 <div style={{
                   background: '#F9FAFB',
                   border: '1px solid #E5E7EB',
                   borderRadius: '8px',
-                  padding: '16px',
-                  marginBottom: '18px'
+                  padding: '12px',
+                  marginBottom: '14px'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#111827' }}>
-                      <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', marginRight: '6px' }}></i>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#111827' }}>
+                      <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', marginRight: '5px' }}></i>
                       Site Shifts & Timings
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6B7280' }}>
-                      Worked on another site today? Click <strong>+</strong>
+                    <div style={{ fontSize: '10.5px', color: '#6B7280' }}>
+                      Worked on another site? Click <strong>+</strong>
                     </div>
                   </div>
 
@@ -2540,20 +2548,19 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     <div
                       key={idx}
                       style={{
-                        display: 'grid',
-                        gridTemplateColumns: '2fr 1fr 1fr auto',
-                        gap: '10px',
-                        alignItems: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
                         background: '#fff',
-                        padding: '12px',
+                        padding: '10px 12px',
                         borderRadius: '8px',
                         border: '1px solid #E5E7EB',
-                        marginBottom: idx === formData.siteSessions.length - 1 ? '0' : '10px'
+                        marginBottom: idx === formData.siteSessions.length - 1 ? '0' : '8px'
                       }}
                     >
-                      {/* Site dropdown */}
+                      {/* Row A: Site dropdown (Full Width!) */}
                       <div>
-                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#6B7280', marginBottom: '4px' }}>
+                        <label style={{ display: 'block', fontSize: '10.5px', fontWeight: '600', color: '#6B7280', marginBottom: '3px' }}>
                           Site / Customer {formData.siteSessions.length > 1 ? `#${idx + 1}` : ''}
                         </label>
                         <select
@@ -2562,12 +2569,14 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                           required
                           style={{
                             width: '100%',
-                            padding: '8px 10px',
+                            padding: '7px 10px',
                             borderRadius: '6px',
                             border: '1px solid #D1D5DB',
                             fontSize: '12px',
                             outline: 'none',
-                            background: '#fff'
+                            background: '#fff',
+                            height: '34px',
+                            boxSizing: 'border-box'
                           }}
                         >
                           <option value="" disabled>-- Select Site --</option>
@@ -2583,106 +2592,109 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                         </select>
                       </div>
 
-                      {/* In Time */}
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#16A34A', marginBottom: '4px' }}>
-                          IN Time
-                        </label>
-                        <input
-                          type="time"
-                          value={session.inTime}
-                          onChange={(e) => handleSessionChange(idx, 'inTime', e.target.value)}
-                          required
-                          style={{
-                            width: '100%',
-                            padding: '7px 8px',
-                            borderRadius: '6px',
-                            border: '1px solid #D1D5DB',
-                            fontSize: '12px',
-                            outline: 'none',
-                            boxSizing: 'border-box'
-                          }}
-                        />
-                      </div>
-
-                      {/* Out Time */}
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#DC2626', marginBottom: '4px' }}>
-                          OUT Time
-                        </label>
-                        <input
-                          type="time"
-                          value={session.outTime}
-                          onChange={(e) => handleSessionChange(idx, 'outTime', e.target.value)}
-                          required
-                          style={{
-                            width: '100%',
-                            padding: '7px 8px',
-                            borderRadius: '6px',
-                            border: '1px solid #D1D5DB',
-                            fontSize: '12px',
-                            outline: 'none',
-                            boxSizing: 'border-box'
-                          }}
-                        />
-                      </div>
-
-                      {/* Actions (+ or -) */}
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', paddingTop: '16px' }}>
-                        {idx === formData.siteSessions.length - 1 && (
-                          <button
-                            type="button"
-                            onClick={handleAddSiteSession}
-                            title="Add Another Site for this Day"
+                      {/* Row B: IN Time + OUT Time + Add/Remove Buttons */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px', alignItems: 'flex-end' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10.5px', fontWeight: '600', color: '#16A34A', marginBottom: '3px' }}>
+                            IN Time
+                          </label>
+                          <input
+                            type="time"
+                            value={session.inTime}
+                            onChange={(e) => handleSessionChange(idx, 'inTime', e.target.value)}
+                            required
                             style={{
-                              background: 'var(--gold, #A56A30)',
-                              color: '#fff',
-                              border: 'none',
+                              width: '100%',
+                              padding: '6px 8px',
                               borderRadius: '6px',
-                              width: '32px',
+                              border: '1px solid #D1D5DB',
+                              fontSize: '11.5px',
+                              outline: 'none',
                               height: '32px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              cursor: 'pointer',
-                              fontSize: '14px'
+                              boxSizing: 'border-box'
                             }}
-                          >
-                            <i className="fa-solid fa-plus"></i>
-                          </button>
-                        )}
+                          />
+                        </div>
 
-                        {formData.siteSessions.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSiteSession(idx)}
-                            title="Remove this slot"
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10.5px', fontWeight: '600', color: '#DC2626', marginBottom: '3px' }}>
+                            OUT Time
+                          </label>
+                          <input
+                            type="time"
+                            value={session.outTime}
+                            onChange={(e) => handleSessionChange(idx, 'outTime', e.target.value)}
+                            required
                             style={{
-                              background: '#FEE2E2',
-                              color: '#DC2626',
-                              border: '1px solid #FCA5A5',
+                              width: '100%',
+                              padding: '6px 8px',
                               borderRadius: '6px',
-                              width: '32px',
+                              border: '1px solid #D1D5DB',
+                              fontSize: '11.5px',
+                              outline: 'none',
                               height: '32px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              cursor: 'pointer',
-                              fontSize: '12px'
+                              boxSizing: 'border-box'
                             }}
-                          >
-                            <i className="fa-solid fa-trash-can"></i>
-                          </button>
-                        )}
+                          />
+                        </div>
+
+                        {/* Actions (+ or -) */}
+                        <div style={{ display: 'flex', gap: '5px' }}>
+                          {idx === formData.siteSessions.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={handleAddSiteSession}
+                              title="Add Another Site for this Day"
+                              style={{
+                                background: 'var(--gold, #4A2C17)',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                width: '32px',
+                                height: '32px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                fontSize: '13px'
+                              }}
+                            >
+                              <i className="fa-solid fa-plus"></i>
+                            </button>
+                          )}
+
+                          {formData.siteSessions.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSiteSession(idx)}
+                              title="Remove this slot"
+                              style={{
+                                background: '#FEE2E2',
+                                color: '#DC2626',
+                                border: '1px solid #FCA5A5',
+                                borderRadius: '6px',
+                                width: '32px',
+                                height: '32px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              <i className="fa-solid fa-trash-can"></i>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Row 3: Day Value & Status */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                {/* Row 3: Day Value & Day Salary */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', marginBottom: '14px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', color: '#374151', marginBottom: '4px' }}>
                       Total Day Value
                     </label>
                     <DayValueCombobox
@@ -2692,35 +2704,37 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Day Salary of that Day
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', color: '#374151', marginBottom: '4px' }}>
+                      Day Salary
                     </label>
                     <div style={{
                       width: '100%',
-                      padding: '9px 12px',
-                      borderRadius: '7px',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
                       border: '1px solid #A7F3D0',
                       background: '#ECFDF5',
-                      fontSize: '14px',
-                      fontWeight: '800',
                       color: '#065F46',
                       boxSizing: 'border-box',
+                      height: '34px',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between'
+                      justifyContent: 'space-between',
+                      gap: '4px'
                     }}>
-                      <span>₹{(() => {
-                        const emp = employees.find(e => String(e.dbId || e.id) === String(formData.userId));
-                        const rate = Number(emp?.dailySalary || 0);
-                        const dVal = !isNaN(parseFloat(formData.dayValue)) ? parseFloat(formData.dayValue) : 1.0;
-                        const salary = Math.round(dVal * rate);
-                        return salary.toLocaleString('en-IN');
-                      })()}</span>
-                      <span style={{ fontSize: '11px', color: '#047857', fontWeight: '600' }}>
+                      <span style={{ fontSize: '13.5px', fontWeight: '800', whiteSpace: 'nowrap' }}>
+                        ₹{(() => {
+                          const emp = employees.find(e => String(e.dbId || e.id) === String(formData.userId));
+                          const rate = Number(emp?.dailySalary || 0);
+                          const dVal = !isNaN(parseFloat(formData.dayValue)) ? parseFloat(formData.dayValue) : 1.0;
+                          const salary = Math.round(dVal * rate);
+                          return salary.toLocaleString('en-IN');
+                        })()}
+                      </span>
+                      <span style={{ fontSize: '10px', color: '#047857', fontWeight: '700', whiteSpace: 'nowrap' }}>
                         {(() => {
                           const emp = employees.find(e => String(e.dbId || e.id) === String(formData.userId));
                           const rate = Number(emp?.dailySalary || 0);
-                          return rate > 0 ? `(${formData.dayValue} Day × ₹${rate})` : 'Select worker';
+                          return rate > 0 ? `(${formData.dayValue}d × ₹${rate})` : '';
                         })()}
                       </span>
                     </div>
@@ -2875,11 +2889,14 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                 <div style={{
                   border: '1px solid #E5E7EB',
                   borderRadius: '8px',
-                  minHeight: '260px',
-                  maxHeight: '460px',
-                  overflowY: 'auto'
+                  minHeight: '220px',
+                  maxHeight: '440px',
+                  overflowY: 'auto',
+                  overflowX: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  width: '100%'
                 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
+                  <table style={{ width: '100%', minWidth: '820px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
                     <thead style={{ background: '#F9FAFB', position: 'sticky', top: 0, zIndex: 2, borderBottom: '1.5px solid #E5E7EB' }}>
                       <tr>
                         <th style={{ padding: '10px 10px', width: '38px', textAlign: 'center', color: '#6B7280', fontWeight: '700' }}>#</th>
@@ -3085,25 +3102,25 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
 
             {/* Form 3: Add Extra Days (Bonus / Overtime Days) */}
             {attendanceMode === 'days' && (
-              <form onSubmit={handleSaveGiftAttendance} onKeyDown={handleFormKeyDown} style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              <form onSubmit={handleSaveGiftAttendance} onKeyDown={handleFormKeyDown} style={{ padding: '14px 16px', overflowY: 'auto', flex: 1 }}>
                 {apiError && (
                   <div style={{
                     background: '#FEF2F2',
                     border: '1px solid #FECACA',
                     color: '#991B1B',
                     borderRadius: '6px',
-                    padding: '10px 14px',
-                    marginBottom: '16px',
-                    fontSize: '13px'
+                    padding: '8px 12px',
+                    marginBottom: '12px',
+                    fontSize: '12px'
                   }}>
                     {apiError}
                   </div>
                 )}
 
                 {/* Employee Selection */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                    Select Employee *
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', color: '#374151', marginBottom: '4px' }}>
+                    Select Employee <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <select
                     value={giftFormData.userId}
@@ -3111,14 +3128,16 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     required
                     style={{
                       width: '100%',
-                      padding: '9px 12px',
-                      borderRadius: '7px',
+                      padding: '7px 10px',
+                      borderRadius: '6px',
                       border: '1px solid #D1D5DB',
-                      fontSize: '13px',
+                      fontSize: '12.5px',
                       outline: 'none',
                       background: '#fff',
                       fontWeight: '600',
-                      color: '#111827'
+                      color: '#111827',
+                      height: '34px',
+                      boxSizing: 'border-box'
                     }}
                   >
                     <option value="" disabled>-- Select Worker --</option>
@@ -3134,9 +3153,9 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                 </div>
 
                 {/* Attendance Date */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                    Attendance Date *
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', color: '#374151', marginBottom: '4px' }}>
+                    Attendance Date <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <input
                     type="date"
@@ -3145,21 +3164,22 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     required
                     style={{
                       width: '100%',
-                      padding: '9px 12px',
-                      borderRadius: '7px',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
                       border: '1px solid #D1D5DB',
-                      fontSize: '13px',
+                      fontSize: '12.5px',
                       outline: 'none',
                       background: '#fff',
+                      height: '34px',
                       boxSizing: 'border-box'
                     }}
                   />
                 </div>
 
                 {/* Days to Add */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                    Days to Add (+Days) *
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', color: '#374151', marginBottom: '4px' }}>
+                    Days to Add (+Days) <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
@@ -3172,15 +3192,17 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                       required
                       style={{
                         flex: 1,
-                        padding: '9px 12px',
-                        borderRadius: '7px',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
                         border: '1.5px solid #D1D5DB',
-                        fontSize: '14px',
+                        fontSize: '13px',
                         fontWeight: '700',
-                        outline: 'none'
+                        outline: 'none',
+                        height: '34px',
+                        boxSizing: 'border-box'
                       }}
                     />
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#6B7280' }}>Days</span>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280' }}>Days</span>
                   </div>
                   {(() => {
                     const emp = employees.find(e => String(e.dbId || e.id) === String(giftFormData.userId));
@@ -3188,7 +3210,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     const days = parseFloat(giftFormData.bonusDays) || 0;
                     if (rate > 0 && days > 0) {
                       return (
-                        <div style={{ fontSize: '12.5px', color: 'var(--gold, #4A2C17)', fontWeight: '700', marginTop: '7px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--gold, #4A2C17)', fontWeight: '700', marginTop: '5px' }}>
                           +{days} Days × ₹{rate}/day = +₹{Math.round(days * rate).toLocaleString('en-IN')} added salary
                         </div>
                       );
@@ -3198,8 +3220,8 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                 </div>
 
                 {/* Notes / Reason */}
-                <div style={{ marginBottom: '22px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', color: '#374151', marginBottom: '4px' }}>
                     Notes / Reason
                   </label>
                   <input
@@ -3209,28 +3231,29 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     onChange={(e) => setGiftFormData({ ...giftFormData, notes: e.target.value })}
                     style={{
                       width: '100%',
-                      padding: '9px 12px',
-                      borderRadius: '7px',
+                      padding: '7px 10px',
+                      borderRadius: '6px',
                       border: '1px solid #D1D5DB',
-                      fontSize: '13px',
+                      fontSize: '12.5px',
                       outline: 'none',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      height: '34px'
                     }}
                   />
                 </div>
 
                 {/* Submit Buttons */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
                     style={{
-                      padding: '9px 18px',
-                      borderRadius: '7px',
+                      padding: '7px 14px',
+                      borderRadius: '6px',
                       border: '1px solid #D1D5DB',
                       background: '#fff',
                       color: '#374151',
-                      fontSize: '13px',
+                      fontSize: '12.5px',
                       fontWeight: '600',
                       cursor: 'pointer'
                     }}
@@ -3243,15 +3266,15 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     disabled={saving}
                     className="btn-primary"
                     style={{
-                      padding: '9px 22px',
-                      borderRadius: '7px',
-                      fontSize: '13px',
+                      padding: '7px 18px',
+                      borderRadius: '6px',
+                      fontSize: '12.5px',
                       fontWeight: '700',
                       cursor: saving ? 'not-allowed' : 'pointer',
                       background: 'var(--gold, #4A2C17)',
                       color: '#fff',
                       border: 'none',
-                      boxShadow: '0 2px 8px rgba(74, 44, 23, 0.25)'
+                      boxShadow: '0 2px 6px rgba(74, 44, 23, 0.22)'
                     }}
                   >
                     {saving ? (
@@ -3283,7 +3306,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1400,
-          padding: '16px'
+          padding: '8px'
         }}>
           <div style={{
             background: '#fff',
@@ -3291,21 +3314,24 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
             width: '100%',
             maxWidth: '560px',
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            maxHeight: '94vh',
+            display: 'flex',
+            flexDirection: 'column'
           }}>
             <div style={{
-              padding: '18px 24px',
+              padding: '14px 16px',
               borderBottom: '1px solid #E5E7EB',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              background: '#F9FAFB'
+              background: '#FAF8F5'
             }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--text-primary, #1F1A17)' }}>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: 'var(--text-primary, #1F1A17)' }}>
                   {editFormData.isBonus ? 'Edit Extra Attendance Days' : 'Edit Attendance Record'}
                 </h3>
-                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '3px' }}>
+                <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
                   Worker: <strong>{editFormData.employeeName}</strong> ({editFormData.empId})
                 </div>
               </div>
@@ -3314,16 +3340,18 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  fontSize: '20px',
-                  color: '#9CA3AF',
-                  cursor: 'pointer'
+                  fontSize: '18px',
+                  color: '#8C7B6D',
+                  cursor: 'pointer',
+                  padding: '4px 6px',
+                  lineHeight: '1'
                 }}
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleUpdateAttendance} onKeyDown={handleFormKeyDown} style={{ padding: '24px' }}>
+            <form onSubmit={handleUpdateAttendance} onKeyDown={handleFormKeyDown} style={{ padding: '14px 16px', overflowY: 'auto', flex: 1 }}>
               {apiError && (
                 <div style={{
                   background: '#FEF2F2',

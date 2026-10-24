@@ -546,11 +546,11 @@ const TodoList = ({ onNavigate }) => {
                       {/* Site Code + Priority Tag */}
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-start' }}>
-                          <span className="site-code-badge">
+                          <span className="site-code-badge" style={{ whiteSpace: 'nowrap' }}>
                             {siteRefCode}
                           </span>
                           {priorityInfo.highestPriority && (
-                            <span className={`site-priority-tag ${priorityInfo.highestPriority.toLowerCase()}`}>
+                            <span className={`site-priority-tag ${priorityInfo.highestPriority.toLowerCase()}`} style={{ whiteSpace: 'nowrap' }}>
                               {priorityInfo.highestPriority === 'Urgent' && '🔥 Urgent'}
                               {priorityInfo.highestPriority === 'High' && '⚡ High'}
                               {priorityInfo.highestPriority === 'Medium' && '📋 Medium'}
