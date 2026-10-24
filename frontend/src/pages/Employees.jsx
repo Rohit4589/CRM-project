@@ -233,37 +233,37 @@ const Employees = () => {
   );
 
   return (
-    <main className="dashboard-content" style={{ padding: '24px' }}>
+    <main className="dashboard-content" style={{ padding: 'clamp(10px, 2.5vw, 24px)' }}>
 
       {/* Page Header */}
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 className="page-title" style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: 'var(--navy, #111827)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h1 className="page-title" style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--navy, #111827)' }}>
               Employees
             </h1>
             <span style={{
               background: 'rgba(165, 106, 48, 0.1)', color: 'var(--gold, #A56A30)',
-              fontSize: '12px', fontWeight: '700', padding: '3px 10px', borderRadius: '12px'
+              fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '10px'
             }}>
               {employees.length}
             </span>
           </div>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#7D6C5E' }}>
+          <p className="page-subtitle" style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#7D6C5E' }}>
             Staff profiles & daily wages
           </p>
         </div>
 
-        <div className="header-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <div className="search-box" style={{ position: 'relative' }}>
+        <div className="header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', maxWidth: '100%' }}>
+          <div className="search-box" style={{ position: 'relative', flex: '1 1 auto', minWidth: '140px' }}>
             <input
               type="text"
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ padding: '9px 14px 9px 36px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', outline: 'none' }}
+              style={{ padding: '6px 12px 6px 32px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '12px', outline: 'none', width: '100%', height: '34px', boxSizing: 'border-box' }}
             />
-            <i className="fa-solid fa-search" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }}></i>
+            <i className="fa-solid fa-search" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '11px' }}></i>
           </div>
           <button
             className="btn-primary"
@@ -271,9 +271,9 @@ const Employees = () => {
               setApiError('');
               setShowAddModal(true);
             }}
-            style={{ padding: '9px 16px', borderRadius: '6px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', height: '34px', whiteSpace: 'nowrap', flexShrink: 0 }}
           >
-            <i className="fa-solid fa-plus"></i> Add Employee
+            <i className="fa-solid fa-plus" style={{ fontSize: '11px' }}></i> Add Employee
           </button>
         </div>
       </div>
@@ -282,10 +282,10 @@ const Employees = () => {
       {successMessage && (
         <div style={{
           background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46',
-          borderRadius: '8px', padding: '12px 16px', marginBottom: '16px',
-          display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: '600'
+          borderRadius: '8px', padding: '10px 14px', marginBottom: '12px',
+          display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: '600'
         }}>
-          <i className="fa-solid fa-circle-check" style={{ color: '#10B981', fontSize: '16px' }}></i>
+          <i className="fa-solid fa-circle-check" style={{ color: '#10B981', fontSize: '15px' }}></i>
           {successMessage}
         </div>
       )}
@@ -294,10 +294,10 @@ const Employees = () => {
       {apiError && (
         <div style={{
           background: '#FEF2F2', border: '1px solid #F87171', color: '#991B1B',
-          borderRadius: '8px', padding: '12px 16px', marginBottom: '16px',
-          display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px'
+          borderRadius: '8px', padding: '10px 14px', marginBottom: '12px',
+          display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px'
         }}>
-          <i className="fa-solid fa-circle-exclamation" style={{ color: '#EF4444', fontSize: '16px' }}></i>
+          <i className="fa-solid fa-circle-exclamation" style={{ color: '#EF4444', fontSize: '15px' }}></i>
           {apiError}
         </div>
       )}
@@ -312,12 +312,12 @@ const Employees = () => {
         WebkitOverflowScrolling: 'touch'
       }}>
         {loading ? (
-          <div style={{ padding: '50px 20px', textAlign: 'center', color: '#6B7280' }}>
-            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '28px', color: 'var(--gold, #A56A30)', marginBottom: '12px' }}></i>
-            <div style={{ fontSize: '14px', fontWeight: '600' }}>Loading employees...</div>
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#6B7280' }}>
+            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '24px', color: 'var(--gold, #A56A30)', marginBottom: '10px' }}></i>
+            <div style={{ fontSize: '13px', fontWeight: '600' }}>Loading employees...</div>
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '650px', tableLayout: 'fixed' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '720px', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{
                 background: '#F3EDE6',
@@ -328,20 +328,20 @@ const Employees = () => {
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px'
               }}>
-                <th style={{ padding: '12px 16px', width: '13%', textAlign: 'left' }}>ID</th>
-                <th style={{ padding: '12px 16px', width: '21%', textAlign: 'center' }}>Employee</th>
-                <th style={{ padding: '12px 16px', width: '15%', textAlign: 'center' }}>Role</th>
-                <th style={{ padding: '12px 16px', width: '14%', textAlign: 'center' }}>Daily Wage</th>
-                <th style={{ padding: '12px 16px', width: '15%', textAlign: 'center' }}>Login PIN</th>
-                <th style={{ padding: '12px 16px', width: '10%', textAlign: 'center' }}>Status</th>
-                <th style={{ padding: '12px 20px', width: '12%', textAlign: 'right' }}>Actions</th>
+                <th style={{ padding: '10px 12px', width: '16%', minWidth: '100px', textAlign: 'left', whiteSpace: 'nowrap' }}>ID</th>
+                <th style={{ padding: '10px 12px', width: '20%', textAlign: 'center' }}>Employee</th>
+                <th style={{ padding: '10px 12px', width: '14%', textAlign: 'center' }}>Role</th>
+                <th style={{ padding: '10px 12px', width: '14%', textAlign: 'center' }}>Daily Wage</th>
+                <th style={{ padding: '10px 12px', width: '14%', textAlign: 'center' }}>Login PIN</th>
+                <th style={{ padding: '10px 12px', width: '10%', textAlign: 'center' }}>Status</th>
+                <th style={{ padding: '10px 14px', width: '12%', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ padding: '40px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: '14px' }}>
-                    <i className="fa-regular fa-folder-open" style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}></i>
+                  <td colSpan="7" style={{ padding: '30px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
+                    <i className="fa-regular fa-folder-open" style={{ fontSize: '22px', display: 'block', marginBottom: '6px' }}></i>
                     No employees found.
                   </td>
                 </tr>
@@ -349,62 +349,64 @@ const Employees = () => {
                 filteredEmployees.map((emp) => (
                   <tr key={emp.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                     {/* 1. Employee ID Badge - Left Aligned */}
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'left' }}>
+                    <td style={{ padding: '10px 12px', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
                       <span style={{
-                        background: 'rgba(165, 106, 48, 0.1)',
+                        background: 'rgba(165, 106, 48, 0.08)',
                         color: 'var(--gold, #A56A30)',
                         border: '1px solid rgba(165, 106, 48, 0.25)',
-                        padding: '4px 10px',
+                        padding: '3px 8px',
                         borderRadius: '6px',
-                        fontWeight: '800',
-                        fontSize: '13px',
+                        fontWeight: '700',
+                        fontSize: '11.5px',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '5px',
+                        whiteSpace: 'nowrap',
+                        fontFamily: 'monospace'
                       }}>
-                        <i className="fa-regular fa-id-badge" style={{ fontSize: '11px' }}></i>
+                        <i className="fa-regular fa-id-badge" style={{ fontSize: '10px' }}></i>
                         {emp.id}
                       </span>
                     </td>
 
                     {/* 2. Employee Name & Phone - Centered */}
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
-                      <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>{emp.name}</div>
-                      <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>{emp.phone || '-'}</div>
+                    <td style={{ padding: '10px 12px', verticalAlign: 'middle', textAlign: 'center' }}>
+                      <div style={{ fontWeight: '700', color: '#111827', fontSize: '12.5px' }}>{emp.name}</div>
+                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>{emp.phone || '-'}</div>
                     </td>
 
                     {/* 3. Role - Centered */}
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center', color: '#374151', fontSize: '13px', fontWeight: '500' }}>
+                    <td style={{ padding: '10px 12px', verticalAlign: 'middle', textAlign: 'center', color: '#374151', fontSize: '12px', fontWeight: '500' }}>
                       {emp.role || '-'}
                     </td>
 
                     {/* 4. Daily Wage - Centered */}
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center', fontWeight: '700', color: '#111827', fontSize: '13px' }}>
+                    <td style={{ padding: '10px 12px', verticalAlign: 'middle', textAlign: 'center', fontWeight: '700', color: '#111827', fontSize: '12.5px' }}>
                       ₹{emp.dailySalary?.toLocaleString()}
                     </td>
 
                     {/* 5. Login Password / PIN - Centered */}
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
+                    <td style={{ padding: '10px 12px', verticalAlign: 'middle', textAlign: 'center' }}>
                       <span style={{
                         background: '#FFFBEB',
                         color: '#92400E',
                         border: '1px solid #FDE68A',
-                        padding: '4px 10px',
+                        padding: '3px 8px',
                         borderRadius: '6px',
                         fontFamily: 'monospace',
                         fontWeight: '700',
-                        fontSize: '12px',
+                        fontSize: '11.5px',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '5px'
                       }} title="Login PIN created for this employee">
-                        <i className="fa-solid fa-key" style={{ fontSize: '10px', color: '#D97706' }}></i>
+                        <i className="fa-solid fa-key" style={{ fontSize: '9px', color: '#D97706' }}></i>
                         {emp.password || '1234'}
                       </span>
                     </td>
 
                     {/* 6. Status - Centered */}
-                    <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
+                    <td style={{ padding: '10px 12px', verticalAlign: 'middle', textAlign: 'center' }}>
                       <span style={{
                         background: emp.status === 'Active' ? '#ECFDF5' : '#F3F4F6',
                         color: emp.status === 'Active' ? '#065F46' : '#6B7280',
@@ -416,7 +418,7 @@ const Employees = () => {
                     </td>
 
                     {/* 7. Action Column with Edit Button - Right Aligned */}
-                    <td style={{ padding: '14px 20px', verticalAlign: 'middle', textAlign: 'right' }}>
+                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', textAlign: 'right' }}>
                       <button
                         onClick={() => openEditModal(emp)}
                         style={{

@@ -2336,19 +2336,50 @@
 
 @media (max-width: 480px) {
   .estimates-container {
-    padding: 12px 8px;
+    padding: 10px 8px !important;
   }
 
   .estimates-header h1 {
-    font-size: 18px;
+    font-size: 18px !important;
+  }
+
+  .estimate-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
   }
 
   .estimate-kpi-card {
-    flex: 1 1 100%;
+    flex: none !important;
+    width: 100% !important;
+    padding: 8px 10px !important;
+    border-radius: 8px !important;
+  }
+
+  .estimate-kpi-icon {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 11px !important;
+  }
+
+  .estimate-kpi-info h3 {
+    font-size: 14px !important;
+  }
+
+  .estimate-kpi-info p {
+    font-size: 9.5px !important;
+  }
+
+  .estimate-filter-bar {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+    border-radius: 10px !important;
   }
 
   .estimate-table {
-    min-width: 780px;
+    min-width: 780px !important;
   }
 }
 

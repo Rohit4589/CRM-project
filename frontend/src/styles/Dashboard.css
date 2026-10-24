@@ -823,24 +823,77 @@
 
 @media (max-width: 768px) {
   .dashboard {
-    padding: 16px;
-  }
-
-  .dash-kpi-grid {
-    grid-template-columns: 1fr;
+    padding: 12px 10px;
   }
 
   .dash-hero {
     flex-direction: column;
-    gap: 12px;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .dash-hero-left h1 {
+    font-size: 17px !important;
+    margin-bottom: 2px;
+  }
+
+  .dash-hero-desc {
+    display: none !important;
+  }
+
+  .dash-date {
+    font-size: 11px !important;
   }
 
   .dash-hero-actions {
     width: 100%;
   }
 
+  .dash-hero-actions .btn-primary {
+    width: 100%;
+    height: 34px !important;
+    font-size: 12px !important;
+    justify-content: center;
+  }
+
+  .dash-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .dash-kpi {
+    padding: 8px 10px !important;
+    min-height: 52px !important;
+    border-radius: 8px !important;
+    gap: 2px !important;
+  }
+
+  .dash-kpi-label {
+    font-size: 10px !important;
+  }
+
+  .dash-kpi-value {
+    font-size: 19px !important;
+  }
+
+  .dash-kpi-meta {
+    display: none !important;
+  }
+
   .dash-quick-actions {
-    flex-wrap: wrap;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .dash-quick-btn {
+    padding: 7px 10px !important;
+    font-size: 11.5px !important;
+    justify-content: center !important;
+    height: 34px !important;
   }
 
   .dash-attendance-summary {
@@ -849,6 +902,16 @@
 
   .dash-attendance-stat {
     border-bottom: 1px solid var(--coffee-border, #D1C2AF);
+  }
+
+  .dash-project-table thead th {
+    padding: 9px 12px !important;
+    font-size: 10.5px !important;
+  }
+
+  .dash-project-table tbody td {
+    padding: 10px 12px !important;
+    font-size: 12px !important;
   }
 }
 
