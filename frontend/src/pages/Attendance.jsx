@@ -1570,79 +1570,11 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
       {/* KPI Overview Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
         gap: '14px',
         marginBottom: '22px'
       }}>
-        {/* Card 1: Logged */}
-        <div style={{
-          background: '#fff',
-          padding: '16px 20px',
-          borderRadius: '10px',
-          border: '1px solid #D1C2AF',
-          boxShadow: '0 1px 3px rgba(100, 70, 40, 0.04)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '14px'
-        }}>
-          <div style={{
-            width: '44px',
-            height: '44px',
-            borderRadius: '10px',
-            background: 'rgba(74, 44, 23, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--gold, #4A2C17)',
-            fontSize: '18px'
-          }}>
-            <i className="fa-solid fa-clipboard-user"></i>
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Logged
-            </div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #4A2C17)', marginTop: '2px' }}>
-              {filteredLogs.length}
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Total Days Approved */}
-        <div style={{
-          background: '#fff',
-          padding: '16px 20px',
-          borderRadius: '10px',
-          border: '1px solid #D1C2AF',
-          boxShadow: '0 1px 3px rgba(100, 70, 40, 0.04)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '14px'
-        }}>
-          <div style={{
-            width: '44px',
-            height: '44px',
-            borderRadius: '10px',
-            background: 'rgba(74, 44, 23, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--gold, #4A2C17)',
-            fontSize: '18px'
-          }}>
-            <i className="fa-solid fa-calendar-check"></i>
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Total Days (Approved)
-            </div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #4A2C17)', marginTop: '2px' }}>
-              {formatDays(totalDaysLogged)} Days
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: Pending Approvals */}
+        {/* Card: Pending Approvals */}
         <div style={{
           background: pendingLogsCount > 0 ? '#FFFBEB' : '#fff',
           padding: '16px 20px',
