@@ -2232,3 +2232,123 @@
   }
 }
 
+/* ========================================================
+   ESTIMATES MOBILE & TABLET RESPONSIVE STYLES
+   ======================================================== */
+
+@media (max-width: 768px) {
+  .estimates-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .estimates-header h1 {
+    font-size: 20px;
+  }
+
+  .estimates-kpis {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .estimate-kpi-card {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 130px;
+    padding: 8px 10px;
+  }
+
+  .estimate-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .estimate-filter-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .estimate-filter-tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .estimate-search-input {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .estimate-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .estimate-table {
+    min-width: 880px;
+  }
+
+  /* Modals on Mobile */
+  .estimate-modal-overlay {
+    padding: 10px;
+  }
+
+  .estimate-modal {
+    width: 96% !important;
+    max-width: 96vw !important;
+    max-height: 92vh !important;
+    border-radius: 12px;
+  }
+
+  .estimate-modal-header {
+    padding: 12px 14px;
+  }
+
+  .estimate-modal-body {
+    padding: 14px 12px;
+  }
+
+  .estimate-modal-footer {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .estimate-modal-footer button {
+    flex: 1;
+    min-width: 110px;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  /* Action Icon buttons */
+  .estimate-action-btn, .btn-action-icon {
+    min-width: 30px;
+    min-height: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .estimates-container {
+    padding: 12px 8px;
+  }
+
+  .estimates-header h1 {
+    font-size: 18px;
+  }
+
+  .estimate-kpi-card {
+    flex: 1 1 100%;
+  }
+
+  .estimate-table {
+    min-width: 780px;
+  }
+}
+

@@ -12,14 +12,14 @@ const SitesFilterBar = ({ statusFilter, setStatusFilter, counts, searchTerm, set
     <div style={{
       background: '#FFFFFF',
       borderRadius: '12px 12px 0 0',
-      padding: '14px 20px',
+      padding: '12px 16px',
       border: '1px solid #D1C2AF',
       borderBottom: '1px solid #E4D9CC',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       flexWrap: 'wrap',
-      gap: '14px',
+      gap: '12px',
       boxShadow: '0 2px 8px rgba(100, 70, 40, 0.03)'
     }}>
       {/* Filter tabs */}
@@ -31,7 +31,10 @@ const SitesFilterBar = ({ statusFilter, setStatusFilter, counts, searchTerm, set
         border: '1px solid #D1C2AF',
         padding: '4px 6px',
         borderRadius: '8px',
-        flexWrap: 'wrap'
+        maxWidth: '100%',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        flexWrap: 'nowrap'
       }}>
         {filterTabs.map((item) => {
           const isActive = 
@@ -49,14 +52,15 @@ const SitesFilterBar = ({ statusFilter, setStatusFilter, counts, searchTerm, set
                 background: isActive ? 'var(--gold, #4A2C17)' : 'transparent',
                 color: isActive ? '#FFFFFF' : '#5C4E43',
                 fontWeight: '600',
-                padding: '7px 16px',
+                padding: '7px 14px',
                 cursor: 'pointer',
-                fontSize: '13px',
+                fontSize: '12.5px',
                 display: 'inline-flex',
                 alignItems: 'center',
                 boxShadow: isActive ? '0 2px 8px rgba(74, 44, 23, 0.28)' : 'none',
                 transition: 'all 0.15s ease',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                flexShrink: 0
               }}
               onMouseOver={(e) => {
                 if (isActive) {
@@ -80,7 +84,7 @@ const SitesFilterBar = ({ statusFilter, setStatusFilter, counts, searchTerm, set
       </div>
 
       {/* Search Box */}
-      <div className="search-box" style={{position: 'relative', width: '270px', maxWidth: '100%'}}>
+      <div className="search-box" style={{position: 'relative', width: '270px', maxWidth: '100%', minWidth: '220px', flex: '1 1 220px'}}>
         <input
           type="text"
           placeholder="Search sites..."

@@ -774,7 +774,7 @@ const Salary = () => {
             overflowX: 'auto',
             WebkitOverflowScrolling: 'touch'
           }}>
-            <table className="salary-shifts-table" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+            <table className="salary-shifts-table" style={{ width: '100%', minWidth: '780px', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <thead>
                 <tr style={{
                   background: '#E2E8F0',

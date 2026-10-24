@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../../config/api';
 import { getTranslation } from '../../utils/translations';
 
-const EmployeeAttendance = ({ user, lang = 'hi' }) => {
+const EmployeeAttendance = ({ user, lang = 'en' }) => {
   const [selectedMonth, setSelectedMonth] = useState('All');
   const [selectedSelfie, setSelectedSelfie] = useState(null);
   const [records, setRecords] = useState([]);

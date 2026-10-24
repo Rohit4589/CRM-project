@@ -3,7 +3,7 @@ import '../styles/Sidebar.css';
 import modernLogo from '../assets/logo.png';
 import { getTranslation } from '../utils/translations';
 
-const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lang = 'hi', onOpenChangePin }) => {
+const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lang = 'en', onOpenChangePin }) => {
   const isEmployee = user?.role === 'employee';
 
   const t = {

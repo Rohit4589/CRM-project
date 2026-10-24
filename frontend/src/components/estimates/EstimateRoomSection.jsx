@@ -101,8 +101,8 @@ const EstimateRoomSection = ({
 
   return (
     <div style={{ marginBottom: '22px', position: 'relative' }}>
-      <div style={{ overflow: 'visible' }}>
-        <table className="print-room-table editor-sheet-table">
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', maxWidth: '100%' }}>
+        <table className="print-room-table editor-sheet-table" style={{ minWidth: '780px' }}>
           <thead className="print-room-thead">
             {/* Room Title Row matching Photo 1 Preview */}
             <tr className="print-room-title-row editor-sheet-title-row">

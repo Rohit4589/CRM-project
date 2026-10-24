@@ -294,7 +294,7 @@
   .header-lang {
     padding: 5px 6px;
     font-size: 11px;
-    max-width: 105px;
+    max-width: 95px;
   }
 
   .header-divider {
@@ -311,6 +311,34 @@
 
   .header-logout-btn {
     padding: 6px 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0 8px;
+  }
+
+  .header-right {
+    gap: 4px;
+  }
+
+  .header-icon-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .mobile-toggle-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .header-lang {
+    padding: 4px 4px;
+    font-size: 11px;
+    max-width: 78px;
   }
 }
 

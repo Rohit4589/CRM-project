@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../../config/api';
 import { getTranslation } from '../../utils/translations';
 
-const EmployeeSalary = ({ user, onNavigate, lang = 'hi' }) => {
+const EmployeeSalary = ({ user, onNavigate, lang = 'en' }) => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState('All');

@@ -3,7 +3,7 @@ import '../styles/Header.css';
 import { API_BASE } from '../config/api';
 import { getTranslation } from '../utils/translations';
 
-const Header = ({ onLogout, onToggleSidebar, user, lang = 'hi', onLangChange, onNavigate }) => {
+const Header = ({ onLogout, onToggleSidebar, user, lang = 'en', onLangChange, onNavigate }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const dropdownRef = useRef(null);

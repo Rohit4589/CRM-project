@@ -407,3 +407,117 @@
   color: #DC2626;
   border-color: #FCA5A5;
 }
+
+/* ========================================================
+   PRODUCTS & RATES RESPONSIVE STYLES
+   ======================================================== */
+
+@media (max-width: 992px) {
+  .catalog-kpi-card {
+    flex: 1 1 calc(50% - 12px);
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 768px) {
+  .products-rates-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .products-rates-header h1 {
+    font-size: 20px;
+  }
+
+  .products-rates-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .products-rates-actions button {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+    padding: 8px 12px;
+  }
+
+  .catalog-kpis {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .catalog-kpi-card {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 130px;
+    padding: 8px 10px;
+  }
+
+  .catalog-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .catalog-toolbar-left {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .catalog-search-input {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .catalog-select {
+    width: 100%;
+  }
+
+  .category-pills-wrap {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .category-pill, .btn-add-room-pill {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .catalog-table {
+    min-width: 680px;
+  }
+
+  .catalog-actions .btn-action-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .products-rates-container {
+    padding: 12px 8px;
+  }
+
+  .products-rates-header h1 {
+    font-size: 18px;
+  }
+
+  .catalog-kpi-card {
+    flex: 1 1 100%;
+  }
+
+  .catalog-table {
+    min-width: 620px;
+  }
+}

@@ -3,7 +3,7 @@ import { API_BASE } from '../../config/api';
 import modernLogo from '../../assets/logo.png';
 import { getTranslation } from '../../utils/translations';
 
-const EmployeeReports = ({ user, lang = 'hi' }) => {
+const EmployeeReports = ({ user, lang = 'en' }) => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState('All');
