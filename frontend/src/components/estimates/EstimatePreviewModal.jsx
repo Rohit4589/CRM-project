@@ -1,6 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import modernLogo from '../../assets/logo.png';
+import LOGO_BASE64 from '../../assets/logoDataUri';
 import scannerImg from '../../assets/scanner.jpg';
+import SCANNER_QR_BASE64 from '../../assets/scannerDataUri';
 import { getMaterialSpecsForCollection } from '../../data/collectionSpecs';
 import { downloadEstimatePdf, printEstimateSheet } from '../../utils/estimatePdfGenerator';
 
@@ -309,10 +311,13 @@ const EstimatePreviewModal = ({
               <div className="print-unified-col print-col-logo">
                 <div className="print-logo-top" style={{ height: '65%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px 8px', background: '#FFFFFF' }}>
                   <img
-                    src={modernLogo}
+                    src={LOGO_BASE64 || modernLogo}
                     alt="Modern Interior"
                     style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
-                    onError={(e) => { e.currentTarget.src = '/logo.png'; }}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = LOGO_BASE64 || '/logo.png';
+                    }}
                   />
                 </div>
                 <div
@@ -716,7 +721,7 @@ const EstimatePreviewModal = ({
                       }}
                     >
                       <img
-                        src={scannerImg}
+                        src={SCANNER_QR_BASE64 || scannerImg}
                         alt="UPI QR Scanner"
                         style={{
                           width: '74px',
@@ -725,7 +730,8 @@ const EstimatePreviewModal = ({
                           display: 'block'
                         }}
                         onError={(e) => {
-                          e.currentTarget.src = '/scanner.jpg';
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = SCANNER_QR_BASE64 || '/scanner.jpg';
                         }}
                       />
                     </div>
