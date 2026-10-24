@@ -33,14 +33,17 @@ const EstimateFilterBar = ({
     }}>
       {/* Left: Status Folder Tabs */}
       <div style={{
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
         gap: '4px',
         background: '#F3EDE6',
         border: '1px solid #D1C2AF',
         padding: '3px 4px',
         borderRadius: '8px',
-        flexShrink: 0
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        maxWidth: '100%',
+        flexWrap: 'nowrap'
       }}>
         {filterTabs.map((item) => {
           const isActive =
@@ -59,14 +62,15 @@ const EstimateFilterBar = ({
                 background: isActive ? 'var(--gold, #4A2C17)' : 'transparent',
                 color: isActive ? '#FFFFFF' : '#5C4E43',
                 fontWeight: '600',
-                padding: '6px 14px',
+                padding: '5px 10px',
                 cursor: 'pointer',
-                fontSize: '12.5px',
+                fontSize: '11.5px',
                 display: 'inline-flex',
                 alignItems: 'center',
-                boxShadow: isActive ? '0 2px 8px rgba(74, 44, 23, 0.28)' : 'none',
+                boxShadow: isActive ? '0 2px 6px rgba(74, 44, 23, 0.22)' : 'none',
                 transition: 'all 0.15s ease',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                flexShrink: 0
               }}
             >
               <span>{item.label} ({item.count})</span>
@@ -75,21 +79,22 @@ const EstimateFilterBar = ({
         })}
       </div>
 
-      {/* Right: Search, Type Select & Create Button (All in 1 Line) */}
+      {/* Right: Search, Type Select & Create Button */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '10px',
-        flexWrap: 'nowrap'
+        gap: '8px',
+        flexWrap: 'wrap',
+        width: '100%'
       }}>
-        <div className="estimate-search-input" style={{ width: '220px', minWidth: '170px', margin: 0 }}>
+        <div className="estimate-search-input" style={{ flex: '1 1 180px', minWidth: '140px', margin: 0 }}>
           <i className="fa-solid fa-magnifying-glass"></i>
           <input
             type="text"
             placeholder="Search estimates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ padding: '8px 12px 8px 34px', fontSize: '12.5px' }}
+            style={{ padding: '6px 12px 6px 32px', fontSize: '12px', height: '34px', width: '100%', boxSizing: 'border-box' }}
           />
         </div>
 
@@ -97,7 +102,7 @@ const EstimateFilterBar = ({
           className="estimate-select"
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          style={{ minWidth: '110px', padding: '8px 10px', fontSize: '12.5px' }}
+          style={{ width: 'auto', padding: '6px 8px', fontSize: '12px', height: '34px' }}
         >
           <option value="All">All Types</option>
           <option value="Residential">Residential</option>
@@ -107,7 +112,7 @@ const EstimateFilterBar = ({
         <button
           className="btn-create-estimate"
           onClick={onCreateNew}
-          style={{ padding: '8px 16px', fontSize: '13px', whiteSpace: 'nowrap' }}
+          style={{ padding: '6px 12px', fontSize: '12px', whiteSpace: 'nowrap', height: '34px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
           <i className="fa-solid fa-plus"></i>
           <span>Create Estimate</span>

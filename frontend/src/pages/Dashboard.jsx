@@ -329,14 +329,14 @@ const Dashboard = ({ onNavigate, user, lang = 'en' }) => {
               {t('viewAll')} <i className="fa-solid fa-arrow-right" style={{ fontSize: '10px', marginLeft: '3px' }}></i>
             </button>
           </div>
-          <div className="dash-card-body">
+          <div className="dash-card-body table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', padding: 0 }}>
             {activeSitesList.length === 0 ? (
               <div style={{ padding: '30px', textAlign: 'center', color: '#8C7B6D' }}>
                 <i className="fa-regular fa-folder-open" style={{ fontSize: '28px', color: '#D1C2AF', marginBottom: '8px' }}></i>
                 <div>{t('noActiveSites')}</div>
               </div>
             ) : (
-              <table className="dash-project-table">
+              <table className="dash-project-table" style={{ minWidth: '650px', width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ width: '15%' }}>{t('codeCol')}</th>

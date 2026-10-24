@@ -423,50 +423,97 @@
   .products-rates-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .products-rates-header h1 {
-    font-size: 20px;
+    font-size: 19px;
+    margin-bottom: 2px;
+  }
+
+  .products-rates-header p {
+    display: none !important;
   }
 
   .products-rates-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
     width: 100%;
   }
 
   .products-rates-actions button {
-    flex: 1;
-    min-width: 120px;
+    width: 100%;
+    min-width: 0;
     justify-content: center;
-    padding: 8px 12px;
+    padding: 7px 10px;
+    font-size: 12px;
+    height: 36px;
   }
 
   .catalog-kpis {
-    gap: 8px;
-    margin-bottom: 14px;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 10px !important;
   }
 
   .catalog-kpi-card {
-    flex: 1 1 calc(50% - 8px);
-    min-width: 130px;
-    padding: 8px 10px;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 7px 9px !important;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+
+  .catalog-kpi-icon {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 11px !important;
+    border-radius: 5px !important;
+  }
+
+  .catalog-kpi-info h3 {
+    font-size: 13.5px !important;
+  }
+
+  .catalog-kpi-info p {
+    font-size: 10px !important;
+  }
+
+  .category-pills-card {
+    padding: 8px 10px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .category-pills-wrap {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .category-pill, .btn-add-room-pill {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 5px 10px !important;
+    font-size: 11.5px !important;
   }
 
   .catalog-toolbar {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
-    padding: 12px 14px;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
   }
 
   .catalog-toolbar-left {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    gap: 8px;
+    gap: 6px;
   }
 
   .catalog-search-input {
@@ -474,20 +521,17 @@
     max-width: 100%;
   }
 
+  .catalog-search-input input {
+    height: 36px;
+    padding: 6px 10px 6px 32px;
+    font-size: 12.5px;
+  }
+
   .catalog-select {
     width: 100%;
-  }
-
-  .category-pills-wrap {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 6px;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .category-pill, .btn-add-room-pill {
-    flex-shrink: 0;
-    white-space: nowrap;
+    height: 36px;
+    font-size: 12.5px;
+    padding: 6px 10px;
   }
 
   .catalog-table {
@@ -495,26 +539,31 @@
   }
 
   .catalog-actions .btn-action-icon {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    font-size: 13px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    font-size: 12px;
     border-radius: 6px;
   }
 }
 
 @media (max-width: 480px) {
   .products-rates-container {
-    padding: 12px 8px;
+    padding: 10px 8px;
   }
 
   .products-rates-header h1 {
-    font-size: 18px;
+    font-size: 17px;
+  }
+
+  .catalog-kpis {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
   }
 
   .catalog-kpi-card {
-    flex: 1 1 100%;
+    padding: 6px 8px !important;
   }
 
   .catalog-table {

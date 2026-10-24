@@ -1664,56 +1664,64 @@ const Salary = () => {
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '16px',
-            marginBottom: '18px'
+            gap: '10px',
+            marginBottom: '14px'
           }}>
             <div>
-              <h1 className="page-title" style={{ margin: 0, fontSize: '26px', fontWeight: '800', color: 'var(--navy, #111827)' }}>
+              <h1 className="page-title" style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--navy, #111827)' }}>
                 Salary & Payroll
               </h1>
-              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#7D6C5E' }}>
+              <p className="page-subtitle" style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#7D6C5E' }}>
                 Wage statements & site billing
               </p>
             </div>
 
-            <div className="header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                style={{
-                  padding: '9px 14px',
-                  borderRadius: '7px',
-                  border: '1px solid #D1D5DB',
-                  outline: 'none',
-                  background: '#fff',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: '#111827'
-                }}
-              />
+            <div className="header-actions" style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flex: '1 1 auto' }}>
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  style={{
+                    padding: '5px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid #D1D5DB',
+                    outline: 'none',
+                    background: '#fff',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#111827',
+                    height: '34px',
+                    boxSizing: 'border-box',
+                    flex: '1 1 auto',
+                    minWidth: '130px'
+                  }}
+                />
 
-              <button
-                type="button"
-                onClick={() => handleOpenGiftModal(employees[0] || {})}
-                style={{
-                  padding: '9px 16px',
-                  borderRadius: '7px',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  background: '#fff',
-                  color: '#374151',
-                  border: '1.5px solid #D1C2AF',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                }}
-              >
-                <i className="fa-solid fa-plus" style={{ color: 'var(--gold, #A56A30)' }}></i>
-                Add Days
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenGiftModal(employees[0] || {})}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    background: '#fff',
+                    color: '#374151',
+                    border: '1.5px solid #D1C2AF',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    height: '34px',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  <i className="fa-solid fa-plus" style={{ color: 'var(--gold, #A56A30)' }}></i>
+                  Add Days
+                </button>
+              </div>
 
               <button
                 onClick={() => {
@@ -1722,9 +1730,9 @@ const Salary = () => {
                 }}
                 className="btn-primary"
                 style={{
-                  padding: '9px 18px',
-                  borderRadius: '7px',
-                  fontSize: '13px',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
                   fontWeight: '700',
                   background: '#059669',
                   color: '#fff',
@@ -1732,7 +1740,10 @@ const Salary = () => {
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  justifyContent: 'center',
+                  gap: '6px',
+                  height: '34px',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 <i className="fa-solid fa-money-bill-transfer"></i> Process Payroll
@@ -1747,16 +1758,16 @@ const Salary = () => {
               border: '1.5px solid #A7F3D0',
               color: '#065F46',
               borderRadius: '8px',
-              padding: '12px 18px',
-              marginBottom: '18px',
+              padding: '10px 14px',
+              marginBottom: '12px',
               fontWeight: '700',
-              fontSize: '13.5px',
+              fontSize: '13px',
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
-              boxShadow: '0 2px 8px rgba(5,150,105,0.1)'
+              gap: '8px',
+              boxShadow: '0 2px 6px rgba(5,150,105,0.08)'
             }}>
-              <i className="fa-solid fa-circle-check" style={{ fontSize: '18px', color: '#059669' }}></i>
+              <i className="fa-solid fa-circle-check" style={{ fontSize: '16px', color: '#059669' }}></i>
               <span>{giftSuccessMsg}</span>
             </div>
           )}
@@ -1769,45 +1780,46 @@ const Salary = () => {
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '14px',
-            marginBottom: '20px',
+            gap: '8px',
+            marginBottom: '12px',
             background: '#F8FAFC',
-            padding: '8px 10px',
-            borderRadius: '12px',
+            padding: '6px 8px',
+            borderRadius: '10px',
             border: '1.5px solid #E2E8F0',
             boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
           }}>
             {/* Left: Tab Switcher Buttons */}
-            <div style={{ display: 'inline-flex', gap: '8px' }}>
+            <div style={{ display: 'inline-flex', gap: '6px', flex: '1 1 auto' }}>
               <button
                 type="button"
                 onClick={() => setViewMode('employee')}
                 style={{
-                  padding: '10px 20px',
-                  borderRadius: '9px',
+                  flex: '1 1 auto',
+                  padding: '6px 12px',
+                  borderRadius: '7px',
                   border: viewMode === 'employee' ? '2px solid var(--navy, #111827)' : '1.5px solid #CBD5E1',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   fontWeight: '800',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '10px',
+                  justifyContent: 'center',
+                  gap: '6px',
                   transition: 'all 0.18s ease',
                   background: viewMode === 'employee' ? 'var(--navy, #111827)' : '#FFFFFF',
                   color: viewMode === 'employee' ? '#FFFFFF' : '#475569',
-                  boxShadow: viewMode === 'employee' ? '0 4px 14px rgba(17, 24, 39, 0.25)' : '0 1px 2px rgba(0,0,0,0.04)'
+                  height: '34px'
                 }}
               >
-                <i className="fa-solid fa-user-tie" style={{ color: viewMode === 'employee' ? '#FBBF24' : '#64748B', fontSize: '14px' }}></i>
+                <i className="fa-solid fa-user-tie" style={{ color: viewMode === 'employee' ? '#FBBF24' : '#64748B', fontSize: '12px' }}></i>
                 <span>By Employee</span>
                 <span style={{
                   background: viewMode === 'employee' ? 'var(--gold, #A56A30)' : '#F3EDE6',
                   color: viewMode === 'employee' ? '#FFFFFF' : '#7A4518',
-                  padding: '2px 9px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                  fontWeight: '800',
-                  border: viewMode === 'employee' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #D1C2AF'
+                  padding: '1px 6px',
+                  borderRadius: '10px',
+                  fontSize: '10.5px',
+                  fontWeight: '800'
                 }}>
                   {salaryRows.length}
                 </span>
@@ -1817,31 +1829,32 @@ const Salary = () => {
                 type="button"
                 onClick={() => setViewMode('site')}
                 style={{
-                  padding: '10px 20px',
-                  borderRadius: '9px',
+                  flex: '1 1 auto',
+                  padding: '6px 12px',
+                  borderRadius: '7px',
                   border: viewMode === 'site' ? '2px solid var(--navy, #111827)' : '1.5px solid #D1C2AF',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   fontWeight: '800',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '10px',
+                  justifyContent: 'center',
+                  gap: '6px',
                   transition: 'all 0.18s ease',
                   background: viewMode === 'site' ? 'var(--navy, #111827)' : '#FFFFFF',
                   color: viewMode === 'site' ? '#FFFFFF' : '#475569',
-                  boxShadow: viewMode === 'site' ? '0 4px 14px rgba(17, 24, 39, 0.25)' : '0 1px 2px rgba(0,0,0,0.04)'
+                  height: '34px'
                 }}
               >
-                <i className="fa-solid fa-location-dot" style={{ color: viewMode === 'site' ? '#FBBF24' : '#64748B', fontSize: '14px' }}></i>
+                <i className="fa-solid fa-location-dot" style={{ color: viewMode === 'site' ? '#FBBF24' : '#64748B', fontSize: '12px' }}></i>
                 <span>By Site</span>
                 <span style={{
                   background: viewMode === 'site' ? 'var(--gold, #A56A30)' : '#F3EDE6',
                   color: viewMode === 'site' ? '#FFFFFF' : '#7A4518',
-                  padding: '2px 9px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                  fontWeight: '800',
-                  border: viewMode === 'site' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #D1C2AF'
+                  padding: '1px 6px',
+                  borderRadius: '10px',
+                  fontSize: '10.5px',
+                  fontWeight: '800'
                 }}>
                   {activeSitesCount}
                 </span>
@@ -1849,7 +1862,7 @@ const Salary = () => {
             </div>
 
             {/* Right: Quick Search Box */}
-            <div style={{ position: 'relative', width: '280px' }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: '240px', flex: '1 1 180px' }}>
               <input
                 type="text"
                 placeholder="Search..."
@@ -1857,22 +1870,23 @@ const Salary = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '8px 32px 8px 34px',
-                  borderRadius: '7px',
+                  padding: '6px 26px 6px 28px',
+                  borderRadius: '6px',
                   border: '1px solid #CBD5E1',
                   background: '#FFFFFF',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   outline: 'none',
+                  height: '34px',
                   boxSizing: 'border-box'
                 }}
               />
               <i className="fa-solid fa-magnifying-glass" style={{
                 position: 'absolute',
-                left: '11px',
+                left: '9px',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 color: '#94A3B8',
-                fontSize: '12px'
+                fontSize: '11px'
               }}></i>
               {searchQuery && (
                 <button
@@ -1887,7 +1901,7 @@ const Salary = () => {
                     border: 'none',
                     color: '#94A3B8',
                     cursor: 'pointer',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     padding: 0
                   }}
                 >
@@ -1897,39 +1911,39 @@ const Salary = () => {
             </div>
           </div>
 
-          {/* KPI Snapshot Cards for Current View */}
+          {/* KPI Snapshot Cards for Current View - Compact 2-column Grid */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '14px',
-            marginBottom: '20px'
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '8px',
+            marginBottom: '12px'
           }}>
             {viewMode === 'employee' ? (
               <>
-                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Total Payroll</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#059669', marginTop: '4px' }}>
+                <div style={{ background: '#fff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #D1C2AF' }}>
+                  <div style={{ fontSize: '10px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Payroll</div>
+                  <div style={{ fontSize: '18px', fontWeight: '800', color: '#059669', marginTop: '2px' }}>
                     ₹{totalEmployeePayroll.toLocaleString('en-IN')}
                   </div>
                 </div>
-                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Active Employees</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--navy, #111827)', marginTop: '4px' }}>
+                <div style={{ background: '#fff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #D1C2AF' }}>
+                  <div style={{ fontSize: '10px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Active Employees</div>
+                  <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--navy, #111827)', marginTop: '2px' }}>
                     {salaryRows.filter(r => r.totalDays > 0).length} / {salaryRows.length}
                   </div>
                 </div>
               </>
             ) : (
               <>
-                <div style={{ background: '#ECFDF5', padding: '14px 18px', borderRadius: '10px', border: '1px solid #A7F3D0' }}>
-                  <div style={{ fontSize: '11px', color: '#065F46', fontWeight: '800', textTransform: 'uppercase' }}>Total Labor Cost</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#065F46', marginTop: '4px' }}>
+                <div style={{ background: '#ECFDF5', padding: '10px 12px', borderRadius: '8px', border: '1px solid #A7F3D0' }}>
+                  <div style={{ fontSize: '10px', color: '#065F46', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Labor Cost</div>
+                  <div style={{ fontSize: '18px', fontWeight: '800', color: '#065F46', marginTop: '2px' }}>
                     ₹{totalSitePayroll.toLocaleString('en-IN')}
                   </div>
                 </div>
-                <div style={{ background: '#fff', padding: '14px 18px', borderRadius: '10px', border: '1px solid #D1C2AF' }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>Active Sites</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #A56A30)', marginTop: '4px' }}>
+                <div style={{ background: '#fff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #D1C2AF' }}>
+                  <div style={{ fontSize: '10px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Active Sites</div>
+                  <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--gold, #A56A30)', marginTop: '2px' }}>
                     {activeSitesCount} Sites
                   </div>
                 </div>
@@ -1960,27 +1974,27 @@ const Salary = () => {
                     textTransform: 'uppercase',
                     letterSpacing: '0.6px'
                   }}>
-                    <th style={{ padding: '14px 16px', width: '19%', fontWeight: '800', color: '#0F172A' }}>Employee</th>
-                    <th style={{ padding: '14px 14px', width: '10%', fontWeight: '800', color: '#0F172A' }}>Total Days</th>
-                    <th style={{ padding: '14px 14px', width: '10%', fontWeight: '800', color: '#0F172A' }}>Daily Rate</th>
-                    <th style={{ padding: '14px 14px', width: '11%', fontWeight: '800', color: '#0F172A' }}>Gross Amount</th>
-                    <th style={{ padding: '14px 14px', width: '11%', fontWeight: '800', color: '#0F172A' }}>Deductions / Adv.</th>
-                    <th style={{ padding: '14px 14px', width: '12%', fontWeight: '800', color: '#0F172A' }}>Net Payable</th>
-                    <th style={{ padding: '14px 12px', width: '14%', fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap' }}>Status</th>
-                    <th style={{ padding: '14px 14px', width: '13%', fontWeight: '800', color: '#0F172A', textAlign: 'center' }}>Actions</th>
+                    <th style={{ padding: '12px 14px', width: '18%', fontWeight: '800', color: '#0F172A' }}>Employee</th>
+                    <th style={{ padding: '12px 12px', width: '12%', minWidth: '95px', fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap' }}>Total Days</th>
+                    <th style={{ padding: '12px 12px', width: '11%', fontWeight: '800', color: '#0F172A' }}>Daily Rate</th>
+                    <th style={{ padding: '12px 12px', width: '11%', fontWeight: '800', color: '#0F172A' }}>Gross Amount</th>
+                    <th style={{ padding: '12px 12px', width: '11%', fontWeight: '800', color: '#0F172A' }}>Deductions / Adv.</th>
+                    <th style={{ padding: '12px 12px', width: '12%', fontWeight: '800', color: '#0F172A' }}>Net Payable</th>
+                    <th style={{ padding: '12px 12px', width: '13%', fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap' }}>Status</th>
+                    <th style={{ padding: '12px 12px', width: '12%', fontWeight: '800', color: '#0F172A', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: '#6B7280' }}>
-                        <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '22px', color: 'var(--gold, #A56A30)', marginBottom: '8px' }}></i>
+                      <td colSpan="8" style={{ padding: '30px', textAlign: 'center', color: '#6B7280' }}>
+                        <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '20px', color: 'var(--gold, #A56A30)', marginBottom: '8px' }}></i>
                         <div>Calculating real payroll from attendance...</div>
                       </td>
                     </tr>
                   ) : filteredSalaryRows.length === 0 ? (
                     <tr>
-                      <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
+                      <td colSpan="8" style={{ padding: '30px', textAlign: 'center', color: '#9CA3AF' }}>
                         No employees found matching your search.
                       </td>
                     </tr>
@@ -1998,7 +2012,7 @@ const Salary = () => {
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       >
-                        <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                        <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
                           <div>
                             <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>{row.name}</div>
                             <div style={{ fontSize: '11px', color: '#6B7280' }}>
@@ -2007,32 +2021,35 @@ const Salary = () => {
                           </div>
                         </td>
 
-                        <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
+                        <td style={{ padding: '10px 12px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span style={{
                             background: row.totalDays > 0 ? '#ECFDF5' : '#F3F4F6',
                             color: row.totalDays > 0 ? '#065F46' : '#6B7280',
-                            padding: '4px 10px',
-                            borderRadius: '12px',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
                             fontSize: '12px',
-                            fontWeight: '700'
+                            fontWeight: '700',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            whiteSpace: 'nowrap'
                           }}>
                             {formatDays(row.totalDays)} Days
                           </span>
                         </td>
 
-                        <td style={{ padding: '14px 18px', verticalAlign: 'middle', fontWeight: '600', color: '#374151', fontSize: '13px' }}>
+                        <td style={{ padding: '10px 12px', verticalAlign: 'middle', fontWeight: '600', color: '#374151', fontSize: '12.5px' }}>
                           ₹{row.dailyRate.toLocaleString('en-IN')}
                         </td>
 
-                        <td style={{ padding: '14px 18px', verticalAlign: 'middle', fontWeight: '700', color: '#111827', fontSize: '13px' }}>
+                        <td style={{ padding: '10px 12px', verticalAlign: 'middle', fontWeight: '700', color: '#111827', fontSize: '12.5px' }}>
                           ₹{row.grossAmount.toLocaleString('en-IN')}
                         </td>
 
-                        <td style={{ padding: '14px 18px', verticalAlign: 'middle', color: '#DC2626', fontSize: '13px' }}>
+                        <td style={{ padding: '10px 12px', verticalAlign: 'middle', color: '#DC2626', fontSize: '12.5px' }}>
                           - ₹{row.deductions.toLocaleString('en-IN')}
                         </td>
 
-                        <td style={{ padding: '14px 18px', verticalAlign: 'middle', fontWeight: '800', color: 'var(--navy, #111827)', fontSize: '15px' }}>
+                        <td style={{ padding: '10px 12px', verticalAlign: 'middle', fontWeight: '800', color: 'var(--navy, #111827)', fontSize: '13.5px' }}>
                           ₹{row.netPayable.toLocaleString('en-IN')}
                         </td>
 

@@ -1345,165 +1345,183 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
       <div className="page-header" style={{
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         flexWrap: 'wrap',
-        gap: '16px',
-        marginBottom: '22px'
+        gap: '10px',
+        marginBottom: '14px'
       }}>
         <div>
-          <h1 className="page-title" style={{ margin: 0, fontSize: '26px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)' }}>
+          <h1 className="page-title" style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)' }}>
             Attendance
           </h1>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#7D6C5E' }}>
+          <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#7D6C5E' }}>
             Daily check-ins & shifts
           </p>
         </div>
 
-        <div className="header-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Quick Date Switcher: All Dates, Today, Date Picker */}
-          <button
-            onClick={() => {
-              setShowAllDates(true);
-              fetchData(null, true);
-            }}
-            style={{
-              padding: '9px 14px',
-              border: showAllDates ? '2px solid var(--gold, #A56A30)' : '1px solid #D1D5DB',
-              borderRadius: '7px',
-              background: showAllDates ? 'var(--gold-bg, rgba(165, 106, 48, 0.12))' : '#fff',
-              color: showAllDates ? 'var(--gold, #A56A30)' : '#374151',
-              fontWeight: '700',
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <i className="fa-solid fa-layer-group"></i> All Dates
-          </button>
+        <div className="header-actions" style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+          {/* Quick Date Switcher: All Dates, Yesterday, Today, Date Picker */}
+          <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+            <button
+              onClick={() => {
+                setShowAllDates(true);
+                fetchData(null, true);
+              }}
+              style={{
+                padding: '6px 10px',
+                border: showAllDates ? '2px solid var(--gold, #A56A30)' : '1px solid #D1D5DB',
+                borderRadius: '6px',
+                background: showAllDates ? 'var(--gold-bg, rgba(165, 106, 48, 0.12))' : '#fff',
+                color: showAllDates ? 'var(--gold, #A56A30)' : '#374151',
+                fontWeight: '700',
+                fontSize: '11.5px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                height: '32px',
+                flexShrink: 0
+              }}
+            >
+              <i className="fa-solid fa-layer-group" style={{ fontSize: '11px' }}></i> All Dates
+            </button>
 
-          {/* Last Attendance Button */}
-          <button
-            onClick={() => {
-              const target = latestDate || getYesterdayStr();
-              setDateFilter(target);
-              setShowAllDates(false);
-              fetchData(target, false);
-            }}
-            title={latestDate ? `Show last completed attendance from ${formatToDMY(latestDate)}` : 'Show last attendance'}
-            style={{
-              padding: '9px 14px',
-              border: (!showAllDates && (dateFilter === latestDate || (!latestDate && dateFilter === getYesterdayStr()))) ? '2px solid #5C3D24' : '1px solid #D1C2AF',
-              borderRadius: '7px',
-              background: (!showAllDates && (dateFilter === latestDate || (!latestDate && dateFilter === getYesterdayStr()))) ? '#F3EDE6' : '#fff',
-              color: (!showAllDates && (dateFilter === latestDate || (!latestDate && dateFilter === getYesterdayStr()))) ? '#5C3D24' : '#5C4E43',
-              fontWeight: '700',
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <i className="fa-solid fa-clock-rotate-left"></i>
-            <span>
-              {latestDate && isYesterday(latestDate) ? 'Yesterday' : 'Last Attendance'}
-              {latestDate ? ` (${formatToDMY(latestDate)})` : ''}
-            </span>
-          </button>
+            {/* Last Attendance Button */}
+            <button
+              onClick={() => {
+                const target = latestDate || getYesterdayStr();
+                setDateFilter(target);
+                setShowAllDates(false);
+                fetchData(target, false);
+              }}
+              title={latestDate ? `Show last completed attendance from ${formatToDMY(latestDate)}` : 'Show last attendance'}
+              style={{
+                padding: '6px 10px',
+                border: (!showAllDates && (dateFilter === latestDate || (!latestDate && dateFilter === getYesterdayStr()))) ? '2px solid #5C3D24' : '1px solid #D1C2AF',
+                borderRadius: '6px',
+                background: (!showAllDates && (dateFilter === latestDate || (!latestDate && dateFilter === getYesterdayStr()))) ? '#F3EDE6' : '#fff',
+                color: (!showAllDates && (dateFilter === latestDate || (!latestDate && dateFilter === getYesterdayStr()))) ? '#5C3D24' : '#5C4E43',
+                fontWeight: '700',
+                fontSize: '11.5px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                height: '32px',
+                flexShrink: 0
+              }}
+            >
+              <i className="fa-solid fa-clock-rotate-left" style={{ fontSize: '11px' }}></i>
+              <span>
+                {latestDate && isYesterday(latestDate) ? 'Yesterday' : 'Last'}
+                {latestDate ? ` (${formatToDMY(latestDate)})` : ''}
+              </span>
+            </button>
 
-          {/* Today Button */}
-          <button
-            onClick={() => {
-              const today = getTodayStr();
-              setDateFilter(today);
-              setShowAllDates(false);
-              fetchData(today, false);
-            }}
-            style={{
-              padding: '9px 14px',
-              border: (!showAllDates && dateFilter === getTodayStr() && (dateFilter !== latestDate || showAllDates)) ? '2px solid #5C3D24' : '1px solid #D1C2AF',
-              borderRadius: '7px',
-              background: (!showAllDates && dateFilter === getTodayStr() && (dateFilter !== latestDate || showAllDates)) ? '#F3EDE6' : '#fff',
-              color: (!showAllDates && dateFilter === getTodayStr() && (dateFilter !== latestDate || showAllDates)) ? '#5C3D24' : '#5C4E43',
-              fontWeight: '700',
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <i className="fa-solid fa-calendar-day"></i> Today
-          </button>
+            {/* Today Button */}
+            <button
+              onClick={() => {
+                const today = getTodayStr();
+                setDateFilter(today);
+                setShowAllDates(false);
+                fetchData(today, false);
+              }}
+              style={{
+                padding: '6px 10px',
+                border: (!showAllDates && dateFilter === getTodayStr() && (dateFilter !== latestDate || showAllDates)) ? '2px solid #5C3D24' : '1px solid #D1C2AF',
+                borderRadius: '6px',
+                background: (!showAllDates && dateFilter === getTodayStr() && (dateFilter !== latestDate || showAllDates)) ? '#F3EDE6' : '#fff',
+                color: (!showAllDates && dateFilter === getTodayStr() && (dateFilter !== latestDate || showAllDates)) ? '#5C3D24' : '#5C4E43',
+                fontWeight: '700',
+                fontSize: '11.5px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                height: '32px',
+                flexShrink: 0
+              }}
+            >
+              <i className="fa-solid fa-calendar-day" style={{ fontSize: '11px' }}></i> Today
+            </button>
 
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => {
-              setDateFilter(e.target.value);
-              setShowAllDates(false);
-              fetchData(e.target.value, false);
-            }}
-            style={{
-              padding: '8px 12px',
-              border: (!showAllDates && dateFilter !== getTodayStr()) ? '2px solid var(--gold, #A56A30)' : '1px solid #D1C2AF',
-              borderRadius: '7px',
-              outline: 'none',
-              fontSize: '13px',
-              background: '#fff',
-              fontWeight: '600',
-              color: '#111827'
-            }}
-          />
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => {
+                setDateFilter(e.target.value);
+                setShowAllDates(false);
+                fetchData(e.target.value, false);
+              }}
+              style={{
+                padding: '4px 8px',
+                border: (!showAllDates && dateFilter !== getTodayStr()) ? '2px solid var(--gold, #A56A30)' : '1px solid #D1C2AF',
+                borderRadius: '6px',
+                outline: 'none',
+                fontSize: '12px',
+                background: '#fff',
+                fontWeight: '600',
+                color: '#111827',
+                height: '32px',
+                boxSizing: 'border-box',
+                flex: '1 1 120px'
+              }}
+            />
+          </div>
 
-          <button
-            onClick={() => handleOpenAddModal('single')}
-            className="btn-primary"
-            style={{
-              padding: '9px 18px',
-              borderRadius: '7px',
-              fontSize: '13px',
-              fontWeight: '700',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '7px',
-              background: 'var(--gold, #4A2C17)',
-              color: '#FFFFFF',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(74, 44, 23, 0.28)'
-            }}
-          >
-            <i className="fa-solid fa-plus" style={{ color: '#FFFFFF', fontSize: '13px' }}></i>
-            Add Attendance
-          </button>
+          {/* Action buttons: Add & Edit side-by-side */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', width: '100%', marginTop: '2px' }}>
+            <button
+              onClick={() => handleOpenAddModal('single')}
+              className="btn-primary"
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '700',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                background: 'var(--gold, #4A2C17)',
+                color: '#FFFFFF',
+                border: 'none',
+                cursor: 'pointer',
+                height: '34px',
+                boxShadow: '0 2px 6px rgba(74, 44, 23, 0.25)'
+              }}
+            >
+              <i className="fa-solid fa-plus" style={{ color: '#FFFFFF', fontSize: '11px' }}></i>
+              Add Attendance
+            </button>
 
-          <button
-            onClick={() => handleOpenBulkEditModal()}
-            title="Edit all attendance records for a specific date in one group sheet"
-            style={{
-              padding: '9px 18px',
-              borderRadius: '7px',
-              fontSize: '13px',
-              fontWeight: '700',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '7px',
-              background: '#FFFFFF',
-              color: 'var(--gold, #4A2C17)',
-              border: '1.5px solid var(--gold, #4A2C17)',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(74, 44, 23, 0.12)',
-              transition: 'all 0.15s ease'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#FAF8F5'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
-          >
-            <i className="fa-solid fa-pen-to-square" style={{ color: 'var(--gold, #4A2C17)', fontSize: '13px' }}></i>
-            Edit Attendance
-          </button>
+            <button
+              onClick={() => handleOpenBulkEditModal()}
+              title="Edit all attendance records for a specific date in one group sheet"
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '700',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                background: '#FFFFFF',
+                color: 'var(--gold, #4A2C17)',
+                border: '1.5px solid var(--gold, #4A2C17)',
+                cursor: 'pointer',
+                height: '34px',
+                boxShadow: '0 1px 4px rgba(74, 44, 23, 0.1)',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#FAF8F5'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+            >
+              <i className="fa-solid fa-pen-to-square" style={{ color: 'var(--gold, #4A2C17)', fontSize: '11px' }}></i>
+              Edit Date
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1512,36 +1530,34 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
         <div style={{
           background: '#FFFBEB',
           border: '1.5px solid #FCD34D',
-          borderRadius: '10px',
-          padding: '14px 20px',
-          marginBottom: '22px',
+          borderRadius: '8px',
+          padding: '10px 14px',
+          marginBottom: '12px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '12px',
-          boxShadow: '0 2px 8px rgba(245, 158, 11, 0.08)'
+          gap: '8px',
+          boxShadow: '0 2px 6px rgba(245, 158, 11, 0.08)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{
-              width: '38px',
-              height: '38px',
+              width: '30px',
+              height: '30px',
               borderRadius: '50%',
               background: '#FEF3C7',
               color: '#D97706',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '17px'
+              fontSize: '14px',
+              flexShrink: 0
             }}>
               <i className="fa-solid fa-bell"></i>
             </div>
             <div>
-              <div style={{ fontWeight: '800', color: '#92400E', fontSize: '14px' }}>
-                {pendingLogsCount} {t('pendingApprovalsCount') || 'Attendance Approval Requests Pending'}
-              </div>
-              <div style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>
-                Workers have punched OUT. Review below and approve to count into worked days and monthly salary.
+              <div style={{ fontWeight: '800', color: '#92400E', fontSize: '12.5px' }}>
+                {pendingLogsCount} {t('pendingApprovalsCount') || 'Requests Pending'}
               </div>
             </div>
           </div>
@@ -1551,92 +1567,94 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
               background: '#059669',
               color: '#fff',
               border: 'none',
-              borderRadius: '8px',
-              padding: '9px 18px',
-              fontSize: '13px',
+              borderRadius: '6px',
+              padding: '6px 12px',
+              fontSize: '11.5px',
               fontWeight: '700',
               cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '5px',
               boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)'
             }}
           >
-            <i className="fa-solid fa-check-double"></i> {t('approveAll') || 'Approve All'} ({pendingLogsCount})
+            <i className="fa-solid fa-check-double"></i> Approve All ({pendingLogsCount})
           </button>
         </div>
       )}
 
-      {/* KPI Overview Cards */}
+      {/* KPI Overview Cards - 2 Column Compact Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-        gap: '14px',
-        marginBottom: '22px'
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '8px',
+        marginBottom: '12px'
       }}>
         {/* Card: Pending Approvals */}
         <div style={{
           background: pendingLogsCount > 0 ? '#FFFBEB' : '#fff',
-          padding: '16px 20px',
-          borderRadius: '10px',
+          padding: '10px 12px',
+          borderRadius: '8px',
           border: pendingLogsCount > 0 ? '1.5px solid #FCD34D' : '1px solid #D1C2AF',
           boxShadow: '0 1px 3px rgba(100, 70, 40, 0.04)',
           display: 'flex',
           alignItems: 'center',
-          gap: '14px'
+          gap: '10px'
         }}>
           <div style={{
-            width: '44px',
-            height: '44px',
-            borderRadius: '10px',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
             background: pendingLogsCount > 0 ? '#FEF3C7' : 'rgba(74, 44, 23, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: pendingLogsCount > 0 ? '#D97706' : 'var(--gold, #4A2C17)',
-            fontSize: '18px'
+            fontSize: '14px',
+            flexShrink: 0
           }}>
             <i className="fa-solid fa-clock"></i>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '11px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Pending Approval
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '10px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Pending
             </div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: pendingLogsCount > 0 ? '#D97706' : 'var(--gold, #4A2C17)', marginTop: '2px' }}>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: pendingLogsCount > 0 ? '#D97706' : 'var(--gold, #4A2C17)', marginTop: '1px' }}>
               {pendingLogsCount} Requests
             </div>
           </div>
         </div>
 
-        {/* Card 4: Sites */}
+        {/* Card: Sites */}
         <div style={{
           background: '#fff',
-          padding: '16px 20px',
-          borderRadius: '10px',
+          padding: '10px 12px',
+          borderRadius: '8px',
           border: '1px solid #D1C2AF',
           boxShadow: '0 1px 3px rgba(100, 70, 40, 0.04)',
           display: 'flex',
           alignItems: 'center',
-          gap: '14px'
+          gap: '10px'
         }}>
           <div style={{
-            width: '44px',
-            height: '44px',
-            borderRadius: '10px',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
             background: 'rgba(74, 44, 23, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'var(--gold, #4A2C17)',
-            fontSize: '18px'
+            fontSize: '14px',
+            flexShrink: 0
           }}>
             <i className="fa-solid fa-location-dot"></i>
           </div>
-          <div>
-            <div style={{ fontSize: '11px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '10px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               Sites
             </div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--gold, #4A2C17)', marginTop: '2px' }}>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--gold, #4A2C17)', marginTop: '1px' }}>
               {uniqueSitesCount} Sites
             </div>
           </div>
@@ -1646,19 +1664,17 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
       {/* Filter & Search Bar */}
       <div style={{
         background: '#fff',
-        borderRadius: '10px',
-        padding: '14px 18px',
+        borderRadius: '8px',
+        padding: '10px 12px',
         border: '1px solid #D1C2AF',
-        marginBottom: '20px',
+        marginBottom: '12px',
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '14px'
+        flexDirection: 'column',
+        gap: '8px'
       }}>
-        <div style={{ display: 'flex', gap: '12px', flex: 1, minWidth: '300px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', width: '100%', flexWrap: 'wrap' }}>
           {/* Search Box */}
-          <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+          <div style={{ position: 'relative', flex: '1 1 140px', minWidth: '130px' }}>
             <input
               type="text"
               placeholder="Search..."
@@ -1666,20 +1682,22 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
                 width: '100%',
-                padding: '9px 14px 9px 36px',
-                borderRadius: '7px',
+                padding: '7px 10px 7px 32px',
+                borderRadius: '6px',
                 border: '1px solid #D1D5DB',
-                fontSize: '13px',
+                fontSize: '12.5px',
                 outline: 'none',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                height: '34px'
               }}
             />
             <i className="fa-solid fa-magnifying-glass" style={{
               position: 'absolute',
-              left: '12px',
+              left: '10px',
               top: '50%',
               transform: 'translateY(-50%)',
-              color: '#9CA3AF'
+              color: '#9CA3AF',
+              fontSize: '12px'
             }}></i>
           </div>
 
@@ -1688,14 +1706,17 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
             value={siteFilter}
             onChange={(e) => setSiteFilter(e.target.value)}
             style={{
-              padding: '9px 14px',
-              borderRadius: '7px',
+              padding: '6px 10px',
+              borderRadius: '6px',
               border: '1px solid #D1D5DB',
               outline: 'none',
               background: '#fff',
-              fontSize: '13px',
+              fontSize: '12.5px',
               fontWeight: '500',
-              color: '#374151'
+              color: '#374151',
+              flex: '1 1 140px',
+              minWidth: '130px',
+              height: '34px'
             }}
           >
             <option value="All">All Sites & Customers</option>
@@ -1711,9 +1732,9 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
           </select>
         </div>
 
-        <div style={{ fontSize: '13px', color: '#6B7280', fontWeight: '500' }}>
+        <div style={{ fontSize: '11.5px', color: '#6B7280', fontWeight: '500' }}>
           Showing <strong>{filteredLogs.length}</strong> record{filteredLogs.length !== 1 ? 's' : ''}
-          {showAllDates ? ' (Across all dates)' : ` for ${formatToDMY(dateFilter)}`}
+          {showAllDates ? ' (All dates)' : ` for ${formatToDMY(dateFilter)}`}
         </div>
       </div>
 
