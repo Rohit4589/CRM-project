@@ -3,7 +3,7 @@ import { ACTIVE_SITES } from '../../data/sitesData';
 import { API_BASE } from '../../config/api';
 import { getTranslation } from '../../utils/translations';
 
-const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
+const EmployeeDashboard = ({ user, onNavigate, lang = 'en', onLangChange }) => {
   const [dbSites, setDbSites] = useState([]);
   const [selectedSiteId, setSelectedSiteId] = useState('');
   
@@ -715,40 +715,40 @@ const EmployeeDashboard = ({ user, onNavigate, lang = 'hi', onLangChange }) => {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: '10px'
+          gap: '8px'
         }}>
-          <div style={{padding: '12px 14px', background: '#FAF8F5', borderRadius: '10px', border: '1px solid var(--coffee-border, #D1C2AF)'}}>
+          <div style={{padding: '10px 12px', background: '#FAF8F5', borderRadius: '10px', border: '1px solid var(--coffee-border, #D1C2AF)'}}>
             <div style={{fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px'}}>
               {t.daysWorked}
             </div>
-            <div style={{fontSize: '20px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', marginTop: '2px'}}>
+            <div style={{fontSize: 'clamp(16px, 4vw, 20px)', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', marginTop: '2px', wordBreak: 'break-word'}}>
               {monthlyStats.loading ? '...' : `${Number(monthlyStats.totalDays.toFixed(2))} ${t.days}`}
             </div>
           </div>
 
-          <div style={{padding: '12px 14px', background: '#FAF8F5', borderRadius: '10px', border: '1px solid var(--coffee-border, #D1C2AF)'}}>
+          <div style={{padding: '10px 12px', background: '#FAF8F5', borderRadius: '10px', border: '1px solid var(--coffee-border, #D1C2AF)'}}>
             <div style={{fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px'}}>
               {t.grossEarned}
             </div>
-            <div style={{fontSize: '20px', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', marginTop: '2px'}}>
+            <div style={{fontSize: 'clamp(16px, 4vw, 20px)', fontWeight: '800', color: 'var(--text-primary, #1F1A17)', marginTop: '2px', wordBreak: 'break-word'}}>
               {monthlyStats.loading ? '...' : `₹${monthlyStats.grossEarned.toLocaleString('en-IN')}`}
             </div>
           </div>
 
-          <div style={{padding: '12px 14px', background: '#FAF8F5', borderRadius: '10px', border: '1px solid var(--coffee-border, #D1C2AF)'}}>
+          <div style={{padding: '10px 12px', background: '#FAF8F5', borderRadius: '10px', border: '1px solid var(--coffee-border, #D1C2AF)'}}>
             <div style={{fontSize: '10.5px', color: '#8C7B6D', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px'}}>
               {t.advanceTaken}
             </div>
-            <div style={{fontSize: '20px', fontWeight: '800', color: monthlyStats.advanceTaken > 0 ? '#DC2626' : '#8C7B6D', marginTop: '2px'}}>
+            <div style={{fontSize: 'clamp(16px, 4vw, 20px)', fontWeight: '800', color: monthlyStats.advanceTaken > 0 ? '#DC2626' : '#8C7B6D', marginTop: '2px', wordBreak: 'break-word'}}>
               {monthlyStats.loading ? '...' : (monthlyStats.advanceTaken > 0 ? `- ₹${monthlyStats.advanceTaken.toLocaleString('en-IN')}` : '₹0')}
             </div>
           </div>
 
-          <div style={{padding: '12px 14px', background: 'rgba(140, 85, 33, 0.08)', borderRadius: '10px', border: '1.5px solid rgba(140, 85, 33, 0.3)'}}>
+          <div style={{padding: '10px 12px', background: 'rgba(140, 85, 33, 0.08)', borderRadius: '10px', border: '1.5px solid rgba(140, 85, 33, 0.3)'}}>
             <div style={{fontSize: '10.5px', color: '#8C5521', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px'}}>
               {t.netPayable}
             </div>
-            <div style={{fontSize: '20px', fontWeight: '800', color: '#8C5521', marginTop: '2px'}}>
+            <div style={{fontSize: 'clamp(16px, 4vw, 20px)', fontWeight: '800', color: '#8C5521', marginTop: '2px', wordBreak: 'break-word'}}>
               {monthlyStats.loading ? '...' : `₹${monthlyStats.netPayable.toLocaleString('en-IN')}`}
             </div>
           </div>

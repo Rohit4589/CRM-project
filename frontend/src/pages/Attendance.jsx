@@ -1718,14 +1718,16 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
       </div>
 
       {/* Attendance Table */}
-      <div className="panel" style={{
+      <div className="panel table-responsive" style={{
         background: '#fff',
         borderRadius: '10px',
         border: '1.5px solid #D1C2AF',
         boxShadow: '0 2px 8px rgba(100, 70, 40, 0.04)',
-        overflow: 'hidden'
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        width: '100%'
       }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '920px', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{
               background: '#F3EDE6',

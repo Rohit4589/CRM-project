@@ -3,7 +3,7 @@ import '../styles/Dashboard.css';
 import { API_BASE } from '../config/api';
 import { getTranslation } from '../utils/translations';
 
-const Dashboard = ({ onNavigate, user, lang = 'hi' }) => {
+const Dashboard = ({ onNavigate, user, lang = 'en' }) => {
   const t = (key) => getTranslation(lang, key);
   const [employeeCount, setEmployeeCount] = useState(0);
   const [siteStats, setSiteStats] = useState({ total: 0, active: 0 });

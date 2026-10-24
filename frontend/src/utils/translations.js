@@ -541,7 +541,7 @@ export const TRANSLATIONS = {
   }
 };
 
-export const getTranslation = (lang = 'hi', key) => {
-  const selected = TRANSLATIONS[lang] || TRANSLATIONS.hi;
+export const getTranslation = (lang = 'en', key) => {
+  const selected = TRANSLATIONS[lang] || TRANSLATIONS.en;
   return selected[key] || TRANSLATIONS.en[key] || key;
 };

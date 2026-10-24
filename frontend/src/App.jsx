@@ -57,12 +57,29 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
 
-  // Multi-language support (defaults to 'hi' Hindi as requested for employees)
+  // Helper to store language preference per logged-in account
+  const getUserLangKey = (user) => {
+    if (!user) return 'mi_crm_lang';
+    const uId = user.id || user.dbId || user.username || user.mobile;
+    return uId ? `mi_crm_lang_user_${uId}` : 'mi_crm_lang';
+  };
+
+  // Multi-language support (defaults to 'en' English as requested)
   const [lang, setLang] = useState(() => {
-    return localStorage.getItem('mi_crm_lang') || 'hi';
+    try {
+      const savedUserStr = localStorage.getItem('mi_crm_user');
+      if (savedUserStr) {
+        const u = JSON.parse(savedUserStr);
+        const userSaved = localStorage.getItem(getUserLangKey(u));
+        if (userSaved) return userSaved;
+      }
+      return localStorage.getItem('mi_crm_lang') || 'en';
+    } catch {
+      return 'en';
+    }
   });
 
-  // Set lang attribute on root for Hindi typography styling
+  // Set lang attribute on root for typography styling
   React.useEffect(() => {
     document.documentElement.lang = lang;
     document.body.setAttribute('data-lang', lang);
@@ -71,6 +88,9 @@ function App() {
   const handleLangChange = (newLang) => {
     setLang(newLang);
     localStorage.setItem('mi_crm_lang', newLang);
+    if (currentUser) {
+      localStorage.setItem(getUserLangKey(currentUser), newLang);
+    }
   };
 
   const [tabParams, setTabParams] = useState({});
@@ -83,6 +103,9 @@ function App() {
   const handleLogin = (user) => {
     setCurrentUser(user);
     localStorage.setItem('mi_crm_user', JSON.stringify(user));
+    // Restore this user's preferred language, or default to English
+    const savedUserLang = localStorage.getItem(getUserLangKey(user)) || 'en';
+    setLang(savedUserLang);
     const defaultTab = user.role === 'employee' ? 'emp-dashboard' : 'dashboard';
     setActiveTab(defaultTab);
   };
@@ -92,6 +115,9 @@ function App() {
     setActiveTab('dashboard');
     localStorage.removeItem('mi_crm_user');
     localStorage.removeItem('mi_crm_tab');
+    // Reset back to English default
+    setLang('en');
+    localStorage.removeItem('mi_crm_lang');
   };
 
   const renderContent = () => {

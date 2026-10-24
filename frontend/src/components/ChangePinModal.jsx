@@ -3,7 +3,7 @@ import { API_BASE } from '../config/api';
 import { getTranslation } from '../utils/translations';
 import { handleFormKeyDown } from '../utils/formKeyboardNav';
 
-const ChangePinModal = ({ isOpen, onClose, user, lang = 'hi' }) => {
+const ChangePinModal = ({ isOpen, onClose, user, lang = 'en' }) => {
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');

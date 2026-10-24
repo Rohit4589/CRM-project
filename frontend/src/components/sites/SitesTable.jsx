@@ -225,25 +225,25 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                 </td>
 
                 {/* Actions - Guaranteed spacing and NEVER cut off */}
-                <td style={{padding: '13px 14px', minWidth: '190px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap'}}>
+                <td style={{padding: '12px 14px', minWidth: '200px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap'}}>
                   <div style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'flex-end',
-                    gap: '5px'
+                    gap: '6px'
                   }}>
                     <button
                       title="View Details"
                       onClick={() => onView(site)}
                       style={{
-                        width: '28px',
-                        height: '28px',
+                        width: '32px',
+                        height: '32px',
                         background: '#FAF8F5',
                         border: '1px solid #D1C2AF',
                         borderRadius: '6px',
                         cursor: 'pointer',
                         color: '#4B5563',
-                        fontSize: '11px',
+                        fontSize: '12px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -261,14 +261,14 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                       title="Open Project Folder in File Explorer"
                       onClick={() => onOpenFolder && onOpenFolder(site)}
                       style={{
-                        width: '28px',
-                        height: '28px',
+                        width: '32px',
+                        height: '32px',
                         background: '#FAF8F5',
                         border: '1px solid #D1C2AF',
                         borderRadius: '6px',
                         cursor: 'pointer',
                         color: '#D97706',
-                        fontSize: '11px',
+                        fontSize: '12px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -286,14 +286,14 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                       title="Print Folder Sticker"
                       onClick={() => onSticker && onSticker(site)}
                       style={{
-                        width: '28px',
-                        height: '28px',
+                        width: '32px',
+                        height: '32px',
                         background: '#FAF8F5',
                         border: '1px solid #D1C2AF',
                         borderRadius: '6px',
                         cursor: 'pointer',
                         color: '#A56A30',
-                        fontSize: '11px',
+                        fontSize: '12px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -311,14 +311,14 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                       title="Edit Site"
                       onClick={() => onEdit(site)}
                       style={{
-                        width: '28px',
-                        height: '28px',
+                        width: '32px',
+                        height: '32px',
                         background: '#FAF8F5',
                         border: '1px solid #D1C2AF',
                         borderRadius: '6px',
                         cursor: 'pointer',
                         color: 'var(--gold, #A56A30)',
-                        fontSize: '11px',
+                        fontSize: '12px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -336,14 +336,14 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                       title="Delete Site"
                       onClick={() => onDelete(site.id)}
                       style={{
-                        width: '28px',
-                        height: '28px',
+                        width: '32px',
+                        height: '32px',
                         background: '#FEF2F2',
                         border: '1px solid #FECACA',
                         borderRadius: '6px',
                         cursor: 'pointer',
                         color: '#DC2626',
-                        fontSize: '11px',
+                        fontSize: '12px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
