@@ -21,9 +21,11 @@ import EmployeeReports from './pages/employee/EmployeeReports';
 
 import Login from './pages/Login';
 import ChangePinModal from './components/ChangePinModal';
+import FestivalModal from './components/festivals/FestivalModal';
 import './index.css';
 
 function App() {
+  const [showFestivalModal, setShowFestivalModal] = useState(false);
   // Restore logged-in user from localStorage on refresh
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -151,7 +153,7 @@ function App() {
       case 'attendance':
         return <Attendance lang={lang} initialDate={tabParams?.date} />;
       case 'salary':
-        return <Salary lang={lang} />;
+        return <Salary lang={lang} onOpenFestivals={() => setShowFestivalModal(true)} />;
       case 'reports':
         return <Reports />;
       case 'estimates':
@@ -161,7 +163,7 @@ function App() {
       case 'products-rates':
         return <ProductsRates onNavigate={handleTabChange} />;
       default:
-        return <Dashboard onNavigate={handleTabChange} user={currentUser} lang={lang} />;
+        return <Dashboard onNavigate={handleTabChange} user={currentUser} lang={lang} onOpenFestivals={() => setShowFestivalModal(true)} />;
     }
   };
 
@@ -180,6 +182,7 @@ function App() {
         onLogout={handleLogout}
         lang={lang}
         onOpenChangePin={() => setShowPinModal(true)}
+        onOpenFestivals={() => setShowFestivalModal(true)}
       />
       <div className="main-wrapper">
         <Header 
@@ -199,6 +202,12 @@ function App() {
         onClose={() => setShowPinModal(false)}
         user={currentUser}
         lang={lang}
+      />
+
+      {/* Global Festivals & Holidays Management Modal */}
+      <FestivalModal 
+        isOpen={showFestivalModal}
+        onClose={() => setShowFestivalModal(false)}
       />
     </div>
   );
