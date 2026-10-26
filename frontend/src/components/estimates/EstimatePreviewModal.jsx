@@ -254,8 +254,8 @@ const EstimatePreviewModal = ({
                 cursor: 'pointer',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
               }}
-              onClick={() => onShare(estimate)}
-              title="Send to Client (WhatsApp)"
+              onClick={() => onShare && onShare(estimate)}
+              title="Share via WhatsApp (Desktop / Web)"
             >
               <i className="fa-brands fa-whatsapp"></i>
             </button>
@@ -431,7 +431,7 @@ const EstimatePreviewModal = ({
                   </tr>
                   <tr>
                     <th style={{ width: '18%', textAlign: 'left' }}>PRODUCT NAME</th>
-                    <th style={{ width: '38%', textAlign: 'center' }}>DISCRIPTION</th>
+                    <th style={{ width: '38%', textAlign: 'center' }}>DESCRIPTION</th>
                     <th style={{ width: '8%', textAlign: 'center' }}>WIDTH</th>
                     <th style={{ width: '8%', textAlign: 'center' }}>HEIGHT</th>
                     <th style={{ width: '7%', textAlign: 'center' }}>AREA</th>
@@ -444,7 +444,7 @@ const EstimatePreviewModal = ({
                   {(room.items || []).map((it, iIdx) => (
                     <tr key={iIdx}>
                       <td style={{ textAlign: 'left', fontWeight: '700', color: '#000000', wordBreak: 'normal', overflowWrap: 'normal', whiteSpace: 'normal', lineHeight: '1.25' }}>{it.productName}</td>
-                      <td style={{ fontSize: '10.5px', color: '#000000', fontWeight: '600', textAlign: 'center', lineHeight: '1.3' }}>{it.description}</td>
+                      <td style={{ fontSize: '10.5px', color: '#000000', fontWeight: '600', textAlign: 'center', lineHeight: '1.3', textTransform: 'capitalize' }}>{it.description}</td>
                       <td style={{ textAlign: 'center', color: '#000000', fontWeight: '600' }}>{it.widthMm || '-'}</td>
                       <td style={{ textAlign: 'center', color: '#000000', fontWeight: '600' }}>{it.heightMm || '-'}</td>
                       <td style={{ textAlign: 'center', fontWeight: '700', color: '#000000' }}>{it.totalArea ?? '-'}</td>

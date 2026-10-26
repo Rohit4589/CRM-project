@@ -189,7 +189,7 @@ exports.getEstimates = async (req, res) => {
     let query = `
       SELECT e.*, s.site_ref, s.customer_name as site_customer_name, s.status as site_status,
              s.location, s.location as site_location,
-             COALESCE(s.status, e.status, 'Running') as order_status
+             COALESCE(e.status, s.status, 'Running') as order_status
       FROM estimates e
       LEFT JOIN sites s ON e.site_id = s.id
       WHERE 1=1
@@ -203,14 +203,14 @@ exports.getEstimates = async (req, res) => {
 
     if (status && status !== 'All') {
       if (status === 'Running') {
-        query += ` AND (COALESCE(s.status, e.status, 'Running') = 'Running' OR COALESCE(s.status, e.status, 'Running') = 'Draft' OR COALESCE(s.status, e.status, 'Running') = 'Quotation')`;
+        query += ` AND (COALESCE(e.status, s.status, 'Running') = 'Running' OR COALESCE(e.status, s.status, 'Running') = 'Draft' OR COALESCE(e.status, s.status, 'Running') = 'Quotation')`;
       } else if (status === 'Complete' || status === 'Completed') {
-        query += ` AND (COALESCE(s.status, e.status) = 'Completed' OR COALESCE(s.status, e.status) = 'Complete')`;
+        query += ` AND (COALESCE(e.status, s.status) = 'Completed' OR COALESCE(e.status, s.status) = 'Complete')`;
       } else if (status === 'Hold / Cancelled' || status === 'On Hold') {
-        query += ` AND (COALESCE(s.status, e.status) = 'On Hold' OR COALESCE(s.status, e.status) = 'Cancelled' OR COALESCE(s.status, e.status) = 'Hold')`;
+        query += ` AND (COALESCE(e.status, s.status) = 'On Hold' OR COALESCE(e.status, s.status) = 'Cancelled' OR COALESCE(e.status, s.status) = 'Hold')`;
       } else {
         params.push(status);
-        query += ` AND (s.status = $${params.length} OR e.status = $${params.length})`;
+        query += ` AND (e.status = $${params.length} OR s.status = $${params.length})`;
       }
     }
 
@@ -552,18 +552,9 @@ exports.updateEstimateStatus = async (req, res) => {
 
     const est = result.rows[0];
 
-    // If estimate is linked to a site, update site status so both tabs match (for valid site statuses)!
-    const VALID_SITE_STATUSES = ['Running', 'Completed', 'On Hold'];
-    if (est.site_id && VALID_SITE_STATUSES.includes(status)) {
-      await pool.query(
-        `UPDATE sites SET status = $1 WHERE id = $2`,
-        [status, est.site_id]
-      ).catch(e => console.error('Error syncing site status:', e));
-    }
-
     res.json({
       success: true,
-      message: `Estimate and Order moved to ${status}`,
+      message: `Estimate moved to ${status}`,
       estimate: est
     });
   } catch (error) {

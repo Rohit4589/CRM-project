@@ -68,21 +68,6 @@ const EditSiteModal = ({
     setEditingSite(updates);
   };
 
-  const handleSelectExistingCustomerProfile = (selectedId) => {
-    const site = existingSites.find(s => String(s.id || s.dbId || s.siteCode) === String(selectedId));
-    if (!site) return;
-    setEditingSite({
-      ...editingSite,
-      customerName: site.customerName || editingSite.customerName,
-      phone: site.phone || editingSite.phone,
-      email: site.email || editingSite.email,
-      contactPersons: (Array.isArray(site.contactPersons) && site.contactPersons.length > 0)
-        ? site.contactPersons
-        : editingSite.contactPersons,
-      refFrom: 'Existing Customer',
-      refName: `Order #${site.siteCode || site.siteRef || site.id}`
-    });
-  };
 
   const handlePhoneChange = (phone) => {
     const currentPersons = Array.isArray(editingSite.contactPersons) ? [...editingSite.contactPersons] : [];
@@ -245,11 +230,28 @@ const EditSiteModal = ({
                     type="text"
                     placeholder="e.g. Pranjal Spaces"
                     value={editingSite.customerName || ''}
-                    onChange={(e) => setEditingSite({...editingSite, customerName: toTitleCase(e.target.value)})}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingSite(prev => ({
+                        ...prev,
+                        customerName: val,
+                        refName: prev.refFrom === 'Existing Customer' ? val : prev.refName
+                      }));
+                    }}
+                    onBlur={() => {
+                      setEditingSite(prev => {
+                        const formatted = toTitleCase(prev.customerName || '');
+                        return {
+                          ...prev,
+                          customerName: formatted,
+                          refName: prev.refFrom === 'Existing Customer' ? formatted : prev.refName
+                        };
+                      });
+                    }}
                     style={{
                       width: '100%', padding: '8px 11px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px'
+                      fontSize: '13px', textTransform: 'capitalize'
                     }}
                     required
                   />
@@ -263,11 +265,12 @@ const EditSiteModal = ({
                     type="text"
                     placeholder="e.g. Ravet / Flat 402"
                     value={editingSite.location || ''}
-                    onChange={(e) => setEditingSite({...editingSite, location: toTitleCase(e.target.value)})}
+                    onChange={(e) => setEditingSite({...editingSite, location: e.target.value})}
+                    onBlur={() => setEditingSite(prev => ({...prev, location: toTitleCase(prev.location || '')}))}
                     style={{
                       width: '100%', padding: '8px 11px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px'
+                      fontSize: '13px', textTransform: 'capitalize'
                     }}
                   />
                 </div>
@@ -304,7 +307,11 @@ const EditSiteModal = ({
                         setEditingSite({ ...editingSite, refFrom: '' });
                       } else {
                         setIsCustomRefFrom(false);
-                        setEditingSite({ ...editingSite, refFrom: val });
+                        const updates = { ...editingSite, refFrom: val };
+                        if (val === 'Existing Customer') {
+                          updates.refName = editingSite.customerName || '';
+                        }
+                        setEditingSite(updates);
                       }
                     }}
                     style={{
@@ -330,11 +337,12 @@ const EditSiteModal = ({
                       type="text"
                       placeholder="Type custom source..."
                       value={editingSite.refFrom || ''}
-                      onChange={(e) => setEditingSite({ ...editingSite, refFrom: toTitleCase(e.target.value) })}
+                      onChange={(e) => setEditingSite({ ...editingSite, refFrom: e.target.value })}
+                      onBlur={() => setEditingSite(prev => ({ ...prev, refFrom: toTitleCase(prev.refFrom || '') }))}
                       style={{
                         marginTop: '5px', width: '100%', padding: '7px 10px', borderRadius: '6px',
                         border: '1.5px solid var(--gold, #A56A30)', boxSizing: 'border-box', outline: 'none',
-                        fontSize: '12.5px', backgroundColor: '#FFFDF7'
+                        fontSize: '12.5px', backgroundColor: '#FFFDF7', textTransform: 'capitalize'
                       }}
                       autoFocus
                     />
@@ -349,57 +357,17 @@ const EditSiteModal = ({
                     type="text"
                     placeholder="e.g. Site Supervisor"
                     value={primaryContactName}
-                    onChange={(e) => handleContactPersonNameChange(toTitleCase(e.target.value))}
+                    onChange={(e) => handleContactPersonNameChange(e.target.value)}
+                    onBlur={() => handleContactPersonNameChange(toTitleCase(primaryContactName || ''))}
                     style={{
                       width: '100%', padding: '8px 11px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px'
+                      fontSize: '13px', textTransform: 'capitalize'
                     }}
                   />
                 </div>
               </div>
 
-              {/* 1. Existing Customer (Repeat Order Auto-fill) */}
-              {editingSite.refFrom === 'Existing Customer' && (
-                <div style={{
-                  marginBottom: '12px',
-                  padding: '10px 12px',
-                  backgroundColor: '#F0FDF4',
-                  borderRadius: '6px',
-                  border: '1.5px solid #86EFAC'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <label style={{ display: 'block', color: '#166534', fontWeight: '700', fontSize: '12px' }}>
-                      <i className="fa-solid fa-user-check" style={{ marginRight: '6px' }}></i>
-                      Select Existing Customer Profile (Auto-fill)
-                    </label>
-                    <span style={{ fontSize: '10px', color: '#15803D', fontWeight: '700', background: '#DCFCE7', padding: '1px 6px', borderRadius: '4px' }}>
-                      Repeat Order
-                    </span>
-                  </div>
-                  <select
-                    onChange={(e) => handleSelectExistingCustomerProfile(e.target.value)}
-                    style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
-                      border: '1.5px solid #16A34A', boxSizing: 'border-box', outline: 'none',
-                      backgroundColor: '#FFFFFF', fontSize: '13px'
-                    }}
-                  >
-                    <option value="">-- Choose Existing Customer To Auto-Fill --</option>
-                    {existingSites.map((site) => {
-                      const label = getSiteRefLabel(site);
-                      return (
-                        <option key={site.id || site.dbId || site.siteCode} value={site.id || site.dbId || site.siteCode}>
-                          {label}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <div style={{ fontSize: '10.5px', color: '#166534', marginTop: '4px' }}>
-                    Auto-fills name, mobile &amp; details.
-                  </div>
-                </div>
-              )}
 
               {/* 2. Referred by Existing Customer */}
               {editingSite.refFrom === 'Referred by Existing Customer' && (
@@ -460,11 +428,12 @@ const EditSiteModal = ({
                       type="text"
                       placeholder="Type referring customer name..."
                       value={editingSite.refName || ''}
-                      onChange={(e) => setEditingSite({ ...editingSite, refName: toTitleCase(e.target.value) })}
+                      onChange={(e) => setEditingSite({ ...editingSite, refName: e.target.value })}
+                      onBlur={() => setEditingSite(prev => ({ ...prev, refName: toTitleCase(prev.refName || '') }))}
                       style={{
                         marginTop: '6px', width: '100%', padding: '7px 10px', borderRadius: '6px',
                         border: '1.5px solid #D97706', boxSizing: 'border-box', outline: 'none',
-                        fontSize: '12.5px', backgroundColor: '#FFFFFF'
+                        fontSize: '12.5px', backgroundColor: '#FFFFFF', textTransform: 'capitalize'
                       }}
                       autoFocus
                     />
@@ -535,10 +504,12 @@ const EditSiteModal = ({
                           type="text"
                           placeholder="Name / Role"
                           value={cp.name || ''}
-                          onChange={(e) => handleUpdateAdditionalContact(idx, 'name', toTitleCase(e.target.value))}
+                          onChange={(e) => handleUpdateAdditionalContact(idx, 'name', e.target.value)}
+                          onBlur={() => handleUpdateAdditionalContact(idx, 'name', toTitleCase(cp.name || ''))}
                           style={{
                             flex: '1 1 50%', padding: '6px 9px', borderRadius: '5px',
-                            border: '1px solid #D1D5DB', fontSize: '12px', outline: 'none'
+                            border: '1px solid #D1D5DB', fontSize: '12px', outline: 'none',
+                            textTransform: 'capitalize'
                           }}
                         />
                         <input
@@ -640,11 +611,13 @@ const EditSiteModal = ({
                   placeholder="Enter complete site address..."
                   rows="3"
                   value={editingSite.fullAddress || ''}
-                  onChange={(e) => setEditingSite({...editingSite, fullAddress: toTitleCase(e.target.value)})}
+                  onChange={(e) => setEditingSite({...editingSite, fullAddress: e.target.value})}
+                  onBlur={() => setEditingSite(prev => ({...prev, fullAddress: toTitleCase(prev.fullAddress || '')}))}
                   style={{
                     width: '100%', padding: '8px 11px', borderRadius: '6px',
                     border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                    resize: 'vertical', fontFamily: 'inherit', fontSize: '13px'
+                    resize: 'vertical', fontFamily: 'inherit', fontSize: '13px',
+                    textTransform: 'capitalize'
                   }}
                   required
                 ></textarea>
@@ -705,6 +678,36 @@ const EditSiteModal = ({
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'
                     }}
                   />
+                </div>
+              </div>
+
+              {/* Order Status Selector */}
+              <div style={{marginBottom: '12px'}}>
+                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '700', fontSize: '12px'}}>
+                  Customer Order Status *
+                </label>
+                <select
+                  value={editingSite.status || 'Running'}
+                  onChange={(e) => setEditingSite({...editingSite, status: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '8px 11px',
+                    borderRadius: '6px',
+                    border: '1.5px solid #D1C2AF',
+                    background: '#FAF8F5',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    color: editingSite.status === 'Completed' ? '#15803D' : (editingSite.status === 'On Hold' ? '#B45309' : '#1E8E3E'),
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="Running" style={{ color: '#1E8E3E', fontWeight: '700' }}>● Running</option>
+                  <option value="Completed" style={{ color: '#15803D', fontWeight: '700' }}>✓ Completed</option>
+                  <option value="On Hold" style={{ color: '#B45309', fontWeight: '700' }}>⏸ On Hold</option>
+                </select>
+                <div style={{ fontSize: '11px', color: '#78716C', marginTop: '3px' }}>
+                  Shifting this customer automatically updates their To-Do List folder and all linked Estimates.
                 </div>
               </div>
 

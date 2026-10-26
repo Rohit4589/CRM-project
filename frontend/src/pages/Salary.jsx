@@ -620,8 +620,8 @@ const Salary = () => {
 
               {/* Employee Particulars Card for Print (Structured 4-Column Grid) */}
               <div className="salary-print-emp-card" style={{
-                background: '#F8FAFC',
-                border: '1.5px solid #CBD5E1',
+                background: '#FAF8F5',
+                border: '1.5px solid #EAE3DA',
                 borderRadius: '8px',
                 padding: '12px 18px',
                 marginBottom: '16px',
@@ -631,29 +631,29 @@ const Salary = () => {
                 alignItems: 'center'
               }}>
                 <div>
-                  <div style={{ fontSize: '10px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Employee</div>
-                  <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#0F172A', marginTop: '2px' }}>
+                  <div style={{ fontSize: '10px', color: '#78716C', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Employee</div>
+                  <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#111827', marginTop: '2px' }}>
                     {activeEmployee.name} <span style={{ fontSize: '11px', color: 'var(--gold, #A56A30)', fontWeight: '700' }}>({activeEmployee.id})</span>
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: '10px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Role / Designation</div>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#334155', marginTop: '2px' }}>
+                  <div style={{ fontSize: '10px', color: '#78716C', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Role / Designation</div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#44403C', marginTop: '2px' }}>
                     {activeEmployee.role || 'Staff'}
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ fontSize: '10px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Daily Wage Rate</div>
+                  <div style={{ fontSize: '10px', color: '#78716C', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Daily Wage Rate</div>
                   <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#8C5521', marginTop: '2px' }}>
-                    ₹{activeEmployee.dailyRate.toLocaleString('en-IN')} <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748B' }}>/ Day</span>
+                    ₹{activeEmployee.dailyRate.toLocaleString('en-IN')} <span style={{ fontSize: '11px', fontWeight: '600', color: '#78716C' }}>/ Day</span>
                   </div>
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '10px', color: '#065F46', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Salary Payable</div>
-                  <div style={{ fontSize: '16px', fontWeight: '900', color: '#065F46', marginTop: '1px' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--gold, #8C5521)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Salary Payable</div>
+                  <div style={{ fontSize: '16px', fontWeight: '900', color: '#4A2C17', marginTop: '1px' }}>
                     ₹{activeEmployee.grossAmount.toLocaleString('en-IN')}
                   </div>
                 </div>
@@ -760,9 +760,9 @@ const Salary = () => {
               </div>
             </div>
 
-            <div style={{ background: '#ECFDF5', padding: '10px 14px', borderRadius: '8px', border: '1px solid #A7F3D0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-              <div style={{ fontSize: '10px', color: '#065F46', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Salary Earned</div>
-              <div style={{ fontSize: '18px', fontWeight: '800', color: '#065F46', marginTop: '2px', whiteSpace: 'nowrap' }}>
+            <div style={{ background: '#FAF8F5', padding: '10px 14px', borderRadius: '8px', border: '1.5px solid #EAE3DA', boxShadow: '0 1px 3px rgba(74, 44, 23, 0.04)' }}>
+              <div style={{ fontSize: '10px', color: 'var(--gold, #8C5521)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Salary Earned</div>
+              <div style={{ fontSize: '18px', fontWeight: '800', color: '#4A2C17', marginTop: '2px', whiteSpace: 'nowrap' }}>
                 ₹{activeEmployee.grossAmount.toLocaleString('en-IN')}
               </div>
             </div>
@@ -772,28 +772,28 @@ const Salary = () => {
           <div className="panel table-responsive salary-table-wrapper" style={{
             background: '#fff',
             borderRadius: '10px',
-            border: '1px solid #E5E7EB',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            border: '1px solid #EAE3DA',
+            boxShadow: '0 2px 8px rgba(74, 44, 23, 0.04)',
             overflowX: 'auto',
             WebkitOverflowScrolling: 'touch'
           }}>
             <table className="salary-shifts-table" style={{ width: '100%', minWidth: '780px', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <thead>
                 <tr style={{
-                  background: '#E2E8F0',
-                  borderBottom: '2px solid #94A3B8',
-                  color: '#0F172A',
+                  background: '#FAF8F5',
+                  borderBottom: '1.5px solid #EAE3DA',
+                  color: '#4A2C17',
                   fontSize: '11px',
                   fontWeight: '800',
                   textTransform: 'uppercase',
                   letterSpacing: '0.6px'
                 }}>
-                  <th className="col-date" style={{ padding: '14px 18px', width: '14%', textAlign: 'left', fontWeight: '800', color: '#0F172A' }}>Date</th>
-                  <th className="col-site" style={{ padding: '14px 18px', width: '26%', textAlign: 'left', fontWeight: '800', color: '#0F172A' }}>Site / Customer</th>
-                  <th className="col-timings salary-hide-on-print" style={{ padding: '14px 18px', width: '26%', textAlign: 'center', fontWeight: '800', color: '#0F172A' }}>Timings (IN / OUT)</th>
-                  <th className="col-hours salary-hide-on-print" style={{ padding: '14px 18px', width: '11%', textAlign: 'center', fontWeight: '800', color: '#0F172A' }}>Work Hours</th>
-                  <th className="col-dayval" style={{ padding: '14px 18px', width: '10%', textAlign: 'center', fontWeight: '800', color: '#0F172A' }}>Day Value</th>
-                  <th className="col-salary" style={{ padding: '14px 18px', width: '13%', textAlign: 'right', fontWeight: '800', color: '#0F172A' }}>Day Salary</th>
+                  <th className="col-date" style={{ padding: '14px 18px', width: '14%', textAlign: 'left', fontWeight: '800', color: '#4A2C17' }}>Date</th>
+                  <th className="col-site" style={{ padding: '14px 18px', width: '26%', textAlign: 'left', fontWeight: '800', color: '#4A2C17' }}>Site / Customer</th>
+                  <th className="col-timings salary-hide-on-print" style={{ padding: '14px 18px', width: '26%', textAlign: 'center', fontWeight: '800', color: '#4A2C17' }}>Timings (IN / OUT)</th>
+                  <th className="col-hours salary-hide-on-print" style={{ padding: '14px 18px', width: '11%', textAlign: 'center', fontWeight: '800', color: '#4A2C17' }}>Work Hours</th>
+                  <th className="col-dayval" style={{ padding: '14px 18px', width: '10%', textAlign: 'center', fontWeight: '800', color: '#4A2C17' }}>Day Value</th>
+                  <th className="col-salary" style={{ padding: '14px 18px', width: '13%', textAlign: 'right', fontWeight: '800', color: '#4A2C17' }}>Day Salary</th>
                 </tr>
               </thead>
               <tbody>
@@ -846,9 +846,9 @@ const Salary = () => {
                                       alignItems: 'center',
                                       gap: '4px',
                                       padding: '3px 8px',
-                                      background: '#EFF6FF',
-                                      color: '#1D4ED8',
-                                      border: '1px solid #BFDBFE',
+                                      background: '#FAF4EE',
+                                      color: '#7A4518',
+                                      border: '1px solid #EAD8C7',
                                       borderRadius: '12px',
                                       fontSize: '11px',
                                       fontWeight: '800',
@@ -858,7 +858,7 @@ const Salary = () => {
                                       <i className="fa-solid fa-layer-group" style={{ fontSize: '10px' }}></i>
                                       {group.shifts.length} Sites ({formatDays(group.totalDayValue)} Days)
                                     </span>
-                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#059669', paddingLeft: '2px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#8C5521', paddingLeft: '2px' }}>
                                       Day Total: ₹{group.totalDaySalary.toLocaleString('en-IN')}
                                     </span>
                                   </div>
@@ -985,8 +985,9 @@ const Salary = () => {
                               </span>
                             ) : (
                               <span className="shift-badge-tag" style={{
-                                background: shift.dayVal >= 1.0 ? '#ECFDF5' : '#FEF3C7',
-                                color: shift.dayVal >= 1.0 ? '#065F46' : '#92400E',
+                                background: shift.dayVal >= 1.0 ? '#FAF4EE' : '#FDF8F0',
+                                color: shift.dayVal >= 1.0 ? 'var(--gold, #8C5521)' : '#9B6833',
+                                border: shift.dayVal >= 1.0 ? '1px solid #EAD8C7' : '1px solid #F3E5D4',
                                 padding: '4px 10px',
                                 borderRadius: '12px',
                                 fontSize: '12px',
@@ -1002,9 +1003,9 @@ const Salary = () => {
                           {/* DAY SALARY */}
                           <td className="col-salary" style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'right' }}>
                             <span className="shift-salary-tag" style={{
-                              background: '#ECFDF5',
-                              color: '#065F46',
-                              border: shift.isBonus ? '1.5px solid #10B981' : '1px solid #A7F3D0',
+                              background: '#FAF4EE',
+                              color: 'var(--gold, #8C5521)',
+                              border: shift.isBonus ? '1.5px solid var(--gold, #A56A30)' : '1px solid #EAD8C7',
                               padding: '4px 12px',
                               borderRadius: '8px',
                               fontSize: '13px',
@@ -1025,34 +1026,34 @@ const Salary = () => {
                 <tfoot>
                   {/* Screen Total Row: 6 Columns */}
                   <tr className="no-print" style={{
-                    background: '#E2E8F0',
-                    borderTop: '2px solid #94A3B8',
-                    borderBottom: '2px solid #94A3B8',
+                    background: '#FAF8F5',
+                    borderTop: '1.5px solid #EAE3DA',
+                    borderBottom: '1.5px solid #EAE3DA',
                     fontWeight: '800'
                   }}>
-                    <td style={{ padding: '16px 18px', fontSize: '14px', color: '#0F172A', fontWeight: '800', textAlign: 'left' }} colSpan="3">
+                    <td style={{ padding: '16px 18px', fontSize: '14px', color: '#4A2C17', fontWeight: '800', textAlign: 'left' }} colSpan="3">
                       Total
                     </td>
-                    <td style={{ padding: '16px 18px', fontSize: '14px', color: '#0F172A', fontWeight: '800', textAlign: 'center' }}>
+                    <td style={{ padding: '16px 18px', fontSize: '14px', color: '#4A2C17', fontWeight: '800', textAlign: 'center' }}>
                       {totalResolvedHours} hrs
                     </td>
                     <td style={{ padding: '16px 18px', fontSize: '14px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
                       {formatDays(activeEmployee.totalDays)} Days
                     </td>
-                    <td style={{ padding: '16px 18px', fontSize: '17px', fontWeight: '800', color: '#059669', textAlign: 'right' }}>
+                    <td style={{ padding: '16px 18px', fontSize: '17px', fontWeight: '800', color: '#4A2C17', textAlign: 'right' }}>
                       ₹{activeEmployee.grossAmount.toLocaleString('en-IN')}
                     </td>
                   </tr>
 
                   {/* Print/PDF Total Row: 4 Columns (Timings and Hours omitted) */}
                   <tr className="salary-print-total-row" style={{ display: 'none' }}>
-                    <td colSpan="2" style={{ padding: '10px 14px', fontSize: '13px', color: '#0F172A', fontWeight: '800', textAlign: 'left' }}>
+                    <td colSpan="2" style={{ padding: '10px 14px', fontSize: '13px', color: '#4A2C17', fontWeight: '800', textAlign: 'left' }}>
                       Total ({activeEmployee.attendanceLogs.length} Shifts)
                     </td>
                     <td style={{ padding: '10px 14px', fontSize: '13px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
                       {formatDays(activeEmployee.totalDays)} Days
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: '15px', fontWeight: '800', color: '#059669', textAlign: 'right' }}>
+                    <td style={{ padding: '10px 14px', fontSize: '15px', fontWeight: '800', color: '#4A2C17', textAlign: 'right' }}>
                       ₹{activeEmployee.grossAmount.toLocaleString('en-IN')}
                     </td>
                   </tr>
@@ -1248,11 +1249,11 @@ const Salary = () => {
             gap: '14px',
             marginBottom: '24px'
           }}>
-            <div style={{ background: '#ECFDF5', padding: '18px 20px', borderRadius: '10px', border: '1.5px solid #A7F3D0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-              <div style={{ fontSize: '11px', color: '#065F46', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ background: '#FAF8F5', padding: '18px 20px', borderRadius: '10px', border: '1.5px solid #EAE3DA', boxShadow: '0 1px 3px rgba(74, 44, 23, 0.04)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--gold, #8C5521)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Total Site Labor Cost (Billing)
               </div>
-              <div style={{ fontSize: '26px', fontWeight: '800', color: '#065F46', marginTop: '6px' }}>
+              <div style={{ fontSize: '26px', fontWeight: '800', color: '#4A2C17', marginTop: '6px' }}>
                 ₹{activeSite.totalLaborCost.toLocaleString('en-IN')}
               </div>
             </div>
@@ -1289,12 +1290,12 @@ const Salary = () => {
           <div className="no-print" style={{
             display: 'inline-flex',
             gap: '8px',
-            background: '#F8FAFC',
+            background: '#FAF8F5',
             padding: '6px 8px',
             borderRadius: '10px',
-            border: '1.5px solid #E2E8F0',
+            border: '1.5px solid #EAE3DA',
             marginBottom: '18px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            boxShadow: '0 1px 3px rgba(74, 44, 23, 0.04)'
           }}>
             <button
               type="button"
@@ -1302,7 +1303,7 @@ const Salary = () => {
               style={{
                 padding: '9px 18px',
                 borderRadius: '8px',
-                border: siteTableTab === 'workers' ? '2px solid var(--navy, #111827)' : '1.5px solid #CBD5E1',
+                border: siteTableTab === 'workers' ? '2px solid var(--gold, #4A2C17)' : '1.5px solid #DCD4CA',
                 fontSize: '13px',
                 fontWeight: '800',
                 cursor: 'pointer',
@@ -1310,12 +1311,12 @@ const Salary = () => {
                 alignItems: 'center',
                 gap: '8px',
                 transition: 'all 0.18s ease',
-                background: siteTableTab === 'workers' ? 'var(--navy, #111827)' : '#FFFFFF',
+                background: siteTableTab === 'workers' ? 'var(--gold, #4A2C17)' : '#FFFFFF',
                 color: siteTableTab === 'workers' ? '#FFFFFF' : '#475569',
-                boxShadow: siteTableTab === 'workers' ? '0 4px 12px rgba(17, 24, 39, 0.22)' : '0 1px 2px rgba(0,0,0,0.03)'
+                boxShadow: siteTableTab === 'workers' ? '0 4px 12px rgba(74, 44, 23, 0.22)' : '0 1px 2px rgba(0,0,0,0.03)'
               }}
             >
-              <i className="fa-solid fa-user-tie" style={{ color: siteTableTab === 'workers' ? '#FBBF24' : '#64748B' }}></i>
+              <i className="fa-solid fa-user-tie" style={{ color: siteTableTab === 'workers' ? '#FBBF24' : '#8C5521' }}></i>
               <span>Employee Worked Data</span>
               <span style={{
                 background: siteTableTab === 'workers' ? 'var(--gold, #A56A30)' : '#F3EDE6',
@@ -1336,7 +1337,7 @@ const Salary = () => {
               style={{
                 padding: '9px 18px',
                 borderRadius: '8px',
-                border: siteTableTab === 'attendance' ? '2px solid var(--navy, #111827)' : '1.5px solid #D1C2AF',
+                border: siteTableTab === 'attendance' ? '2px solid var(--gold, #4A2C17)' : '1.5px solid #DCD4CA',
                 fontSize: '13px',
                 fontWeight: '800',
                 cursor: 'pointer',
@@ -1344,12 +1345,12 @@ const Salary = () => {
                 alignItems: 'center',
                 gap: '8px',
                 transition: 'all 0.18s ease',
-                background: siteTableTab === 'attendance' ? 'var(--navy, #111827)' : '#FFFFFF',
+                background: siteTableTab === 'attendance' ? 'var(--gold, #4A2C17)' : '#FFFFFF',
                 color: siteTableTab === 'attendance' ? '#FFFFFF' : '#475569',
-                boxShadow: siteTableTab === 'attendance' ? '0 4px 12px rgba(17, 24, 39, 0.22)' : '0 1px 2px rgba(0,0,0,0.03)'
+                boxShadow: siteTableTab === 'attendance' ? '0 4px 12px rgba(74, 44, 23, 0.22)' : '0 1px 2px rgba(0,0,0,0.03)'
               }}
             >
-              <i className="fa-regular fa-calendar-days" style={{ color: siteTableTab === 'attendance' ? '#FBBF24' : '#64748B' }}></i>
+              <i className="fa-regular fa-calendar-days" style={{ color: siteTableTab === 'attendance' ? '#FBBF24' : '#8C5521' }}></i>
               <span>Day-Wise Attendance</span>
               <span style={{
                 background: siteTableTab === 'attendance' ? 'var(--gold, #A56A30)' : '#F3EDE6',
@@ -1385,19 +1386,19 @@ const Salary = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '850px', tableLayout: 'fixed' }}>
                   <thead>
                     <tr style={{
-                      background: '#E2E8F0',
-                      borderBottom: '2px solid #94A3B8',
-                      color: '#0F172A',
+                      background: '#FAF8F5',
+                      borderBottom: '1.5px solid #EAE3DA',
+                      color: '#4A2C17',
                       fontSize: '11px',
                       fontWeight: '800',
                       textTransform: 'uppercase',
                       letterSpacing: '0.6px'
                     }}>
-                      <th style={{ padding: '14px 18px', width: '32%', textAlign: 'left', fontWeight: '800', color: '#0F172A' }}>Employee Details</th>
-                      <th style={{ padding: '14px 18px', width: '17%', textAlign: 'center', fontWeight: '800', color: '#0F172A' }}>Days on Site</th>
-                      <th style={{ padding: '14px 18px', width: '17%', textAlign: 'center', fontWeight: '800', color: '#0F172A' }}>Daily Wage Rate</th>
-                      <th style={{ padding: '14px 18px', width: '20%', textAlign: 'right', fontWeight: '800', color: '#0F172A' }}>Total Site Salary</th>
-                      <th style={{ padding: '14px 18px', width: '14%', textAlign: 'center', fontWeight: '800', color: '#0F172A' }}>Shifts Logged</th>
+                      <th style={{ padding: '14px 18px', width: '32%', textAlign: 'left', fontWeight: '800', color: '#4A2C17' }}>Employee Details</th>
+                      <th style={{ padding: '14px 18px', width: '17%', textAlign: 'center', fontWeight: '800', color: '#4A2C17' }}>Days on Site</th>
+                      <th style={{ padding: '14px 18px', width: '17%', textAlign: 'center', fontWeight: '800', color: '#4A2C17' }}>Daily Wage Rate</th>
+                      <th style={{ padding: '14px 18px', width: '20%', textAlign: 'right', fontWeight: '800', color: '#4A2C17' }}>Total Site Salary</th>
+                      <th style={{ padding: '14px 18px', width: '14%', textAlign: 'center', fontWeight: '800', color: '#4A2C17' }}>Shifts Logged</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1420,8 +1421,9 @@ const Salary = () => {
 
                           <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
                             <span style={{
-                              background: '#ECFDF5',
-                              color: '#065F46',
+                              background: '#FAF4EE',
+                              color: 'var(--gold, #8C5521)',
+                              border: '1px solid #EAD8C7',
                               padding: '4px 10px',
                               borderRadius: '12px',
                               fontSize: '12px',
@@ -1438,9 +1440,9 @@ const Salary = () => {
 
                           <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'right' }}>
                             <span style={{
-                              background: '#ECFDF5',
-                              color: '#065F46',
-                              border: '1px solid #A7F3D0',
+                              background: '#FAF4EE',
+                              color: 'var(--gold, #8C5521)',
+                              border: '1px solid #EAD8C7',
                               padding: '5px 12px',
                               borderRadius: '8px',
                               fontSize: '14px',
@@ -1461,24 +1463,24 @@ const Salary = () => {
                   {activeSite.workers.length > 0 && (
                     <tfoot>
                       <tr style={{
-                        background: '#E2E8F0',
-                        borderTop: '2px solid #94A3B8',
-                        borderBottom: '2px solid #94A3B8',
+                        background: '#FAF8F5',
+                        borderTop: '1.5px solid #EAE3DA',
+                        borderBottom: '1.5px solid #EAE3DA',
                         fontWeight: '800'
                       }}>
-                        <td style={{ padding: '16px 18px', fontSize: '14px', color: '#0F172A', fontWeight: '800', textAlign: 'left' }}>
+                        <td style={{ padding: '16px 18px', fontSize: '14px', color: '#4A2C17', fontWeight: '800', textAlign: 'left' }}>
                           Total Project Labor Expense
                         </td>
                         <td style={{ padding: '16px 18px', fontSize: '14px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
                           {formatDays(activeSite.totalDays)} Days
                         </td>
-                        <td style={{ padding: '16px 18px', fontSize: '12px', color: '#6B7280', fontWeight: '700', textAlign: 'center' }}>
+                        <td style={{ padding: '16px 18px', fontSize: '12px', color: '#78716C', fontWeight: '700', textAlign: 'center' }}>
                           Avg: ₹{activeSite.totalDays > 0 ? Math.round(activeSite.totalLaborCost / activeSite.totalDays).toLocaleString('en-IN') : 0}/day
                         </td>
-                        <td style={{ padding: '16px 18px', fontSize: '18px', fontWeight: '800', color: '#059669', textAlign: 'right' }}>
+                        <td style={{ padding: '16px 18px', fontSize: '18px', fontWeight: '800', color: '#4A2C17', textAlign: 'right' }}>
                           ₹{activeSite.totalLaborCost.toLocaleString('en-IN')}
                         </td>
-                        <td style={{ padding: '16px 18px', fontSize: '13px', color: '#0F172A', fontWeight: '800', textAlign: 'center' }}>
+                        <td style={{ padding: '16px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800', textAlign: 'center' }}>
                           {activeSite.shifts.length} shifts
                         </td>
                       </tr>
@@ -1507,20 +1509,20 @@ const Salary = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '850px', tableLayout: 'fixed' }}>
                   <thead>
                     <tr style={{
-                      background: '#E2E8F0',
-                      borderBottom: '2px solid #94A3B8',
-                      color: '#0F172A',
+                      background: '#FAF8F5',
+                      borderBottom: '1.5px solid #EAE3DA',
+                      color: '#4A2C17',
                       fontSize: '11px',
                       fontWeight: '800',
                       textTransform: 'uppercase',
                       letterSpacing: '0.6px'
                     }}>
-                      <th style={{ padding: '14px 18px', width: '15%', textAlign: 'left', fontWeight: '800', color: '#0F172A' }}>Date</th>
-                      <th style={{ padding: '14px 18px', width: '25%', textAlign: 'left', fontWeight: '800', color: '#0F172A' }}>Employee Name</th>
-                      <th style={{ padding: '14px 18px', width: '25%', textAlign: 'center', fontWeight: '800', color: '#0F172A' }}>Timings (IN / OUT)</th>
-                      <th style={{ padding: '14px 18px', width: '11%', textAlign: 'center', fontWeight: '800', color: '#0F172A' }}>Work Hours</th>
-                      <th style={{ padding: '14px 18px', width: '11%', textAlign: 'center', fontWeight: '800', color: '#0F172A' }}>Day Value</th>
-                      <th style={{ padding: '14px 18px', width: '13%', textAlign: 'right', fontWeight: '800', color: '#0F172A' }}>Shift Cost</th>
+                      <th style={{ padding: '14px 18px', width: '15%', textAlign: 'left', fontWeight: '800', color: '#4A2C17' }}>Date</th>
+                      <th style={{ padding: '14px 18px', width: '25%', textAlign: 'left', fontWeight: '800', color: '#4A2C17' }}>Employee Name</th>
+                      <th style={{ padding: '14px 18px', width: '25%', textAlign: 'center', fontWeight: '800', color: '#4A2C17' }}>Timings (IN / OUT)</th>
+                      <th style={{ padding: '14px 18px', width: '11%', textAlign: 'center', fontWeight: '800', color: '#4A2C17' }}>Work Hours</th>
+                      <th style={{ padding: '14px 18px', width: '11%', textAlign: 'center', fontWeight: '800', color: '#4A2C17' }}>Day Value</th>
+                      <th style={{ padding: '14px 18px', width: '13%', textAlign: 'right', fontWeight: '800', color: '#4A2C17' }}>Shift Cost</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1556,7 +1558,7 @@ const Salary = () => {
 
                             <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
                               <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px', fontFamily: 'monospace' }}>
-                                <span style={{ background: '#ECFDF5', color: '#065F46', padding: '3px 8px', borderRadius: '4px', fontWeight: '700' }}>
+                                <span style={{ background: '#FAF4EE', color: '#7A4518', border: '1px solid #EAD8C7', padding: '3px 8px', borderRadius: '4px', fontWeight: '700' }}>
                                   IN: {log.inTime}
                                 </span>
                                 <span style={{ color: '#9CA3AF' }}>→</span>
@@ -1572,8 +1574,9 @@ const Salary = () => {
 
                             <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
                               <span style={{
-                                background: dayVal >= 1.0 ? '#ECFDF5' : '#FEF3C7',
-                                color: dayVal >= 1.0 ? '#065F46' : '#92400E',
+                                background: dayVal >= 1.0 ? '#FAF4EE' : '#FDF8F0',
+                                color: dayVal >= 1.0 ? 'var(--gold, #8C5521)' : '#9B6833',
+                                border: dayVal >= 1.0 ? '1px solid #EAD8C7' : '1px solid #F3E5D4',
                                 padding: '3px 9px',
                                 borderRadius: '12px',
                                 fontSize: '12px',
@@ -1586,9 +1589,9 @@ const Salary = () => {
 
                             <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'right' }}>
                               <span style={{
-                                background: '#ECFDF5',
-                                color: '#065F46',
-                                border: '1px solid #A7F3D0',
+                                background: '#FAF4EE',
+                                color: 'var(--gold, #8C5521)',
+                                border: '1px solid #EAD8C7',
                                 padding: '3px 10px',
                                 borderRadius: '6px',
                                 fontSize: '13px',
@@ -1605,21 +1608,21 @@ const Salary = () => {
                   {activeSite.shifts.length > 0 && (
                     <tfoot>
                       <tr style={{
-                        background: '#E2E8F0',
-                        borderTop: '2px solid #94A3B8',
-                        borderBottom: '2px solid #94A3B8',
+                        background: '#FAF8F5',
+                        borderTop: '1.5px solid #EAE3DA',
+                        borderBottom: '1.5px solid #EAE3DA',
                         fontWeight: '800'
                       }}>
-                        <td style={{ padding: '14px 18px', fontSize: '13px', color: '#0F172A', fontWeight: '800', textAlign: 'left' }} colSpan="3">
+                        <td style={{ padding: '14px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800', textAlign: 'left' }} colSpan="3">
                           Total Shifts: {activeSite.shifts.length}
                         </td>
-                        <td style={{ padding: '14px 18px', fontSize: '13px', color: '#0F172A', fontWeight: '800', textAlign: 'center' }}>
+                        <td style={{ padding: '14px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800', textAlign: 'center' }}>
                           {activeSite.totalHours} hrs
                         </td>
                         <td style={{ padding: '14px 18px', fontSize: '13px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
                           {formatDays(activeSite.totalDays)} Days
                         </td>
-                        <td style={{ padding: '14px 18px', fontSize: '16px', fontWeight: '800', color: '#059669', textAlign: 'right' }}>
+                        <td style={{ padding: '14px 18px', fontSize: '16px', fontWeight: '800', color: '#4A2C17', textAlign: 'right' }}>
                           ₹{activeSite.totalLaborCost.toLocaleString('en-IN')}
                         </td>
                       </tr>
@@ -1737,7 +1740,7 @@ const Salary = () => {
                   borderRadius: '6px',
                   fontSize: '12px',
                   fontWeight: '700',
-                  background: '#059669',
+                  background: 'var(--gold, #4A2C17)',
                   color: '#fff',
                   border: 'none',
                   cursor: 'pointer',
@@ -1746,7 +1749,8 @@ const Salary = () => {
                   justifyContent: 'center',
                   gap: '6px',
                   height: '34px',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 6px rgba(74, 44, 23, 0.2)'
                 }}
               >
                 <i className="fa-solid fa-money-bill-transfer"></i> Process Payroll
@@ -1757,9 +1761,9 @@ const Salary = () => {
           {/* Gift Attendance Success Banner */}
           {giftSuccessMsg && (
             <div style={{
-              background: '#ECFDF5',
-              border: '1.5px solid #A7F3D0',
-              color: '#065F46',
+              background: '#FAF4EE',
+              border: '1.5px solid #EAD8C7',
+              color: '#7A4518',
               borderRadius: '8px',
               padding: '10px 14px',
               marginBottom: '12px',
@@ -1768,9 +1772,9 @@ const Salary = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              boxShadow: '0 2px 6px rgba(5,150,105,0.08)'
+              boxShadow: '0 2px 6px rgba(165, 106, 48, 0.08)'
             }}>
-              <i className="fa-solid fa-circle-check" style={{ fontSize: '16px', color: '#059669' }}></i>
+              <i className="fa-solid fa-circle-check" style={{ fontSize: '16px', color: 'var(--gold, #A56A30)' }}></i>
               <span>{giftSuccessMsg}</span>
             </div>
           )}
@@ -1785,11 +1789,11 @@ const Salary = () => {
             flexWrap: 'wrap',
             gap: '8px',
             marginBottom: '12px',
-            background: '#F8FAFC',
+            background: '#FAF8F5',
             padding: '6px 8px',
             borderRadius: '10px',
-            border: '1.5px solid #E2E8F0',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            border: '1.5px solid #EAE3DA',
+            boxShadow: '0 1px 3px rgba(74, 44, 23, 0.04)'
           }}>
             {/* Left: Tab Switcher Buttons */}
             <div style={{ display: 'inline-flex', gap: '6px', flex: '1 1 auto' }}>
@@ -1800,7 +1804,7 @@ const Salary = () => {
                   flex: '1 1 auto',
                   padding: '6px 12px',
                   borderRadius: '7px',
-                  border: viewMode === 'employee' ? '2px solid var(--navy, #111827)' : '1.5px solid #CBD5E1',
+                  border: viewMode === 'employee' ? '2px solid var(--gold, #4A2C17)' : '1.5px solid #DCD4CA',
                   fontSize: '12px',
                   fontWeight: '800',
                   cursor: 'pointer',
@@ -1809,12 +1813,12 @@ const Salary = () => {
                   justifyContent: 'center',
                   gap: '6px',
                   transition: 'all 0.18s ease',
-                  background: viewMode === 'employee' ? 'var(--navy, #111827)' : '#FFFFFF',
-                  color: viewMode === 'employee' ? '#FFFFFF' : '#475569',
+                  background: viewMode === 'employee' ? 'var(--gold, #4A2C17)' : '#FFFFFF',
+                  color: viewMode === 'employee' ? '#FFFFFF' : '#5C4E43',
                   height: '34px'
                 }}
               >
-                <i className="fa-solid fa-user-tie" style={{ color: viewMode === 'employee' ? '#FBBF24' : '#64748B', fontSize: '12px' }}></i>
+                <i className="fa-solid fa-user-tie" style={{ color: viewMode === 'employee' ? '#FBBF24' : '#8C7B6D', fontSize: '12px' }}></i>
                 <span>By Employee</span>
                 <span style={{
                   background: viewMode === 'employee' ? 'var(--gold, #A56A30)' : '#F3EDE6',
@@ -1835,7 +1839,7 @@ const Salary = () => {
                   flex: '1 1 auto',
                   padding: '6px 12px',
                   borderRadius: '7px',
-                  border: viewMode === 'site' ? '2px solid var(--navy, #111827)' : '1.5px solid #D1C2AF',
+                  border: viewMode === 'site' ? '2px solid var(--gold, #4A2C17)' : '1.5px solid #DCD4CA',
                   fontSize: '12px',
                   fontWeight: '800',
                   cursor: 'pointer',
@@ -1844,12 +1848,12 @@ const Salary = () => {
                   justifyContent: 'center',
                   gap: '6px',
                   transition: 'all 0.18s ease',
-                  background: viewMode === 'site' ? 'var(--navy, #111827)' : '#FFFFFF',
-                  color: viewMode === 'site' ? '#FFFFFF' : '#475569',
+                  background: viewMode === 'site' ? 'var(--gold, #4A2C17)' : '#FFFFFF',
+                  color: viewMode === 'site' ? '#FFFFFF' : '#5C4E43',
                   height: '34px'
                 }}
               >
-                <i className="fa-solid fa-location-dot" style={{ color: viewMode === 'site' ? '#FBBF24' : '#64748B', fontSize: '12px' }}></i>
+                <i className="fa-solid fa-location-dot" style={{ color: viewMode === 'site' ? '#FBBF24' : '#8C7B6D', fontSize: '12px' }}></i>
                 <span>By Site</span>
                 <span style={{
                   background: viewMode === 'site' ? 'var(--gold, #A56A30)' : '#F3EDE6',
@@ -1875,7 +1879,7 @@ const Salary = () => {
                   width: '100%',
                   padding: '6px 26px 6px 28px',
                   borderRadius: '6px',
-                  border: '1px solid #CBD5E1',
+                  border: '1px solid #DCD4CA',
                   background: '#FFFFFF',
                   fontSize: '12px',
                   outline: 'none',
@@ -1888,7 +1892,7 @@ const Salary = () => {
                 left: '9px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#94A3B8',
+                color: '#8C7B6D',
                 fontSize: '11px'
               }}></i>
               {searchQuery && (
@@ -1924,8 +1928,8 @@ const Salary = () => {
             {viewMode === 'employee' ? (
               <>
                 <div style={{ background: '#fff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #D1C2AF' }}>
-                  <div style={{ fontSize: '10px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Payroll</div>
-                  <div style={{ fontSize: '18px', fontWeight: '800', color: '#059669', marginTop: '2px' }}>
+                  <div style={{ fontSize: '10px', color: '#78716C', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Payroll</div>
+                  <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--gold, #8C5521)', marginTop: '2px' }}>
                     ₹{totalEmployeePayroll.toLocaleString('en-IN')}
                   </div>
                 </div>
@@ -1938,9 +1942,9 @@ const Salary = () => {
               </>
             ) : (
               <>
-                <div style={{ background: '#ECFDF5', padding: '10px 12px', borderRadius: '8px', border: '1px solid #A7F3D0' }}>
-                  <div style={{ fontSize: '10px', color: '#065F46', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Labor Cost</div>
-                  <div style={{ fontSize: '18px', fontWeight: '800', color: '#065F46', marginTop: '2px' }}>
+                <div style={{ background: '#FAF8F5', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #EAE3DA' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--gold, #8C5521)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Labor Cost</div>
+                  <div style={{ fontSize: '18px', fontWeight: '800', color: '#4A2C17', marginTop: '2px' }}>
                     ₹{totalSitePayroll.toLocaleString('en-IN')}
                   </div>
                 </div>
@@ -1961,30 +1965,30 @@ const Salary = () => {
             <div className="panel table-responsive" style={{
               background: '#fff',
               borderRadius: '10px',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              border: '1.5px solid #EAE3DA',
+              boxShadow: '0 2px 8px rgba(74, 44, 23, 0.04)',
               overflowX: 'auto',
               WebkitOverflowScrolling: 'touch'
             }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px', tableLayout: 'fixed' }}>
                 <thead>
                   <tr style={{
-                    background: '#E2E8F0',
-                    borderBottom: '2px solid #94A3B8',
-                    color: '#0F172A',
+                    background: '#FAF8F5',
+                    borderBottom: '1.5px solid #EAE3DA',
+                    color: '#4A2C17',
                     fontSize: '11px',
                     fontWeight: '800',
                     textTransform: 'uppercase',
                     letterSpacing: '0.6px'
                   }}>
-                    <th style={{ padding: '12px 14px', width: '18%', fontWeight: '800', color: '#0F172A' }}>Employee</th>
-                    <th style={{ padding: '12px 12px', width: '12%', minWidth: '95px', fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap' }}>Total Days</th>
-                    <th style={{ padding: '12px 12px', width: '11%', fontWeight: '800', color: '#0F172A' }}>Daily Rate</th>
-                    <th style={{ padding: '12px 12px', width: '11%', fontWeight: '800', color: '#0F172A' }}>Gross Amount</th>
-                    <th style={{ padding: '12px 12px', width: '11%', fontWeight: '800', color: '#0F172A' }}>Deductions / Adv.</th>
-                    <th style={{ padding: '12px 12px', width: '12%', fontWeight: '800', color: '#0F172A' }}>Net Payable</th>
-                    <th style={{ padding: '12px 12px', width: '13%', fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap' }}>Status</th>
-                    <th style={{ padding: '12px 12px', width: '12%', fontWeight: '800', color: '#0F172A', textAlign: 'center' }}>Actions</th>
+                    <th style={{ padding: '12px 14px', width: '18%', fontWeight: '800', color: '#4A2C17' }}>Employee</th>
+                    <th style={{ padding: '12px 12px', width: '12%', minWidth: '95px', fontWeight: '800', color: '#4A2C17', whiteSpace: 'nowrap' }}>Total Days</th>
+                    <th style={{ padding: '12px 12px', width: '11%', fontWeight: '800', color: '#4A2C17' }}>Daily Rate</th>
+                    <th style={{ padding: '12px 12px', width: '11%', fontWeight: '800', color: '#4A2C17' }}>Gross Amount</th>
+                    <th style={{ padding: '12px 12px', width: '11%', fontWeight: '800', color: '#4A2C17' }}>Deductions / Adv.</th>
+                    <th style={{ padding: '12px 12px', width: '12%', fontWeight: '800', color: '#4A2C17' }}>Net Payable</th>
+                    <th style={{ padding: '12px 12px', width: '13%', fontWeight: '800', color: '#4A2C17', whiteSpace: 'nowrap' }}>Status</th>
+                    <th style={{ padding: '12px 12px', width: '12%', fontWeight: '800', color: '#4A2C17', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2026,8 +2030,9 @@ const Salary = () => {
 
                         <td style={{ padding: '10px 12px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span style={{
-                            background: row.totalDays > 0 ? '#ECFDF5' : '#F3F4F6',
-                            color: row.totalDays > 0 ? '#065F46' : '#6B7280',
+                            background: row.totalDays > 0 ? '#FAF4EE' : '#F5F5F4',
+                            color: row.totalDays > 0 ? 'var(--gold, #8C5521)' : '#78716C',
+                            border: row.totalDays > 0 ? '1px solid #EAD8C7' : '1px solid #E7E5E4',
                             padding: '3px 8px',
                             borderRadius: '6px',
                             fontSize: '12px',
@@ -2048,8 +2053,8 @@ const Salary = () => {
                           ₹{row.grossAmount.toLocaleString('en-IN')}
                         </td>
 
-                        <td style={{ padding: '10px 12px', verticalAlign: 'middle', color: '#DC2626', fontSize: '12.5px' }}>
-                          - ₹{row.deductions.toLocaleString('en-IN')}
+                        <td style={{ padding: '10px 12px', verticalAlign: 'middle', color: row.deductions > 0 ? '#DC2626' : '#A8A29E', fontSize: '12.5px' }}>
+                          {row.deductions > 0 ? `- ₹${row.deductions.toLocaleString('en-IN')}` : '₹0'}
                         </td>
 
                         <td style={{ padding: '10px 12px', verticalAlign: 'middle', fontWeight: '800', color: 'var(--navy, #111827)', fontSize: '13.5px' }}>
@@ -2058,8 +2063,9 @@ const Salary = () => {
 
                         <td style={{ padding: '14px 12px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                           <span style={{
-                            background: row.totalDays > 0 ? '#FEF3C7' : '#F3F4F6',
-                            color: row.totalDays > 0 ? '#92400E' : '#6B7280',
+                            background: row.totalDays > 0 ? '#FDF8F0' : '#F5F5F4',
+                            color: row.totalDays > 0 ? '#9B6833' : '#78716C',
+                            border: row.totalDays > 0 ? '1px solid #F3E5D4' : '1px solid #E7E5E4',
                             padding: '4px 10px',
                             borderRadius: '12px',
                             fontSize: '11.5px',
@@ -2110,28 +2116,28 @@ const Salary = () => {
             <div className="panel table-responsive" style={{
               background: '#fff',
               borderRadius: '10px',
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              border: '1.5px solid #EAE3DA',
+              boxShadow: '0 2px 8px rgba(74, 44, 23, 0.04)',
               overflowX: 'auto',
               WebkitOverflowScrolling: 'touch'
             }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '950px', tableLayout: 'fixed' }}>
                 <thead>
                   <tr style={{
-                    background: '#E2E8F0',
-                    borderBottom: '2px solid #94A3B8',
-                    color: '#0F172A',
+                    background: '#FAF8F5',
+                    borderBottom: '1.5px solid #EAE3DA',
+                    color: '#4A2C17',
                     fontSize: '11px',
                     fontWeight: '800',
                     textTransform: 'uppercase',
                     letterSpacing: '0.6px'
                   }}>
-                    <th style={{ padding: '14px 18px', width: '25%', fontWeight: '800', color: '#0F172A' }}>Site / Customer Project</th>
-                    <th style={{ padding: '14px 18px', width: '14%', fontWeight: '800', color: '#0F172A' }}>Active Workers</th>
-                    <th style={{ padding: '14px 18px', width: '13%', fontWeight: '800', color: '#0F172A' }}>Total Man-Days</th>
-                    <th style={{ padding: '14px 18px', width: '12%', fontWeight: '800', color: '#0F172A' }}>Total Hours</th>
-                    <th style={{ padding: '14px 18px', width: '18%', fontWeight: '800', color: '#0F172A' }}>Site Labor Cost (Billing)</th>
-                    <th style={{ padding: '14px 18px', width: '18%', fontWeight: '800', color: '#0F172A', textAlign: 'right' }}>Actions</th>
+                    <th style={{ padding: '14px 18px', width: '25%', fontWeight: '800', color: '#4A2C17' }}>Site / Customer Project</th>
+                    <th style={{ padding: '14px 18px', width: '14%', fontWeight: '800', color: '#4A2C17' }}>Active Workers</th>
+                    <th style={{ padding: '14px 18px', width: '13%', fontWeight: '800', color: '#4A2C17' }}>Total Man-Days</th>
+                    <th style={{ padding: '14px 18px', width: '12%', fontWeight: '800', color: '#4A2C17' }}>Total Hours</th>
+                    <th style={{ padding: '14px 18px', width: '18%', fontWeight: '800', color: '#4A2C17' }}>Site Labor Cost (Billing)</th>
+                    <th style={{ padding: '14px 18px', width: '18%', fontWeight: '800', color: '#4A2C17', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2209,8 +2215,9 @@ const Salary = () => {
                         {/* Total Man-Days */}
                         <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
                           <span style={{
-                            background: site.totalDays > 0 ? '#ECFDF5' : '#F3F4F6',
-                            color: site.totalDays > 0 ? '#065F46' : '#9CA3AF',
+                            background: site.totalDays > 0 ? '#FAF4EE' : '#F5F5F4',
+                            color: site.totalDays > 0 ? 'var(--gold, #8C5521)' : '#78716C',
+                            border: site.totalDays > 0 ? '1px solid #EAD8C7' : '1px solid #E7E5E4',
                             padding: '4px 10px',
                             borderRadius: '12px',
                             fontSize: '12px',
@@ -2229,9 +2236,9 @@ const Salary = () => {
                         {/* Total Labor Cost (Billing) */}
                         <td style={{ padding: '14px 18px', verticalAlign: 'middle' }}>
                           <span style={{
-                            background: site.totalLaborCost > 0 ? '#ECFDF5' : '#F3F4F6',
-                            color: site.totalLaborCost > 0 ? '#065F46' : '#6B7280',
-                            border: site.totalLaborCost > 0 ? '1px solid #A7F3D0' : 'none',
+                            background: site.totalLaborCost > 0 ? '#FAF4EE' : '#F5F5F4',
+                            color: site.totalLaborCost > 0 ? 'var(--gold, #8C5521)' : '#78716C',
+                            border: site.totalLaborCost > 0 ? '1px solid #EAD8C7' : 'none',
                             padding: '5px 12px',
                             borderRadius: '8px',
                             fontSize: '14px',
@@ -2284,27 +2291,27 @@ const Salary = () => {
                 {filteredSiteRows.length > 0 && (
                   <tfoot>
                     <tr style={{
-                      background: '#E2E8F0',
-                      borderTop: '2px solid #94A3B8',
-                      borderBottom: '2px solid #94A3B8',
+                      background: '#FAF8F5',
+                      borderTop: '1.5px solid #EAE3DA',
+                      borderBottom: '1.5px solid #EAE3DA',
                       fontWeight: '800'
                     }}>
-                      <td style={{ padding: '16px 18px', fontSize: '13px', color: '#0F172A', fontWeight: '800' }}>
+                      <td style={{ padding: '16px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800' }}>
                         Total Project Labor Expense
                       </td>
-                      <td style={{ padding: '16px 18px', fontSize: '13px', color: '#0F172A', fontWeight: '800' }}>
+                      <td style={{ padding: '16px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800' }}>
                         {activeSitesCount} Active Sites
                       </td>
                       <td style={{ padding: '16px 18px', fontSize: '14px', color: '#8C5521', fontWeight: '800' }}>
                         {formatDays(totalSiteManDays)} Days
                       </td>
-                      <td style={{ padding: '16px 18px', fontSize: '13px', color: '#0F172A', fontWeight: '800' }}>
+                      <td style={{ padding: '16px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800' }}>
                         {filteredSiteRows.reduce((sum, s) => sum + s.totalHours, 0)} hrs
                       </td>
-                      <td style={{ padding: '16px 18px', fontSize: '17px', fontWeight: '800', color: '#059669' }}>
+                      <td style={{ padding: '16px 18px', fontSize: '17px', fontWeight: '800', color: '#4A2C17' }}>
                         ₹{totalSitePayroll.toLocaleString('en-IN')}
                       </td>
-                      <td style={{ padding: '16px 18px', textAlign: 'right', fontSize: '12px', color: '#64748B' }}>
+                      <td style={{ padding: '16px 18px', textAlign: 'right', fontSize: '12px', color: '#78716C' }}>
                         All Sites Active
                       </td>
                     </tr>
@@ -2459,7 +2466,7 @@ const Salary = () => {
                   const days = parseFloat(giftFormData.bonusDays) || 0;
                   if (rate > 0 && days > 0) {
                     return (
-                      <div style={{ fontSize: '12px', color: '#059669', fontWeight: '600', marginTop: '6px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--gold, #8C5521)', fontWeight: '700', marginTop: '6px' }}>
                         +{days} Days × ₹{rate}/day = +₹{Math.round(days * rate).toLocaleString('en-IN')} added salary
                       </div>
                     );
@@ -2496,12 +2503,13 @@ const Salary = () => {
                     fontSize: '13px',
                     fontWeight: '700',
                     cursor: giftSaving ? 'not-allowed' : 'pointer',
-                    background: 'linear-gradient(135deg, #111827 0%, #1F2937 100%)',
+                    background: 'var(--gold, #4A2C17)',
                     color: '#fff',
                     border: 'none',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    boxShadow: '0 2px 6px rgba(74, 44, 23, 0.2)'
                   }}
                 >
                   {giftSaving ? 'Adding...' : 'Add Days'}

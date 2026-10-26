@@ -70,21 +70,6 @@ const AddSiteModal = ({
     setFormData(updates);
   };
 
-  const handleSelectExistingCustomerProfile = (selectedId) => {
-    const site = existingSites.find(s => String(s.id || s.dbId || s.siteCode) === String(selectedId));
-    if (!site) return;
-    setFormData({
-      ...formData,
-      customerName: site.customerName || formData.customerName,
-      phone: site.phone || formData.phone,
-      email: site.email || formData.email,
-      contactPersons: (Array.isArray(site.contactPersons) && site.contactPersons.length > 0)
-        ? site.contactPersons
-        : formData.contactPersons,
-      refFrom: 'Existing Customer',
-      refName: `Order #${site.siteCode || site.siteRef || site.id}`
-    });
-  };
 
   const handlePhoneChange = (phone) => {
     const currentPersons = Array.isArray(formData.contactPersons) ? [...formData.contactPersons] : [];
@@ -132,18 +117,19 @@ const AddSiteModal = ({
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(17, 24, 39, 0.65)', display: 'flex',
       justifyContent: 'center', alignItems: 'center', zIndex: 1250,
-      backdropFilter: 'blur(3px)', padding: '16px'
+      backdropFilter: 'blur(3px)', padding: '8px'
     }}>
       <div style={{
         background: '#fff', borderRadius: '12px',
         width: '100%', maxWidth: '920px',
         boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
-        maxHeight: '92vh', overflowY: 'auto'
+        maxHeight: '94vh', display: 'flex', flexDirection: 'column',
+        overflow: 'hidden'
       }}>
         {/* Modal Header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '16px 22px', borderBottom: '1px solid #E5E7EB'
+          padding: '14px 18px', borderBottom: '1px solid #E5E7EB', background: '#FAF8F5'
         }}>
           <h2 style={{margin: 0, fontSize: '17px', fontWeight: '700', color: '#111827'}}>
             Add New Customer / Site
@@ -159,15 +145,17 @@ const AddSiteModal = ({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} onKeyDown={handleFormKeyDown} style={{padding: '20px 22px'}}>
+        <form onSubmit={onSubmit} onKeyDown={handleFormKeyDown} style={{padding: '14px 14px', overflowY: 'auto', overflowX: 'hidden', flex: 1, boxSizing: 'border-box', width: '100%'}}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-            gap: '20px',
-            alignItems: 'start'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
+            gap: '16px',
+            alignItems: 'start',
+            width: '100%',
+            boxSizing: 'border-box'
           }}>
             {/* LEFT COLUMN: Customer & Order */}
-            <div>
+            <div style={{ minWidth: 0, width: '100%' }}>
               <div style={{
                 fontSize: '11px', fontWeight: '700', color: 'var(--gold, #A56A30)',
                 textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px'
@@ -176,8 +164,8 @@ const AddSiteModal = ({
               </div>
 
               {/* Row 1: Order Number & Status */}
-              <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
-                <div style={{flex: '1 1 50%'}}>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '12px', width: '100%', boxSizing: 'border-box'}}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Order Number *
                   </label>
@@ -203,7 +191,7 @@ const AddSiteModal = ({
                     }}
                     style={{
                       width: '100%',
-                      padding: '8px 11px',
+                      padding: '8px 10px',
                       borderRadius: '6px',
                       border: '1.5px solid #D1D5DB',
                       boxSizing: 'border-box',
@@ -217,7 +205,7 @@ const AddSiteModal = ({
                   />
                 </div>
 
-                <div style={{flex: '1 1 50%'}}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Status
                   </label>
@@ -225,7 +213,7 @@ const AddSiteModal = ({
                     value={formData.status}
                     onChange={(e) => setFormData({...formData, status: e.target.value})}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '8px 10px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
                       backgroundColor: '#fff', fontSize: '13px'
                     }}
@@ -238,8 +226,8 @@ const AddSiteModal = ({
               </div>
 
               {/* Row 2: Customer Name & Reference Name (Side-by-Side) */}
-              <div style={{display: 'flex', gap: '12px', marginBottom: '8px'}}>
-                <div style={{flex: '1 1 50%'}}>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '8px', width: '100%', boxSizing: 'border-box'}}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Customer Name *
                   </label>
@@ -247,17 +235,34 @@ const AddSiteModal = ({
                     type="text"
                     placeholder="e.g. Pranjal Spaces"
                     value={formData.customerName}
-                    onChange={(e) => setFormData({...formData, customerName: toTitleCase(e.target.value)})}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData(prev => ({
+                        ...prev,
+                        customerName: val,
+                        refName: prev.refFrom === 'Existing Customer' ? val : prev.refName
+                      }));
+                    }}
+                    onBlur={() => {
+                      setFormData(prev => {
+                        const formatted = toTitleCase(prev.customerName || '');
+                        return {
+                          ...prev,
+                          customerName: formatted,
+                          refName: prev.refFrom === 'Existing Customer' ? formatted : prev.refName
+                        };
+                      });
+                    }}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '8px 10px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px'
+                      fontSize: '13px', textTransform: 'capitalize'
                     }}
                     required
                   />
                 </div>
 
-                <div style={{flex: '1 1 50%'}}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Reference Name
                   </label>
@@ -265,11 +270,12 @@ const AddSiteModal = ({
                     type="text"
                     placeholder="e.g. Ravet / Flat 402"
                     value={formData.location}
-                    onChange={(e) => setFormData({...formData, location: toTitleCase(e.target.value)})}
+                    onChange={(e) => setFormData({...formData, location: e.target.value})}
+                    onBlur={() => setFormData(prev => ({...prev, location: toTitleCase(prev.location || '')}))}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '8px 10px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px'
+                      fontSize: '13px', textTransform: 'capitalize'
                     }}
                   />
                 </div>
@@ -289,8 +295,8 @@ const AddSiteModal = ({
               </div>
 
               {/* Row 3: Customer Ref From & Contact Person Name (Side-by-Side) */}
-              <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
-                <div style={{flex: '1 1 50%'}}>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '12px', width: '100%', boxSizing: 'border-box'}}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Customer Ref From
                   </label>
@@ -306,11 +312,15 @@ const AddSiteModal = ({
                         setFormData({ ...formData, refFrom: '' });
                       } else {
                         setIsCustomRefFrom(false);
-                        setFormData({ ...formData, refFrom: val });
+                        const updates = { ...formData, refFrom: val };
+                        if (val === 'Existing Customer') {
+                          updates.refName = formData.customerName || '';
+                        }
+                        setFormData(updates);
                       }
                     }}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '8px 10px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
                       backgroundColor: '#fff', fontSize: '13px'
                     }}
@@ -332,18 +342,19 @@ const AddSiteModal = ({
                       type="text"
                       placeholder="Type custom source..."
                       value={formData.refFrom || ''}
-                      onChange={(e) => setFormData({ ...formData, refFrom: toTitleCase(e.target.value) })}
+                      onChange={(e) => setFormData({ ...formData, refFrom: e.target.value })}
+                      onBlur={() => setFormData(prev => ({ ...prev, refFrom: toTitleCase(prev.refFrom || '') }))}
                       style={{
                         marginTop: '5px', width: '100%', padding: '7px 10px', borderRadius: '6px',
                         border: '1.5px solid var(--gold, #A56A30)', boxSizing: 'border-box', outline: 'none',
-                        fontSize: '12.5px', backgroundColor: '#FFFDF7'
+                        fontSize: '12.5px', backgroundColor: '#FFFDF7', textTransform: 'capitalize'
                       }}
                       autoFocus
                     />
                   )}
                 </div>
 
-                <div style={{flex: '1 1 50%'}}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Contact Person Name
                   </label>
@@ -351,57 +362,17 @@ const AddSiteModal = ({
                     type="text"
                     placeholder="e.g. Site Supervisor"
                     value={primaryContactName}
-                    onChange={(e) => handleContactPersonNameChange(toTitleCase(e.target.value))}
+                    onChange={(e) => handleContactPersonNameChange(e.target.value)}
+                    onBlur={() => handleContactPersonNameChange(toTitleCase(primaryContactName || ''))}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '8px 10px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px'
+                      fontSize: '13px', textTransform: 'capitalize'
                     }}
                   />
                 </div>
               </div>
 
-              {/* 1. Existing Customer (Repeat Order Auto-fill) */}
-              {formData.refFrom === 'Existing Customer' && (
-                <div style={{
-                  marginBottom: '12px',
-                  padding: '10px 12px',
-                  backgroundColor: '#F0FDF4',
-                  borderRadius: '6px',
-                  border: '1.5px solid #86EFAC'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <label style={{ display: 'block', color: '#166534', fontWeight: '700', fontSize: '12px' }}>
-                      <i className="fa-solid fa-user-check" style={{ marginRight: '6px' }}></i>
-                      Select Existing Customer Profile (Auto-fill)
-                    </label>
-                    <span style={{ fontSize: '10px', color: '#15803D', fontWeight: '700', background: '#DCFCE7', padding: '1px 6px', borderRadius: '4px' }}>
-                      Repeat Order
-                    </span>
-                  </div>
-                  <select
-                    onChange={(e) => handleSelectExistingCustomerProfile(e.target.value)}
-                    style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
-                      border: '1.5px solid #16A34A', boxSizing: 'border-box', outline: 'none',
-                      backgroundColor: '#FFFFFF', fontSize: '13px'
-                    }}
-                  >
-                    <option value="">-- Choose Existing Customer To Auto-Fill --</option>
-                    {existingSites.map((site) => {
-                      const label = getSiteRefLabel(site);
-                      return (
-                        <option key={site.id || site.dbId || site.siteCode} value={site.id || site.dbId || site.siteCode}>
-                          {label}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <div style={{ fontSize: '10.5px', color: '#166534', marginTop: '4px' }}>
-                    Auto-fills name, mobile &amp; details.
-                  </div>
-                </div>
-              )}
 
               {/* 2. Referred by Existing Customer */}
               {formData.refFrom === 'Referred by Existing Customer' && (
@@ -462,11 +433,12 @@ const AddSiteModal = ({
                       type="text"
                       placeholder="Type referring customer name..."
                       value={formData.refName || ''}
-                      onChange={(e) => setFormData({ ...formData, refName: toTitleCase(e.target.value) })}
+                      onChange={(e) => setFormData({ ...formData, refName: e.target.value })}
+                      onBlur={() => setFormData(prev => ({ ...prev, refName: toTitleCase(prev.refName || '') }))}
                       style={{
                         marginTop: '6px', width: '100%', padding: '7px 10px', borderRadius: '6px',
                         border: '1.5px solid #D97706', boxSizing: 'border-box', outline: 'none',
-                        fontSize: '12.5px', backgroundColor: '#FFFFFF'
+                        fontSize: '12.5px', backgroundColor: '#FFFFFF', textTransform: 'capitalize'
                       }}
                       autoFocus
                     />
@@ -475,8 +447,8 @@ const AddSiteModal = ({
               )}
 
               {/* Row 4: Mobile Number & Email Address (Side-by-Side) */}
-              <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
-                <div style={{flex: '1 1 50%'}}>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '12px', width: '100%', boxSizing: 'border-box'}}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Mobile Number
                   </label>
@@ -486,13 +458,13 @@ const AddSiteModal = ({
                     value={formData.phone || ''}
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '8px 10px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
                       fontSize: '13px'
                     }}
                   />
                 </div>
-                <div style={{flex: '1 1 50%'}}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Email Address
                   </label>
@@ -502,7 +474,7 @@ const AddSiteModal = ({
                     value={formData.email || ''}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '8px 10px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
                       fontSize: '13px'
                     }}
@@ -537,10 +509,12 @@ const AddSiteModal = ({
                           type="text"
                           placeholder="Name / Role"
                           value={cp.name || ''}
-                          onChange={(e) => handleUpdateAdditionalContact(idx, 'name', toTitleCase(e.target.value))}
+                          onChange={(e) => handleUpdateAdditionalContact(idx, 'name', e.target.value)}
+                          onBlur={() => handleUpdateAdditionalContact(idx, 'name', toTitleCase(cp.name || ''))}
                           style={{
                             flex: '1 1 50%', padding: '6px 9px', borderRadius: '5px',
-                            border: '1px solid #D1D5DB', fontSize: '12px', outline: 'none'
+                            border: '1px solid #D1D5DB', fontSize: '12px', outline: 'none',
+                            textTransform: 'capitalize'
                           }}
                         />
                         <input
@@ -572,7 +546,7 @@ const AddSiteModal = ({
             </div>
 
             {/* RIGHT COLUMN: Site Address & Timeline */}
-            <div>
+            <div style={{ minWidth: 0, width: '100%' }}>
               <div style={{
                 fontSize: '11px', fontWeight: '700', color: 'var(--gold, #A56A30)',
                 textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px'
@@ -582,11 +556,11 @@ const AddSiteModal = ({
 
               {/* Site Address with Pick on Map button */}
               <div style={{marginBottom: '12px'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '6px'}}>
                   <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Site Address *
                   </label>
-                  <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap'}}>
                     {formData.latLng && (
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: '3px',
@@ -613,7 +587,8 @@ const AddSiteModal = ({
                         padding: '3px 8px', background: 'rgba(165, 106, 48, 0.1)',
                         border: '1px solid rgba(165, 106, 48, 0.35)', borderRadius: '5px',
                         color: 'var(--gold, #A56A30)', cursor: 'pointer', fontSize: '11px',
-                        fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px'
+                        fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        flexShrink: 0
                       }}
                     >
                       <i className="fa-solid fa-map-location-dot"></i> Pick on Map
@@ -625,7 +600,8 @@ const AddSiteModal = ({
                       style={{
                         padding: '3px 7px', background: '#F8FAFC', border: '1px solid #CBD5E1',
                         borderRadius: '5px', color: '#334155', cursor: 'pointer', fontSize: '11px',
-                        fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '3px'
+                        fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '3px',
+                        flexShrink: 0
                       }}
                     >
                       {quickGeocoding ? (
@@ -642,11 +618,13 @@ const AddSiteModal = ({
                   placeholder="Enter complete site address..."
                   rows="3"
                   value={formData.fullAddress}
-                  onChange={(e) => setFormData({...formData, fullAddress: toTitleCase(e.target.value)})}
+                  onChange={(e) => setFormData({...formData, fullAddress: e.target.value})}
+                  onBlur={() => setFormData(prev => ({...prev, fullAddress: toTitleCase(prev.fullAddress || '')}))}
                   style={{
-                    width: '100%', padding: '8px 11px', borderRadius: '6px',
+                    width: '100%', padding: '8px 10px', borderRadius: '6px',
                     border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                    resize: 'vertical', fontFamily: 'inherit', fontSize: '13px'
+                    resize: 'vertical', fontFamily: 'inherit', fontSize: '13px',
+                    textTransform: 'capitalize'
                   }}
                   required
                 ></textarea>
@@ -663,8 +641,8 @@ const AddSiteModal = ({
               )}
 
               {/* Start Date & Target Date */}
-              <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
-                <div style={{flex: '1 1 50%'}}>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '12px', width: '100%', boxSizing: 'border-box'}}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Start Date
                   </label>
@@ -673,12 +651,12 @@ const AddSiteModal = ({
                     value={formData.startDate}
                     onChange={(e) => setFormData({...formData, startDate: e.target.value})}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
-                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'
+                      width: '100%', padding: '8px 8px', borderRadius: '6px',
+                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '12px'
                     }}
                   />
                 </div>
-                <div style={{flex: '1 1 50%'}}>
+                <div style={{ minWidth: 0 }}>
                   <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
                     Target Date
                   </label>
@@ -687,8 +665,8 @@ const AddSiteModal = ({
                     value={formData.targetDate}
                     onChange={(e) => setFormData({...formData, targetDate: e.target.value})}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
-                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'
+                      width: '100%', padding: '8px 8px', borderRadius: '6px',
+                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '12px'
                     }}
                   />
                 </div>

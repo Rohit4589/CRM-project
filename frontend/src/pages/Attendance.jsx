@@ -2450,7 +2450,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                   }}
                 >
                   <i className="fa-solid fa-plus" style={{ fontSize: '10.5px' }}></i>
-                  + Days
+                  Add Days
                 </button>
               </div>
             </div>
@@ -2810,7 +2810,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
 
             {/* Modal Form Body - Bulk Multiple Employees Mode */}
             {attendanceMode === 'bulk' && (
-              <form onSubmit={handleSaveBulkAttendance} style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <form onSubmit={handleSaveBulkAttendance} style={{ padding: '12px 14px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {apiError && (
                   <div style={{
                     background: '#FEF2F2',
@@ -2829,11 +2829,11 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                   background: '#F9FAFB',
                   border: '1px solid #E5E7EB',
                   borderRadius: '10px',
-                  padding: '12px 16px',
+                  padding: '10px 14px',
                   display: 'flex',
                   alignItems: 'flex-end',
                   justifyContent: 'space-between',
-                  gap: '12px',
+                  gap: '10px',
                   flexWrap: 'wrap'
                 }}>
                   {/* Attendance Date */}
@@ -2889,8 +2889,8 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                 <div style={{
                   border: '1px solid #E5E7EB',
                   borderRadius: '8px',
-                  minHeight: '220px',
-                  maxHeight: '440px',
+                  minHeight: 'auto',
+                  maxHeight: '38vh',
                   overflowY: 'auto',
                   overflowX: 'auto',
                   WebkitOverflowScrolling: 'touch',
@@ -3026,46 +3026,46 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '14px 18px',
+                  padding: '10px 14px',
                   background: '#F9FAFB',
                   border: '1px solid #E5E7EB',
-                  borderRadius: '10px',
+                  borderRadius: '8px',
                   flexWrap: 'wrap',
-                  gap: '12px',
-                  marginTop: '4px'
+                  gap: '8px',
+                  marginTop: 'auto'
                 }}>
                   {/* Summary Badges */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-                    <div style={{ fontSize: '12px', color: '#4B5563' }}>
-                      Workers: <strong style={{ color: '#111827', fontSize: '13px' }}>{bulkRows.length}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '11.5px', color: '#4B5563' }}>
+                      Workers: <strong style={{ color: '#111827', fontSize: '12.5px' }}>{bulkRows.length}</strong>
                     </div>
-                    <div style={{ fontSize: '12px', color: '#4B5563' }}>
-                      Total Hajeri: <strong style={{ color: 'var(--gold, #A56A30)', fontSize: '13px' }}>
+                    <div style={{ fontSize: '11.5px', color: '#4B5563' }}>
+                      Hajeri: <strong style={{ color: 'var(--gold, #A56A30)', fontSize: '12.5px' }}>
                         {(() => {
                           const t = bulkRows.reduce((sum, r) => sum + (parseFloat(r.dayValue) || 0), 0);
-                          return t % 1 === 0 ? `${t.toFixed(0)} Days` : `${parseFloat(t.toFixed(2))} Days`;
+                          return t % 1 === 0 ? `${t.toFixed(0)}d` : `${parseFloat(t.toFixed(2))}d`;
                         })()}
                       </strong>
                     </div>
-                    <div style={{ fontSize: '12px', color: '#4B5563' }}>
-                      Total Est. Wages: <strong style={{ color: '#166534', fontSize: '13px' }}>
+                    <div style={{ fontSize: '11.5px', color: '#4B5563' }}>
+                      Est: <strong style={{ color: '#166534', fontSize: '12.5px' }}>
                         ₹{bulkRows.reduce((sum, r) => sum + Math.round((parseFloat(r.dayValue) || 0) * (r.dailyRate || 0)), 0).toLocaleString('en-IN')}
                       </strong>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                     <button
                       type="button"
                       onClick={() => setShowAddModal(false)}
                       style={{
-                        padding: '9px 18px',
-                        borderRadius: '7px',
+                        padding: '7px 14px',
+                        borderRadius: '6px',
                         border: '1px solid #D1D5DB',
                         background: '#fff',
                         color: '#374151',
-                        fontSize: '13px',
+                        fontSize: '12px',
                         fontWeight: '600',
                         cursor: 'pointer'
                       }}
@@ -3078,21 +3078,22 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                       disabled={saving || bulkRows.length === 0}
                       className="btn-primary"
                       style={{
-                        padding: '9px 22px',
-                        borderRadius: '7px',
-                        fontSize: '13px',
+                        padding: '7px 16px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
                         fontWeight: '700',
                         cursor: (saving || bulkRows.length === 0) ? 'not-allowed' : 'pointer',
                         background: 'var(--gold, #4A2C17)',
                         color: '#FFFFFF',
                         border: 'none',
-                        boxShadow: '0 2px 8px rgba(74, 44, 23, 0.25)'
+                        boxShadow: '0 2px 8px rgba(74, 44, 23, 0.25)',
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       {saving ? (
                         <span><i className="fa-solid fa-spinner fa-spin"></i> Saving...</span>
                       ) : (
-                        <span><i className="fa-solid fa-check" style={{ color: '#FFFFFF' }}></i> Save All Attendance ({bulkRows.length} Workers)</span>
+                        <span><i className="fa-solid fa-check" style={{ color: '#FFFFFF' }}></i> Save Attendance ({bulkRows.length})</span>
                       )}
                     </button>
                   </div>
