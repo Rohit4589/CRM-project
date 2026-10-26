@@ -3,7 +3,7 @@ import '../styles/Sidebar.css';
 import modernLogo from '../assets/logo.png';
 import { getTranslation } from '../utils/translations';
 
-const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lang = 'en', onOpenChangePin }) => {
+const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lang = 'en', onOpenChangePin, onOpenFestivals }) => {
   const isEmployee = user?.role === 'employee';
 
   const t = {
@@ -200,6 +200,18 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lan
                   onClick={(e) => handleItemClick(e, 'products-rates')}
                 >
                   <i className="fa-solid fa-tags"></i> {t.productsRates}
+                </a>
+                <a 
+                  href="#" 
+                  className="menu-item" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onOpenFestivals) onOpenFestivals();
+                    if (onClose) onClose();
+                  }}
+                  title="Manage Festival Holidays & Benefits"
+                >
+                  <i className="fa-solid fa-champagne-glasses" style={{ color: 'var(--gold, #A56A30)' }}></i> Festivals & Holidays
                 </a>
               </div>
             </>
