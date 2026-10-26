@@ -1,4 +1,6 @@
-// Centralized API configuration supporting web browser (localhost & LAN) and mobile Capacitor app
+// Centralized API configuration supporting web browser (localhost, LAN, Cloud) and mobile Capacitor app
+const CLOUD_BACKEND_URL = 'https://modern-interior-backend.onrender.com';
+
 const getBaseUrl = () => {
   // Check if running inside Capacitor native mobile container
   const isNativeApp = typeof window !== 'undefined' && (
@@ -8,24 +10,35 @@ const getBaseUrl = () => {
     (typeof window.origin === 'string' && window.origin.includes('capacitor://'))
   );
 
-  // 1. If running as native mobile app on phone, use configured Wi-Fi IP or cloud URL
+  // 1. If running as native mobile app on phone
   if (isNativeApp) {
-    return (import.meta.env.VITE_API_URL || 'http://192.168.0.104:5000').replace(/\/+$/, '');
+    const envUrl = import.meta.env.VITE_API_URL;
+    if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('192.168.')) {
+      return envUrl.replace(/\/+$/, '');
+    }
+    return CLOUD_BACKEND_URL;
   }
 
-  // 2. If running on laptop browser (localhost / 127.0.0.1), ALWAYS connect directly to localhost:5000
-  // This guarantees laptop dashboard always loads instantly without being affected by Wi-Fi IP changes
-  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    return 'http://localhost:5000';
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname || '';
+
+    // 2. Laptop browser dev (localhost / 127.0.0.1)
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000';
+    }
+
+    // 3. Local Wi-Fi testing on LAN (e.g. 192.168.x.x, 10.x.x.x)
+    const isLocalLanIp = /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(hostname);
+    if (isLocalLanIp) {
+      return `http://${hostname}:5000`;
+    }
+
+    // 4. Deployed online (Render, Vercel, or custom cloud domain)
+    return CLOUD_BACKEND_URL;
   }
 
-  // 3. If accessing via phone browser on local Wi-Fi (e.g. http://192.168.0.104:5173)
-  if (typeof window !== 'undefined' && window.location.hostname) {
-    return `http://${window.location.hostname}:5000`;
-  }
-
-  // 4. Fallback to env variable
-  return (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
+  // 5. Fallback
+  return CLOUD_BACKEND_URL;
 };
 
 export const API_BASE_URL = getBaseUrl();
