@@ -416,13 +416,7 @@ const updateSite = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Site not found' });
     }
 
-    // Keep linked estimates in sync with site status
-    if (status) {
-      await pool.query(
-        `UPDATE public.estimates SET status = $1 WHERE site_id = $2`,
-        [status, targetDbId]
-      ).catch(e => console.error('Failed to sync estimates status:', e));
-    }
+
 
     const row = result.rows[0];
     const match = String(row.siteRef || newSiteRef || '').match(/\d+/);
@@ -618,10 +612,72 @@ const openSiteFolder = async (req, res) => {
   }
 };
 
+// PATCH /api/sites/:id/status - Quick Shift Customer Status
+const updateSiteStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ success: false, message: 'Status is required' });
+    }
+
+    // Resolve target site in DB by id or by site_ref
+    let targetDbId = null;
+    let targetSiteRef = null;
+    let targetCustomerName = null;
+
+    const numericParam = parseInt(id, 10);
+    if (!isNaN(numericParam)) {
+      const checkById = await pool.query('SELECT id, site_ref, customer_name FROM public.sites WHERE id = $1', [numericParam]);
+      if (checkById.rows.length > 0) {
+        targetDbId = checkById.rows[0].id;
+        targetSiteRef = checkById.rows[0].site_ref;
+        targetCustomerName = checkById.rows[0].customer_name;
+      }
+    }
+    if (!targetDbId) {
+      const checkByRef = await pool.query('SELECT id, site_ref, customer_name FROM public.sites WHERE UPPER(site_ref) = UPPER($1)', [id]);
+      if (checkByRef.rows.length > 0) {
+        targetDbId = checkByRef.rows[0].id;
+        targetSiteRef = checkByRef.rows[0].site_ref;
+        targetCustomerName = checkByRef.rows[0].customer_name;
+      }
+    }
+
+    if (!targetDbId) {
+      return res.status(404).json({ success: false, message: 'Site not found' });
+    }
+
+    // 1. Update site status
+    await pool.query('UPDATE public.sites SET status = $1 WHERE id = $2', [status, targetDbId]);
+
+    // 2. Sync all matching estimates to the same status (by site_id, customer_name, or estimate_number prefix)
+    const baseCode = (targetSiteRef || '').replace(/[^0-9]/g, '');
+    await pool.query(`
+      UPDATE public.estimates
+      SET status = $1
+      WHERE site_id = $2
+         OR ($3 != '' AND LOWER(TRIM(customer_name)) = LOWER(TRIM($3)))
+         OR ($4 != '' AND (estimate_number = $4 OR estimate_number LIKE $4 || '-%'))
+    `, [status, targetDbId, targetCustomerName || '', baseCode]).catch(err => console.error('Failed to sync estimates on status shift:', err));
+
+    return res.json({
+      success: true,
+      message: `Site status updated to ${status} and estimates synchronized`,
+      status
+    });
+  } catch (error) {
+    console.error('Error updating site status:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update site status', error: error.message });
+  }
+};
+
 module.exports = {
   getSites,
   addSite,
   updateSite,
+  updateSiteStatus,
   deleteSite,
   openSiteFolder,
 };

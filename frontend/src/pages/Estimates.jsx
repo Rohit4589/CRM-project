@@ -9,7 +9,6 @@ import EstimateTable from '../components/estimates/EstimateTable';
 import EstimateWizardModal from '../components/estimates/EstimateWizardModal';
 import EstimateEditorModal from '../components/estimates/EstimateEditorModal';
 import EstimatePreviewModal from '../components/estimates/EstimatePreviewModal';
-import EstimateShareModal from '../components/estimates/EstimateShareModal';
 import EstimateDeleteModal from '../components/estimates/EstimateDeleteModal';
 
 const Estimates = ({ onNavigate }) => {
@@ -28,7 +27,6 @@ const Estimates = ({ onNavigate }) => {
   const [showWizard, setShowWizard] = useState(false);
   const [editingEstimate, setEditingEstimate] = useState(null);
   const [previewEstimate, setPreviewEstimate] = useState(null);
-  const [shareEstimate, setShareEstimate] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -103,25 +101,74 @@ const Estimates = ({ onNavigate }) => {
     fetchEstimates();
   }, []);
 
+  // Resolve effective status: estimate's own status is the primary source of truth (manual control)
+  const getEstimateEffectiveStatus = (est) => {
+    // 1. Primary: estimate's own explicit status
+    if (est.status && est.status !== 'Draft' && est.status !== 'Quotation') {
+      return est.status;
+    }
+    if (est.effective_status) {
+      return est.effective_status;
+    }
+
+    // 2. Fallback to matched customer site status if estimate has no explicit status
+    if (sites && sites.length > 0) {
+      const estSiteId = est.site_id ? String(est.site_id) : '';
+      const rawNum = String(est.estimate_number || '');
+      const numMatch = rawNum.match(/^(\d+)/);
+      const estNumBase = numMatch ? parseInt(numMatch[1], 10) : null;
+
+      let matchedSite = null;
+
+      // 1. Primary strict match: by site_id pointing to site dbId or id
+      if (estSiteId) {
+        matchedSite = sites.find(s => String(s.dbId || '') === estSiteId || String(s.id || '') === estSiteId);
+      }
+
+      // 2. Secondary strict match: by order number base matching siteCode / siteRef
+      if (!matchedSite && estNumBase !== null) {
+        matchedSite = sites.find(s => {
+          const sRaw = String(s.siteCode || s.siteRef || s.id || '').replace(/[^0-9]/g, '');
+          const sNum = parseInt(sRaw, 10);
+          return !isNaN(sNum) && sNum === estNumBase;
+        });
+      }
+
+      if (matchedSite && matchedSite.status) {
+        return matchedSite.status;
+      }
+    }
+
+    return est.effective_status || est.order_status || est.site_status || est.status || 'Running';
+  };
+
   // Compute folder counts (Running, Completed, On Hold, All)
   const counts = {
     all: (estimates || []).length,
     running: (estimates || []).filter(e => {
-      const s = e.order_status || e.site_status || e.status;
+      const s = getEstimateEffectiveStatus(e);
       return s === 'Running' || (!s || (s !== 'Completed' && s !== 'Complete' && s !== 'On Hold' && s !== 'Cancelled' && s !== 'Hold'));
     }).length,
     completed: (estimates || []).filter(e => {
-      const s = e.order_status || e.site_status || e.status;
+      const s = getEstimateEffectiveStatus(e);
       return s === 'Completed' || s === 'Complete';
     }).length,
     onHold: (estimates || []).filter(e => {
-      const s = e.order_status || e.site_status || e.status;
+      const s = getEstimateEffectiveStatus(e);
       return s === 'On Hold' || s === 'Cancelled' || s === 'Hold';
     }).length
   };
 
   // Filter estimates by active folder, search keyword, and project type
-  const filteredEstimates = (estimates || []).filter(est => {
+  const filteredEstimates = (estimates || []).map(est => {
+    const s = getEstimateEffectiveStatus(est);
+    return {
+      ...est,
+      effective_status: s,
+      order_status: s,
+      site_status: s
+    };
+  }).filter(est => {
     const sTerm = searchTerm.toLowerCase().trim();
     const rawNum = String(est.estimate_number || '');
     const matchesSearch = !sTerm ||
@@ -133,7 +180,7 @@ const Estimates = ({ onNavigate }) => {
 
     const matchesType = typeFilter === 'All' || est.project_type === typeFilter;
 
-    const s = est.order_status || est.site_status || est.status || 'Running';
+    const s = est.effective_status;
     let matchesStatus = true;
     if (statusFilter === 'Running') {
       matchesStatus = s === 'Running' || (!s || (s !== 'Completed' && s !== 'Complete' && s !== 'On Hold' && s !== 'Cancelled' && s !== 'Hold'));
@@ -155,22 +202,23 @@ const Estimates = ({ onNavigate }) => {
     return new Date(b.created_at || 0) - new Date(a.created_at || 0);
   });
 
-  // Move order/estimate status (e.g. from Running to Quotation)
+  // Move individual estimate status (e.g. from Running to Completed / On Hold)
   const handleStatusChange = async (estimateId, newStatus) => {
     try {
-      // Optimistically update
+      // 1. Optimistically update ONLY this individual estimate in state
       setEstimates(prev => prev.map(est => {
         if (est.id === estimateId) {
           return {
             ...est,
             status: newStatus,
-            order_status: newStatus,
-            site_status: newStatus
+            effective_status: newStatus,
+            order_status: newStatus
           };
         }
         return est;
       }));
 
+      // 2. Persist change to backend
       const res = await fetch(`${API_BASE}/estimates/${estimateId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -181,15 +229,76 @@ const Estimates = ({ onNavigate }) => {
         alert(data.message || 'Failed to update order status');
         fetchEstimates();
       } else {
-        // Refresh both estimates and sites to ensure live synchronization across tabs
-        fetch(`${API_BASE}/sites`).then(r => r.json()).then(d => {
-          if (d.success) setSites(d.sites || []);
+        // Refresh estimates in background
+        fetch(`${API_BASE}/estimates`).then(r => r.json()).then(d => {
+          if (d.success) setEstimates(d.estimates || []);
         }).catch(() => {});
       }
     } catch (err) {
       console.error('Error changing estimate status:', err);
       fetchEstimates();
     }
+  };
+
+  // Direct WhatsApp share without popup modal:
+  // Opens WhatsApp (Desktop on computer if installed, or WhatsApp Web in browser)
+  // without phone number so user can search and choose contact directly in WhatsApp
+  const handleShareWhatsApp = (estimate) => {
+    if (!estimate) return;
+
+    const formattedTotal = Number(estimate.final_total || 0).toLocaleString('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    });
+
+    const rawNum = String(estimate.estimate_number || '');
+    const revMatch = rawNum.match(/^(\d+)-(\d+)$/);
+    let orderStr = rawNum;
+    if (revMatch) {
+      const bNum = parseInt(revMatch[1], 10);
+      const base = bNum < 1000 ? String(bNum).padStart(3, '0') : String(bNum);
+      orderStr = `#${base} (Bill #${parseInt(revMatch[2], 10) || revMatch[2]})`;
+    } else {
+      const num = parseInt(rawNum.replace(/\D/g, ''), 10);
+      if (num) {
+        orderStr = `#${num < 1000 ? String(num).padStart(3, '0') : num}`;
+      }
+    }
+
+    const cleanCustomerName = String(estimate.customer_name || '').replace(/-\d+$/, '').trim();
+    const greeting = cleanCustomerName ? `Hello ${cleanCustomerName},\n\n` : `Hello,\n\n`;
+    const projectType = estimate.project_type || 'Residential';
+    const tier = estimate.collection_tier || (
+      estimate.furniture_level === 'Modern' ? 'Essential Collection' :
+      estimate.furniture_level === 'Luxury' ? 'Elite Collection' :
+      'Signature Collection'
+    );
+
+    const messageText = `${greeting}Greetings from *Modern Interior*!\n\nHere is your Budgetary Estimate details:\n*Order No:* ${orderStr}\n*Project Type:* ${projectType} (${tier})\n*Estimated Amount:* ${formattedTotal}\n\nPlease review your estimate proposal. Let us know if you would like any customizations!\n\nThank you,\n*Modern Interior Pune*`;
+
+    const encodedText = encodeURIComponent(messageText);
+
+    // Auto-copy text to clipboard so user can also paste anytime
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(messageText).catch(() => {});
+    }
+
+    // Record send on backend if estimate has id
+    if (estimate.id) {
+      fetch(`${API_BASE}/estimates/${estimate.id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel: 'whatsapp' })
+      }).catch(err => console.error('Error recording estimate send:', err));
+
+      setEstimates(prev => prev.map(e => e.id === estimate.id ? { ...e, status: 'Sent' } : e));
+    }
+
+    // Direct WhatsApp share URL without phone number so user can search and select recipient
+    // https://api.whatsapp.com/send?text=... bridges seamlessly:
+    // Launches WhatsApp Desktop app on computer, or opens WhatsApp Web in browser
+    window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
   };
 
   // When user completes wizard, build draft rooms with chosen tier rates or load previous bill
@@ -564,8 +673,8 @@ const Estimates = ({ onNavigate }) => {
     <main className="dashboard-content estimates-container" style={{ padding: 'clamp(16px, 2.5vw, 28px)', width: '100%', boxSizing: 'border-box' }}>
       {/* Page Header */}
       <div className="estimates-header">
-        <h1>Estimates & Quotations</h1>
-        <p>Generate, download, and share client estimates with instant 3-tier furniture costing.</p>
+        <h1>Estimates</h1>
+        <p>Client budget proposals</p>
       </div>
 
       {/* KPI Cards */}
@@ -591,7 +700,7 @@ const Estimates = ({ onNavigate }) => {
         onEdit={(est) => setEditingEstimate(est)}
         onRevision={handleCreateRevision}
         onDownload={(est) => setPreviewEstimate(est)}
-        onShare={(est) => setShareEstimate(est)}
+        onShare={handleShareWhatsApp}
         onDelete={handleDeleteEstimate}
         onStatusChange={handleStatusChange}
       />
@@ -625,18 +734,7 @@ const Estimates = ({ onNavigate }) => {
         <EstimatePreviewModal
           estimate={previewEstimate}
           onClose={() => setPreviewEstimate(null)}
-          onShare={(est) => {
-            setShareEstimate(est);
-          }}
-        />
-      )}
-
-      {/* WhatsApp Share Modal */}
-      {shareEstimate && (
-        <EstimateShareModal
-          estimate={shareEstimate}
-          onClose={() => setShareEstimate(null)}
-          onStatusUpdated={handleStatusUpdated}
+          onShare={handleShareWhatsApp}
         />
       )}
 

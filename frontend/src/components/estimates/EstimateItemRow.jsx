@@ -6,6 +6,14 @@ const cleanNumberInput = (v) => {
   return String(v).replace(/^0+(?=\d)/, '');
 };
 
+// Helper to auto-capitalize every word (Title Case)
+const capitalizeWords = (str) => {
+  if (!str) return '';
+  return str.replace(/(^\s*|[\s\n\r/\\-]+)([a-z])/g, (match, separator, letter) => {
+    return separator + letter.toUpperCase();
+  });
+};
+
 const EstimateItemRow = ({
   item,
   index,
@@ -38,7 +46,6 @@ const EstimateItemRow = ({
 
   // Check if current description exists in catalog
   const isExistingDesc = catalogDescriptions.includes(item.description);
-  const [isCustomDesc, setIsCustomDesc] = useState(false);
 
   // Product autocomplete recommendations state
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
@@ -132,41 +139,78 @@ const EstimateItemRow = ({
   const sigRate = Number(item.signatureRate || matchedProd?.signatureRate || matchedProd?.luxuryModern) || 0;
   const eliRate = Number(item.eliteRate || matchedProd?.eliteRate || matchedProd?.luxury) || 0;
 
-  // Handle description change and auto-switch rate based on selected collection description
-  const handleDescriptionSelect = (newDesc) => {
-    if (newDesc === '__CUSTOM__') {
-      setIsCustomDesc(true);
+  // Handle description preset change and auto-switch rate based on selected collection
+  const handleDescriptionPreset = (presetKey) => {
+    if (presetKey === '__CUSTOM__') {
       onChange({
         ...item,
-        description: ''
+        description: 'APPROX'
       });
       return;
     }
 
-    let updatedRate = Number(item.rate) || 0;
-
-    // Check which collection description matches the selection
-    if (essDesc && newDesc.trim() === essDesc && essRate > 0) {
-      updatedRate = essRate;
-    } else if (sigDesc && newDesc.trim() === sigDesc && sigRate > 0) {
-      updatedRate = sigRate;
-    } else if (eliDesc && newDesc.trim() === eliDesc && eliRate > 0) {
-      updatedRate = eliRate;
+    if (presetKey === '__ESSENTIAL__') {
+      const updatedRate = essRate > 0 ? essRate : (Number(item.rate) || 0);
+      const newAmount = Math.round((Number(item.totalArea) || 1) * updatedRate);
+      onChange({
+        ...item,
+        description: essDesc,
+        rate: updatedRate,
+        amount: newAmount,
+        essentialDesc: essDesc,
+        signatureDesc: sigDesc,
+        eliteDesc: eliDesc,
+        essentialRate: essRate,
+        signatureRate: sigRate,
+        eliteRate: eliRate
+      });
+      return;
     }
 
-    const newAmount = Math.round((Number(item.totalArea) || 1) * updatedRate);
+    if (presetKey === '__SIGNATURE__') {
+      const updatedRate = sigRate > 0 ? sigRate : (Number(item.rate) || 0);
+      const newAmount = Math.round((Number(item.totalArea) || 1) * updatedRate);
+      onChange({
+        ...item,
+        description: sigDesc,
+        rate: updatedRate,
+        amount: newAmount,
+        essentialDesc: essDesc,
+        signatureDesc: sigDesc,
+        eliteDesc: eliDesc,
+        essentialRate: essRate,
+        signatureRate: sigRate,
+        eliteRate: eliRate
+      });
+      return;
+    }
 
+    if (presetKey === '__ELITE__') {
+      const updatedRate = eliRate > 0 ? eliRate : (Number(item.rate) || 0);
+      const newAmount = Math.round((Number(item.totalArea) || 1) * updatedRate);
+      onChange({
+        ...item,
+        description: eliDesc,
+        rate: updatedRate,
+        amount: newAmount,
+        essentialDesc: essDesc,
+        signatureDesc: sigDesc,
+        eliteDesc: eliDesc,
+        essentialRate: essRate,
+        signatureRate: sigRate,
+        eliteRate: eliRate
+      });
+      return;
+    }
+
+    // Direct catalog description text selection if no tiered collection specs exist
+    const updatedRate = Number(item.rate) || 0;
+    const newAmount = Math.round((Number(item.totalArea) || 1) * updatedRate);
     onChange({
       ...item,
-      description: newDesc,
+      description: presetKey,
       rate: updatedRate,
-      amount: newAmount,
-      essentialDesc: essDesc,
-      signatureDesc: sigDesc,
-      eliteDesc: eliDesc,
-      essentialRate: essRate,
-      signatureRate: sigRate,
-      eliteRate: eliRate
+      amount: newAmount
     });
   };
 
@@ -725,151 +769,108 @@ const EstimateItemRow = ({
         </div>
       </td>
 
-      {/* Description / Specification Column - Centered Multi-line Paragraph */}
-      <td style={{ textAlign: 'center' }}>
-        {isCustomDesc ? (
-          <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-            <textarea
-              rows={2}
-              autoFocus
-              data-nav-item="true"
-              data-col="1"
-              value={item.description || ''}
-              placeholder="Enter custom description..."
-              onChange={(e) => onChange({ ...item, description: e.target.value })}
-              style={{
-                fontSize: '10.5px',
-                color: '#000000',
-                fontWeight: '600',
-                lineHeight: '1.35',
-                minHeight: '34px',
-                resize: 'vertical',
-                overflow: 'auto',
-                padding: '4px',
-                whiteSpace: 'normal',
-                wordBreak: 'break-word',
-                textAlign: 'center',
-                flex: 1
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setIsCustomDesc(false)}
-              title="Pick from dropdown"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#888',
-                padding: '2px 4px',
-                fontSize: '11px'
-              }}
-            >
-              <i className="fa-solid fa-list"></i>
-            </button>
-          </div>
-        ) : (
-          <div
-            style={{
-              position: 'relative',
-              width: '100%',
-              minHeight: '34px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '3px 6px',
-              cursor: 'pointer'
-            }}
-          >
-            {/* Multi-line paragraph text display so user can read full specification */}
-            <div
-              style={{
-                fontSize: '10.5px',
-                color: '#000000',
-                fontWeight: '600',
-                lineHeight: '1.35',
-                textAlign: 'center',
-                wordBreak: 'break-word',
-                whiteSpace: 'normal',
-                width: '100%',
-                paddingRight: '12px'
-              }}
-            >
-              {item.description || <span style={{ color: '#999', fontStyle: 'italic' }}>-- Select Description --</span>}
+      {/* Description / Specification Column - Centered Multi-line Paragraph with Collection Presets & Direct Editing */}
+      <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '3px 4px' }}>
+        {(() => {
+          const descTrimmed = (item.description || '').trim();
+          let currentPresetValue = '';
+          if (descTrimmed === 'APPROX') {
+            currentPresetValue = '__CUSTOM__';
+          } else if (essDesc && descTrimmed === essDesc) {
+            currentPresetValue = '__ESSENTIAL__';
+          } else if (sigDesc && descTrimmed === sigDesc) {
+            currentPresetValue = '__SIGNATURE__';
+          } else if (eliDesc && descTrimmed === eliDesc) {
+            currentPresetValue = '__ELITE__';
+          } else if (descTrimmed) {
+            currentPresetValue = '__MODIFIED__';
+          } else {
+            currentPresetValue = '';
+          }
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '100%' }}>
+              {/* Preset Selector Dropdown */}
+              <select
+                value={currentPresetValue}
+                onChange={(e) => handleDescriptionPreset(e.target.value)}
+                title="Pick collection specification or custom preset. Text below remains directly editable for this estimate."
+                style={{
+                  width: '100%',
+                  height: '21px',
+                  fontSize: '9.5px',
+                  fontWeight: '700',
+                  color: '#4A2C17',
+                  background: '#FAF6F0',
+                  border: '1px solid #D1C2AF',
+                  borderRadius: '3px',
+                  padding: '0 4px',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value="" disabled>-- Select Specification --</option>
+                {essDesc && (
+                  <option value="__ESSENTIAL__">
+                    🥉 Essential {essRate > 0 ? `(₹${essRate})` : ''}
+                  </option>
+                )}
+                {sigDesc && (
+                  <option value="__SIGNATURE__">
+                    🥈 Signature {sigRate > 0 ? `(₹${sigRate})` : ''}
+                  </option>
+                )}
+                {eliDesc && (
+                  <option value="__ELITE__">
+                    🥇 Elite {eliRate > 0 ? `(₹${eliRate})` : ''}
+                  </option>
+                )}
+                {!essDesc && !sigDesc && !eliDesc && catalogDescriptions.map((desc, i) => (
+                  <option key={i} value={desc}>{desc}</option>
+                ))}
+                <option value="__CUSTOM__">✏️ Custom (APPROX)</option>
+                {currentPresetValue === '__MODIFIED__' && (
+                  <option value="__MODIFIED__" disabled>
+                    📝 Custom / Edited ({descTrimmed.length > 22 ? descTrimmed.slice(0, 22) + '...' : descTrimmed})
+                  </option>
+                )}
+              </select>
+
+              {/* Direct Editable Textarea - Editable for that estimate only */}
+              <textarea
+                rows={2}
+                data-nav-item="true"
+                data-col="1"
+                value={item.description || ''}
+                placeholder="Specification / description..."
+                autoCapitalize="words"
+                onChange={(e) => {
+                  const formatted = capitalizeWords(e.target.value);
+                  onChange({ ...item, description: formatted });
+                }}
+                style={{
+                  fontSize: '10.5px',
+                  color: '#000000',
+                  fontWeight: '600',
+                  lineHeight: '1.35',
+                  minHeight: '36px',
+                  resize: 'vertical',
+                  overflow: 'auto',
+                  padding: '4px 6px',
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  textAlign: 'center',
+                  textTransform: 'capitalize',
+                  width: '100%',
+                  border: '1px solid #D1C2AF',
+                  borderRadius: '4px',
+                  background: '#FFFFFF',
+                  boxSizing: 'border-box'
+                }}
+              />
             </div>
-
-            {/* Dropdown Chevron indicator */}
-            <i
-              className="fa-solid fa-chevron-down"
-              style={{
-                position: 'absolute',
-                right: '4px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: '9px',
-                color: '#8C827A',
-                pointerEvents: 'none'
-              }}
-            />
-
-            {/* Invisible native select overlay that opens immediately on click */}
-            <select
-              data-nav-item="true"
-              data-col="1"
-              value={item.description || ''}
-              onChange={(e) => {
-                if (e.target.value === '__CUSTOM__') {
-                  setIsCustomDesc(true);
-                  onChange({ ...item, description: '' });
-                } else {
-                  handleDescriptionSelect(e.target.value);
-                }
-              }}
-              title="Click to change description specification (rate updates automatically)"
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                opacity: 0,
-                cursor: 'pointer',
-                border: 'none',
-                background: 'transparent',
-                zIndex: 2
-              }}
-            >
-              <option value="" disabled>-- Select Collection Description --</option>
-              {essDesc && (
-                <option value={essDesc}>
-                  🥉 Essential Collection {essRate ? `(₹${essRate})` : ''}: {essDesc}
-                </option>
-              )}
-              {sigDesc && (
-                <option value={sigDesc}>
-                  🥈 Signature Collection {sigRate ? `(₹${sigRate})` : ''}: {sigDesc}
-                </option>
-              )}
-              {eliDesc && (
-                <option value={eliDesc}>
-                  🥇 Elite Collection {eliRate ? `(₹${eliRate})` : ''}: {eliDesc}
-                </option>
-              )}
-              {!essDesc && !sigDesc && !eliDesc && catalogDescriptions.map((desc, i) => (
-                <option key={i} value={desc}>{desc}</option>
-              ))}
-              {Boolean(item.description) && 
-                item.description !== essDesc && 
-                item.description !== sigDesc && 
-                item.description !== eliDesc && (
-                <option value={item.description}>
-                  📝 Custom: {item.description}
-                </option>
-              )}
-              <option value="__CUSTOM__">✏️ Custom / Edit Description...</option>
-            </select>
-          </div>
-        )}
+          );
+        })()}
       </td>
 
       {/* Width (MM) - Centered matching Photo 1 */}

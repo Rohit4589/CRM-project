@@ -26,8 +26,33 @@ class SiteTask {
     }
   }
 
+  // Helper to resolve siteId whether it was passed as primary key id or site_ref code (e.g. 229 vs 16)
+  static async resolveSiteDbId(rawId) {
+    if (!rawId) return null;
+    const num = Number(rawId);
+    if (!isNaN(num) && num > 0) {
+      const pkCheck = await pool.query('SELECT id FROM public.sites WHERE id = $1', [num]);
+      if (pkCheck.rows.length > 0) {
+        return pkCheck.rows[0].id;
+      }
+    }
+    const str = String(rawId).trim();
+    const cleanNum = str.replace(/\D/g, '');
+    const refCheck = await pool.query(`
+      SELECT id FROM public.sites 
+      WHERE site_ref = $1 
+         OR regexp_replace(site_ref, '[^0-9]', '', 'g') = $2
+      LIMIT 1
+    `, [str, cleanNum || str]);
+    if (refCheck.rows.length > 0) {
+      return refCheck.rows[0].id;
+    }
+    return num || null;
+  }
+
   // Find tasks with optional date and siteId filters
   static async find({ date, siteId }) {
+    let resolvedSiteId = siteId ? await SiteTask.resolveSiteDbId(siteId) : null;
     let query = `
       SELECT 
         st.id,
@@ -55,8 +80,8 @@ class SiteTask {
       query += ` AND st.task_date = $${params.length}`;
     }
 
-    if (siteId) {
-      params.push(Number(siteId));
+    if (resolvedSiteId) {
+      params.push(resolvedSiteId);
       query += ` AND st.site_id = $${params.length}`;
     }
 
@@ -78,6 +103,7 @@ class SiteTask {
 
   // Create a new task
   static async create({ siteId, taskDate, title, priority, assignedEmployeeId, assignedEmployeeName, dueTime }) {
+    const resolvedSiteId = await SiteTask.resolveSiteDbId(siteId);
     const effectiveDate = taskDate || new Date().toISOString().split('T')[0];
     const effectivePriority = priority || 'Medium';
 
@@ -99,7 +125,7 @@ class SiteTask {
     `;
 
     const values = [
-      Number(siteId),
+      Number(resolvedSiteId),
       effectiveDate,
       title.trim(),
       effectivePriority,
@@ -184,6 +210,7 @@ class SiteTask {
 
   // Transactional batch sync for a site on a given date
   static async syncDayPlan(siteId, taskDate, tasks) {
+    const resolvedSiteId = await SiteTask.resolveSiteDbId(siteId);
     const client = await pool.connect();
     try {
       const effectiveDate = taskDate || new Date().toISOString().split('T')[0];
@@ -192,7 +219,7 @@ class SiteTask {
       // Query all existing tasks for this site so tasks persist across days
       const existingRes = await client.query(
         'SELECT id FROM public.site_tasks WHERE site_id = $1',
-        [Number(siteId)]
+        [Number(resolvedSiteId)]
       );
       const existingIds = existingRes.rows.map(r => r.id);
       const incomingIds = (tasks || []).filter(t => t.id && typeof t.id === 'number').map(t => t.id);
@@ -260,7 +287,7 @@ class SiteTask {
               is_completed as "isCompleted",
               completed_at as "completedAt";
           `, [
-            Number(siteId),
+            Number(resolvedSiteId),
             effectiveDate,
             t.title.trim(),
             t.priority || 'Medium',

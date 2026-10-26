@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const EstimateTable = ({
   estimates = [],
@@ -11,6 +11,17 @@ const EstimateTable = ({
   onDelete,
   onStatusChange
 }) => {
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setOpenMenuId(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
   if (loading) {
     return (
       <div className="estimate-table-card" style={{ padding: '40px', textAlign: 'center', color: '#7A6F66' }}>
@@ -31,8 +42,8 @@ const EstimateTable = ({
   }
 
   return (
-    <div className="estimate-table-card">
-      <div className="estimate-table-wrap">
+    <div className="estimate-table-card" style={{ minHeight: '320px' }}>
+      <div className="estimate-table-wrap" style={{ minHeight: '280px', paddingBottom: '40px' }}>
         <table className="estimate-table">
           <thead>
             <tr>
@@ -43,11 +54,11 @@ const EstimateTable = ({
               <th style={{ width: '100px', minWidth: '95px', textAlign: 'center' }}>Date</th>
               <th style={{ width: '125px', minWidth: '120px', textAlign: 'center' }}>Folder Status</th>
               <th style={{ width: '130px', minWidth: '125px', textAlign: 'center', whiteSpace: 'nowrap' }}>Final Total</th>
-              <th style={{ width: '220px', minWidth: '220px', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
+              <th style={{ width: '100px', minWidth: '95px', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {estimates.map((est) => {
+            {estimates.map((est, index) => {
               const formattedTotal = Number(est.final_total || 0).toLocaleString('en-IN', {
                 style: 'currency',
                 currency: 'INR',
@@ -81,7 +92,7 @@ const EstimateTable = ({
               // Strip manual -01, -02 from customer name if user had typed it
               const cleanCustomerName = String(est.customer_name || '').replace(/-\d+$/, '').trim();
 
-              const currentStatus = est.order_status || est.site_status || est.status || 'Running';
+              const currentStatus = est.effective_status || est.order_status || est.site_status || est.status || 'Running';
               const isRunning = currentStatus === 'Running' || currentStatus === 'Draft' || currentStatus === 'Quotation';
               const isCompleted = currentStatus === 'Completed' || currentStatus === 'Complete';
               const isOnHold = currentStatus === 'On Hold' || currentStatus === 'Hold / Cancelled' || currentStatus === 'Hold';
@@ -163,51 +174,266 @@ const EstimateTable = ({
                   <td style={{ textAlign: 'center', whiteSpace: 'nowrap', width: '130px', minWidth: '125px' }}>
                     <strong style={{ fontSize: '14px', color: '#2E7D32' }}>{formattedTotal}</strong>
                   </td>
-                  <td style={{ textAlign: 'right', width: '220px', minWidth: '220px', whiteSpace: 'nowrap' }}>
-                    <div className="estimate-actions" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
-                      {onEdit && (
-                        <button
-                          className="btn-action-icon edit"
-                          title="Edit Estimate"
-                          onClick={() => onEdit(est)}
-                        >
-                          <i className="fa-solid fa-pen-to-square"></i>
-                        </button>
-                      )}
-
+                  <td style={{ textAlign: 'center', width: '100px', minWidth: '95px', whiteSpace: 'nowrap', position: 'relative' }}>
+                    <div className="estimate-actions" style={{ justifyContent: 'center', gap: '6px' }}>
+                      {/* 1. View Estimate */}
                       <button
+                        type="button"
                         className="btn-action-icon"
-                        title="Preview & Print"
+                        title="Preview & Print Estimate"
                         onClick={() => onView(est)}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          background: '#FAF8F5',
+                          border: '1px solid #D1C2AF',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          color: '#4B5563',
+                          fontSize: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.15s ease',
+                          padding: 0,
+                          flexShrink: 0
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.background = '#F3EDE6'; e.currentTarget.style.borderColor = '#9A7B56'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.background = '#FAF8F5'; e.currentTarget.style.borderColor = '#D1C2AF'; }}
                       >
                         <i className="fa-solid fa-eye"></i>
                       </button>
 
-                      <button
-                        className="btn-action-icon"
-                        title="Download / Print Bill"
-                        onClick={() => (onDownload ? onDownload(est) : onView(est))}
+                      {/* 2. Three-Dots Menu */}
+                      <div
+                        style={{ position: 'relative', display: 'inline-block' }}
+                        onMouseEnter={() => {
+                          setOpenMenuId(est.id);
+                        }}
+                        onMouseLeave={() => {
+                          setOpenMenuId(null);
+                        }}
                       >
-                        <i className="fa-solid fa-download"></i>
-                      </button>
-
-                      {onRevision && (
                         <button
-                          className="btn-action-icon revision"
-                          title="Create Next Revision / Copy Bill"
-                          onClick={() => onRevision(est)}
+                          type="button"
+                          title="Estimate Actions (Edit, Copy, Delete)"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === est.id ? null : est.id);
+                          }}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            background: openMenuId === est.id ? 'var(--gold, #4A2C17)' : '#FAF8F5',
+                            border: openMenuId === est.id ? '1.5px solid var(--gold, #4A2C17)' : '1px solid #D1C2AF',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            color: openMenuId === est.id ? '#FFFFFF' : '#4A2C17',
+                            fontSize: '14px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.15s ease',
+                            padding: 0,
+                            flexShrink: 0,
+                            boxShadow: openMenuId === est.id ? '0 2px 8px rgba(74, 44, 23, 0.25)' : 'none'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (openMenuId !== est.id) {
+                              e.currentTarget.style.background = '#F3EDE6';
+                              e.currentTarget.style.borderColor = 'var(--gold, #A56A30)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (openMenuId !== est.id) {
+                              e.currentTarget.style.background = '#FAF8F5';
+                              e.currentTarget.style.borderColor = '#D1C2AF';
+                            }
+                          }}
                         >
-                          <i className="fa-solid fa-copy"></i>
+                          <i className="fa-solid fa-ellipsis-vertical"></i>
                         </button>
-                      )}
 
-                      <button
-                        className="btn-action-icon delete"
-                        title="Delete"
-                        onClick={() => onDelete(est)}
-                      >
-                        <i className="fa-solid fa-trash-can"></i>
-                      </button>
+                        {openMenuId === est.id && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              right: 0,
+                              top: index >= estimates.length - 2 && estimates.length > 2 ? 'auto' : '100%',
+                              bottom: index >= estimates.length - 2 && estimates.length > 2 ? '100%' : 'auto',
+                              paddingTop: index >= estimates.length - 2 && estimates.length > 2 ? '0' : '4px',
+                              paddingBottom: index >= estimates.length - 2 && estimates.length > 2 ? '4px' : '0',
+                              zIndex: 600,
+                              minWidth: '185px'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div
+                              style={{
+                                background: '#FFFFFF',
+                                borderRadius: '10px',
+                                border: '1.5px solid #D1C2AF',
+                                boxShadow: '0 12px 32px rgba(74, 44, 23, 0.25)',
+                                padding: '6px 0',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                textAlign: 'left',
+                                overflow: 'hidden'
+                              }}
+                            >
+                              {/* Header */}
+                              <div style={{
+                                padding: '6px 14px 4px',
+                                fontSize: '10.5px',
+                                fontWeight: '800',
+                                color: 'var(--gold, #8C5521)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.6px',
+                                borderBottom: '1px solid #F3EDE6',
+                                marginBottom: '2px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
+                              }}>
+                                <span>Estimate Actions</span>
+                                <span style={{ fontSize: '10px', color: '#9CA3AF', fontFamily: 'monospace' }}>#{baseOrder || est.id}</span>
+                              </div>
+
+                              {/* 1. Edit */}
+                              {onEdit && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOpenMenuId(null);
+                                    onEdit(est);
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    padding: '9px 14px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#111827',
+                                    fontSize: '13px',
+                                    fontWeight: '700',
+                                    cursor: 'pointer',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    transition: 'all 0.12s ease'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = '#FAF4EE'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  <span style={{
+                                    width: '26px',
+                                    height: '26px',
+                                    borderRadius: '6px',
+                                    background: '#EFF6FF',
+                                    color: '#2563EB',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '12px',
+                                    border: '1px solid #BFDBFE'
+                                  }}>
+                                    <i className="fa-solid fa-pen-to-square"></i>
+                                  </span>
+                                  <span>Edit Estimate</span>
+                                </button>
+                              )}
+
+                              {/* 2. Copy Estimate */}
+                              {onRevision && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setOpenMenuId(null);
+                                    onRevision(est);
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    padding: '9px 14px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#111827',
+                                    fontSize: '13px',
+                                    fontWeight: '700',
+                                    cursor: 'pointer',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    transition: 'all 0.12s ease'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = '#FAF4EE'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  <span style={{
+                                    width: '26px',
+                                    height: '26px',
+                                    borderRadius: '6px',
+                                    background: '#FEF3C7',
+                                    color: '#D97706',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '12px',
+                                    border: '1px solid #FDE68A'
+                                  }}>
+                                    <i className="fa-solid fa-copy"></i>
+                                  </span>
+                                  <span>Copy Estimate</span>
+                                </button>
+                              )}
+
+                              <div style={{ height: '1px', background: '#F3EDE6', margin: '4px 0' }}></div>
+
+                              {/* 3. Delete */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  onDelete(est);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '10px',
+                                  padding: '9px 14px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: '#DC2626',
+                                  fontSize: '13px',
+                                  fontWeight: '700',
+                                  cursor: 'pointer',
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  transition: 'all 0.12s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = '#FEF2F2'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                              >
+                                <span style={{
+                                  width: '26px',
+                                  height: '26px',
+                                  borderRadius: '6px',
+                                  background: '#FEE2E2',
+                                  color: '#DC2626',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '12px',
+                                  border: '1px solid #FECACA'
+                                }}>
+                                  <i className="fa-solid fa-trash-can"></i>
+                                </span>
+                                <span>Delete Estimate</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>

@@ -111,7 +111,19 @@ export function initGlobalAutoCapitalize() {
     }
   };
 
-  // Listen on both 'input' (while typing or pasting) and 'blur' (when leaving the field)
-  window.addEventListener('input', handleInputOrBlur, true);
+  // Handle paste: auto-capitalize pasted text
+  const handlePaste = (e) => {
+    const target = e.target;
+    if (!shouldAutoCapitalize(target)) return;
+    setTimeout(() => {
+      handleInputOrBlur({ target });
+    }, 0);
+  };
+
+  // Listen on 'blur' (when leaving the field) and 'paste' (when pasting text)
+  // We do NOT modify .value synchronously on 'input' while actively typing,
+  // because in React controlled inputs and HTML DOM, programmatically assigning .value
+  // causes the browser to reset the caret/cursor to the end of the text.
   window.addEventListener('blur', handleInputOrBlur, true);
+  window.addEventListener('paste', handlePaste, true);
 }
