@@ -1,6 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker, onOpenFolder }) => {
+const SitesTable = ({
+  sites,
+  getStatusBadge,
+  onView,
+  onEdit,
+  onDelete,
+  onSticker,
+  onOpenFolder,
+  onOpenEstimate,
+  onOpenTodoList,
+  onShiftStatus
+}) => {
+  const [statusMenuSiteId, setStatusMenuSiteId] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleGlobalClick = () => { setOpenMenuId(null); setStatusMenuSiteId(null); };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
   return (
     <div style={{
       background: '#fff',
@@ -10,7 +31,9 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
       boxShadow: '0 4px 16px rgba(100, 70, 40, 0.05)',
       overflowX: 'auto',
       WebkitOverflowScrolling: 'touch',
-      width: '100%'
+      width: '100%',
+      minHeight: '260px',
+      paddingBottom: '24px'
     }}>
       <table style={{
         width: '100%',
@@ -30,12 +53,12 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
             letterSpacing: '0.8px'
           }}>
             <th style={{padding: '12px 14px', width: '8%', minWidth: '70px'}}>Code</th>
-            <th style={{padding: '12px 14px', width: '21%', minWidth: '180px'}}>Client / Site</th>
-            <th style={{padding: '12px 14px', width: '14%', minWidth: '130px'}}>Contact</th>
-            <th style={{padding: '12px 14px', width: '20%', minWidth: '160px'}}>Address</th>
-            <th style={{padding: '12px 14px', width: '9%', minWidth: '95px'}}>Start Date</th>
+            <th style={{padding: '12px 14px', width: '22%', minWidth: '180px'}}>Client / Site</th>
+            <th style={{padding: '12px 14px', width: '15%', minWidth: '130px'}}>Contact</th>
+            <th style={{padding: '12px 14px', width: '22%', minWidth: '160px'}}>Address</th>
+            <th style={{padding: '12px 14px', width: '10%', minWidth: '95px'}}>Start Date</th>
             <th style={{padding: '12px 14px', width: '10%', minWidth: '95px'}}>Status</th>
-            <th style={{padding: '12px 14px', width: '18%', minWidth: '190px', textAlign: 'right'}}>Actions</th>
+            <th style={{padding: '12px 14px', width: '13%', minWidth: '135px', textAlign: 'right'}}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -47,7 +70,7 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
               </td>
             </tr>
           ) : (
-            sites.map((site) => (
+            sites.map((site, index) => (
               <tr key={site.id} style={{borderBottom: '1px solid #EAE1D5', transition: 'background 0.15s'}}>
                 
                 {/* Site Ref */}
@@ -219,20 +242,98 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                   )}
                 </td>
 
-                {/* Status */}
+                {/* Status with Quick Shift Dropdown */}
                 <td style={{padding: '13px 14px', verticalAlign: 'middle', whiteSpace: 'nowrap'}}>
-                  {getStatusBadge(site.status)}
+                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStatusMenuSiteId(statusMenuSiteId === site.id ? null : site.id);
+                      }}
+                      title="Click to shift customer status (Running / Completed / On Hold)"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                    >
+                      {getStatusBadge(site.status)}
+                      <i className="fa-solid fa-chevron-down" style={{ fontSize: '9px', color: '#9CA3AF' }}></i>
+                    </button>
+
+                    {statusMenuSiteId === site.id && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 'calc(100% + 4px)',
+                          background: '#FFFFFF',
+                          borderRadius: '8px',
+                          border: '1.5px solid #D1C2AF',
+                          boxShadow: '0 8px 20px rgba(74, 44, 23, 0.2)',
+                          zIndex: 300,
+                          minWidth: '135px',
+                          padding: '4px 0',
+                          textAlign: 'left'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div style={{ padding: '4px 10px', fontSize: '10px', fontWeight: '800', color: '#78716C', textTransform: 'uppercase' }}>
+                          Shift Status:
+                        </div>
+                        {['Running', 'Completed', 'On Hold'].map((st) => (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() => {
+                              setStatusMenuSiteId(null);
+                              onShiftStatus && onShiftStatus(site, st);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              width: '100%',
+                              padding: '7px 12px',
+                              border: 'none',
+                              background: site.status === st ? '#FAF4EE' : 'transparent',
+                              color: st === 'Running' ? '#1E8E3E' : (st === 'Completed' ? '#15803D' : '#B45309'),
+                              fontSize: '12px',
+                              fontWeight: site.status === st ? '800' : '600',
+                              cursor: 'pointer',
+                              textAlign: 'left'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#FAF4EE'}
+                            onMouseLeave={(e) => {
+                              if (site.status !== st) e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            <span>●</span>
+                            <span>{st}</span>
+                            {site.status === st && <i className="fa-solid fa-check" style={{ marginLeft: 'auto', fontSize: '10px' }}></i>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </td>
 
-                {/* Actions - Guaranteed spacing and NEVER cut off */}
-                <td style={{padding: '12px 14px', minWidth: '200px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap'}}>
+                {/* Actions - View, Folder, and 3-Dots Dropdown Menu */}
+                <td style={{padding: '12px 14px', minWidth: '135px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap'}}>
                   <div style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'flex-end',
                     gap: '6px'
                   }}>
+                    {/* 1. View Details */}
                     <button
+                      type="button"
                       title="View Details"
                       onClick={() => onView(site)}
                       style={{
@@ -257,7 +358,9 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                       <i className="fa-solid fa-eye"></i>
                     </button>
 
+                    {/* 2. Open Project Folder */}
                     <button
+                      type="button"
                       title="Open Project Folder in File Explorer"
                       onClick={() => onOpenFolder && onOpenFolder(site)}
                       style={{
@@ -282,80 +385,319 @@ const SitesTable = ({ sites, getStatusBadge, onView, onEdit, onDelete, onSticker
                       <i className="fa-solid fa-folder-open"></i>
                     </button>
 
-                    <button
-                      title="Print Folder Sticker"
-                      onClick={() => onSticker && onSticker(site)}
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        background: '#FAF8F5',
-                        border: '1px solid #D1C2AF',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        color: '#A56A30',
-                        fontSize: '12px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.15s ease',
-                        padding: 0,
-                        flexShrink: 0
+                    {/* 3. Three-Dots Menu with Rock-Solid Click & Hover Lock */}
+                    <div
+                      style={{ position: 'relative', display: 'inline-block' }}
+                      onMouseEnter={() => {
+                        // Smoothly open on hover
+                        setOpenMenuId(site.id);
                       }}
-                      onMouseOver={(e) => { e.currentTarget.style.background = '#F3EDE6'; e.currentTarget.style.borderColor = '#9A7B56'; }}
-                      onMouseOut={(e) => { e.currentTarget.style.background = '#FAF8F5'; e.currentTarget.style.borderColor = '#D1C2AF'; }}
-                    >
-                      <i className="fa-solid fa-tag"></i>
-                    </button>
-                    
-                    <button
-                      title="Edit Site"
-                      onClick={() => onEdit(site)}
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        background: '#FAF8F5',
-                        border: '1px solid #D1C2AF',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        color: 'var(--gold, #A56A30)',
-                        fontSize: '12px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.15s ease',
-                        padding: 0,
-                        flexShrink: 0
+                      onMouseLeave={(e) => {
+                        // Only close on mouse leave if moving far away, with slight tolerance
+                        setOpenMenuId(null);
                       }}
-                      onMouseOver={(e) => { e.currentTarget.style.background = '#F3EDE6'; e.currentTarget.style.borderColor = '#9A7B56'; }}
-                      onMouseOut={(e) => { e.currentTarget.style.background = '#FAF8F5'; e.currentTarget.style.borderColor = '#D1C2AF'; }}
                     >
-                      <i className="fa-solid fa-pen"></i>
-                    </button>
-                    
-                    <button
-                      title="Delete Site"
-                      onClick={() => onDelete(site.id)}
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        background: '#FEF2F2',
-                        border: '1px solid #FECACA',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        color: '#DC2626',
-                        fontSize: '12px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.15s ease',
-                        padding: 0,
-                        flexShrink: 0
-                      }}
-                      onMouseOver={(e) => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.borderColor = '#F87171'; }}
-                      onMouseOut={(e) => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.borderColor = '#FECACA'; }}
-                    >
-                      <i className="fa-solid fa-trash-can"></i>
-                    </button>
+                      <button
+                        type="button"
+                        title="Customer Actions (Estimate, To-Do, Sticker, Edit, Delete)"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(openMenuId === site.id ? null : site.id);
+                        }}
+                        style={{
+                          width: '36px',
+                          height: '34px',
+                          background: openMenuId === site.id ? 'var(--gold, #4A2C17)' : '#FAF8F5',
+                          border: openMenuId === site.id ? '1.5px solid var(--gold, #4A2C17)' : '1.5px solid #D1C2AF',
+                          borderRadius: '7px',
+                          cursor: 'pointer',
+                          color: openMenuId === site.id ? '#FFFFFF' : '#4A2C17',
+                          fontSize: '16px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.15s ease',
+                          padding: 0,
+                          flexShrink: 0,
+                          boxShadow: openMenuId === site.id ? '0 2px 8px rgba(74, 44, 23, 0.25)' : 'none'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (openMenuId !== site.id) {
+                            e.currentTarget.style.background = '#F3EDE6';
+                            e.currentTarget.style.borderColor = 'var(--gold, #A56A30)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (openMenuId !== site.id) {
+                            e.currentTarget.style.background = '#FAF8F5';
+                            e.currentTarget.style.borderColor = '#D1C2AF';
+                          }
+                        }}
+                      >
+                        <i className="fa-solid fa-ellipsis-vertical"></i>
+                      </button>
+
+                      {openMenuId === site.id && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            right: 0,
+                            // Bridge without any dead space!
+                            top: index >= sites.length - 2 && sites.length > 2 ? 'auto' : '100%',
+                            bottom: index >= sites.length - 2 && sites.length > 2 ? '100%' : 'auto',
+                            paddingTop: index >= sites.length - 2 && sites.length > 2 ? '0' : '4px',
+                            paddingBottom: index >= sites.length - 2 && sites.length > 2 ? '4px' : '0',
+                            zIndex: 600,
+                            minWidth: '190px'
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div
+                            style={{
+                              background: '#FFFFFF',
+                              borderRadius: '10px',
+                              border: '1.5px solid #D1C2AF',
+                              boxShadow: '0 12px 32px rgba(74, 44, 23, 0.25)',
+                              padding: '6px 0',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              textAlign: 'left',
+                              overflow: 'hidden'
+                            }}
+                          >
+                            {/* Menu Header with site code */}
+                            <div style={{
+                              padding: '6px 14px 4px',
+                              fontSize: '10.5px',
+                              fontWeight: '800',
+                              color: 'var(--gold, #8C5521)',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.6px',
+                              borderBottom: '1px solid #F3EDE6',
+                              marginBottom: '2px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between'
+                            }}>
+                              <span>Customer Actions</span>
+                              <span style={{ fontSize: '10px', color: '#9CA3AF', fontFamily: 'monospace' }}>#{site.siteCode || site.id}</span>
+                            </div>
+
+                            {/* 1. Estimate */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                onOpenEstimate && onOpenEstimate(site);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '9px 14px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#111827',
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                width: '100%',
+                                textAlign: 'left',
+                                transition: 'all 0.12s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#FAF4EE'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <span style={{
+                                width: '26px',
+                                height: '26px',
+                                borderRadius: '6px',
+                                background: '#FAF4EE',
+                                color: 'var(--gold, #A56A30)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                border: '1px solid #EAD8C7'
+                              }}>
+                                <i className="fa-solid fa-file-invoice"></i>
+                              </span>
+                              <span>Estimate</span>
+                            </button>
+
+                            {/* 2. To-Do List */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                onOpenTodoList && onOpenTodoList(site);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '9px 14px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#111827',
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                width: '100%',
+                                textAlign: 'left',
+                                transition: 'all 0.12s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#FAF4EE'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <span style={{
+                                width: '26px',
+                                height: '26px',
+                                borderRadius: '6px',
+                                background: '#FEF3C7',
+                                color: '#D97706',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                border: '1px solid #FDE68A'
+                              }}>
+                                <i className="fa-solid fa-list-check"></i>
+                              </span>
+                              <span>To-Do List</span>
+                            </button>
+
+                            {/* 3. Sticker */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                onSticker && onSticker(site);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '9px 14px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#111827',
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                width: '100%',
+                                textAlign: 'left',
+                                transition: 'all 0.12s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#FAF4EE'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <span style={{
+                                width: '26px',
+                                height: '26px',
+                                borderRadius: '6px',
+                                background: '#F3E8FF',
+                                color: '#7C3AED',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                border: '1px solid #E9D5FF'
+                              }}>
+                                <i className="fa-solid fa-tag"></i>
+                              </span>
+                              <span>Sticker</span>
+                            </button>
+
+                            {/* 4. Edit */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                onEdit && onEdit(site);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '9px 14px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#111827',
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                width: '100%',
+                                textAlign: 'left',
+                                transition: 'all 0.12s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#FAF4EE'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <span style={{
+                                width: '26px',
+                                height: '26px',
+                                borderRadius: '6px',
+                                background: '#EFF6FF',
+                                color: '#2563EB',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                border: '1px solid #BFDBFE'
+                              }}>
+                                <i className="fa-solid fa-pen-to-square"></i>
+                              </span>
+                              <span>Edit Customer</span>
+                            </button>
+
+                            <div style={{ height: '1px', background: '#F3EDE6', margin: '4px 0' }}></div>
+
+                            {/* 5. Delete */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                onDelete && onDelete(site.id);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '9px 14px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#DC2626',
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                width: '100%',
+                                textAlign: 'left',
+                                transition: 'all 0.12s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#FEF2F2'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <span style={{
+                                width: '26px',
+                                height: '26px',
+                                borderRadius: '6px',
+                                background: '#FEE2E2',
+                                color: '#DC2626',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                border: '1px solid #FECACA'
+                              }}>
+                                <i className="fa-solid fa-trash-can"></i>
+                              </span>
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </td>
 

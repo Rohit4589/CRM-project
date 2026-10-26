@@ -15,6 +15,10 @@ import AddSiteModal from '../components/sites/AddSiteModal';
 import EditSiteModal from '../components/sites/EditSiteModal';
 import SiteDetailsModal from '../components/sites/SiteDetailsModal';
 import SiteStickerModal from '../components/sites/SiteStickerModal';
+import SiteTodoModal from '../components/sites/SiteTodoModal';
+import EstimatePreviewModal from '../components/estimates/EstimatePreviewModal';
+import CustomerBillsModal from '../components/sites/CustomerBillsModal';
+import SiteTodoContentArea from '../components/sites/SiteTodoContentArea';
 
 const Sites = ({ onNavigate }) => {
   const [sites, setSites] = useState([]);
@@ -30,6 +34,15 @@ const Sites = ({ onNavigate }) => {
   const [siteToDelete, setSiteToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [toast, setToast] = useState(null); // { message: '', type: 'success' | 'error' }
+  const [pendingEstimatesSite, setPendingEstimatesSite] = useState(null); // { customerName, pendingCount }
+
+  // Direct Estimate & To-Do Modals from 3-Dots Menu
+  const [todoSite, setTodoSite] = useState(null);
+  const [previewEstimate, setPreviewEstimate] = useState(null);
+  const [noEstimatePromptSite, setNoEstimatePromptSite] = useState(null);
+  const [loadingEstimate, setLoadingEstimate] = useState(false);
+  const [customerBillsData, setCustomerBillsData] = useState(null); // { site, bills: [] }
+  const [activeTodoSite, setActiveTodoSite] = useState(null);
 
   // Office CPU F: Drive Bridge State
   const [bridgeStatus, setBridgeStatus] = useState({ online: false, data: null });
@@ -90,6 +103,158 @@ const Sites = ({ onNavigate }) => {
     checkBridgeStatus(1200).then(res => setBridgeStatus(res));
   }, []);
 
+
+  // Open Estimate directly for this customer from 3-dots menu (shows all customer bills)
+  const handleOpenEstimate = async (site) => {
+    try {
+      setLoadingEstimate(true);
+      const siteIdStr = String(site.id || site.dbId || '');
+      const siteCodeStr = String(site.siteCode || '').trim();
+      const custNameStr = String(site.customerName || '').trim().toLowerCase();
+
+      // Collect all matching bills
+      let matchingBills = [];
+
+      // 1. Search by site_id first
+      try {
+        const res = await fetch(`${API_BASE}/estimates?site_id=${site.id}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.estimates)) {
+          matchingBills.push(...data.estimates);
+        }
+      } catch (err) {
+        console.warn('Error fetching by site_id:', err);
+      }
+
+      // 2. Fetch search by customer_name as well to find all bills for this client
+      if (site.customerName) {
+        try {
+          const res2 = await fetch(`${API_BASE}/estimates?search=${encodeURIComponent(site.customerName.trim())}`);
+          const data2 = await res2.json();
+          if (data2.success && Array.isArray(data2.estimates)) {
+            data2.estimates.forEach(est => {
+              const estSiteId = String(est.site_id || '');
+              const estCust = String(est.customer_name || est.site_customer_name || '').trim().toLowerCase();
+              const estNum = String(est.estimate_number || '');
+              const isMatch =
+                estSiteId === siteIdStr ||
+                (siteCodeStr && estNum.startsWith(siteCodeStr)) ||
+                (estCust && (estCust === custNameStr || estCust.includes(custNameStr) || custNameStr.includes(estCust)));
+              if (isMatch && !matchingBills.some(b => String(b.id) === String(est.id))) {
+                matchingBills.push(est);
+              }
+            });
+          }
+        } catch (err2) {
+          console.warn('Error searching estimates by name:', err2);
+        }
+      }
+
+      // Sort matching bills newest / highest bill revision first (e.g. Bill #3, Bill #2)
+      matchingBills.sort((a, b) => {
+        const numA = parseInt(String(a.estimate_number || '').replace(/^[^-]*-?/, ''), 10) || (a.id || 0);
+        const numB = parseInt(String(b.estimate_number || '').replace(/^[^-]*-?/, ''), 10) || (b.id || 0);
+        return numB - numA;
+      });
+
+      if (matchingBills.length === 0) {
+        setNoEstimatePromptSite(site);
+        return;
+      }
+
+      // Open CustomerBillsModal showing all bills for this customer
+      setCustomerBillsData({ site, bills: matchingBills });
+    } catch (err) {
+      console.error('Error fetching customer estimates:', err);
+      setNoEstimatePromptSite(site);
+    } finally {
+      setLoadingEstimate(false);
+    }
+  };
+
+  // Quick shift site status (Running, Completed, On Hold)
+  const handleShiftSiteStatus = async (site, newStatus) => {
+    if (!site || site.status === newStatus) return;
+    const targetId = site.dbId || site.id;
+
+    // Prerequisite: All estimates/bills must be completed before customer can be completed
+    if (newStatus === 'Completed') {
+      try {
+        const estRes = await fetch(`${API_BASE}/estimates`);
+        const estData = await estRes.json();
+        if (estData.success && Array.isArray(estData.estimates)) {
+          const siteDbId = String(site.dbId || '');
+          const siteCode = String(site.siteCode || site.siteRef || site.id || '').replace(/[^0-9]/g, '');
+
+          const siteEstimates = estData.estimates.filter(est => {
+            const eSiteId = String(est.site_id || '');
+            const rawNum = String(est.estimate_number || '');
+            const match = rawNum.match(/^(\d+)/);
+            const eCode = match ? match[1] : '';
+
+            return (siteDbId && eSiteId === siteDbId) || (siteCode && eCode === siteCode);
+          });
+
+          const pendingEstimates = siteEstimates.filter(
+            est => est.status !== 'Completed' && est.status !== 'Complete'
+          );
+
+          if (pendingEstimates.length > 0) {
+            setPendingEstimatesSite({
+              customerName: site.customerName || 'Customer',
+              pendingCount: pendingEstimates.length
+            });
+            showToast('Estimates pending: complete all bills first', 'warning', 4000);
+            return;
+          }
+        }
+      } catch (checkErr) {
+        console.warn('Could not verify estimate statuses before completion:', checkErr);
+      }
+    }
+
+    // Optimistic UI update
+    setSites(prev => prev.map(s => (s.id === site.id || s.dbId === targetId ? { ...s, status: newStatus } : s)));
+    showToast(`Customer "${site.customerName}" shifted to ${newStatus}`, 'success');
+
+    try {
+      const payload = {
+        customerName: site.customerName,
+        phone: site.phone || '',
+        email: site.email || '',
+        location: site.location || '',
+        fullAddress: site.fullAddress || '',
+        startDate: site.startDate || '',
+        targetDate: site.targetDate || '',
+        status: newStatus,
+        progress: site.progress || 0,
+        notes: site.notes || ''
+      };
+
+      const res = await fetch(`${API_BASE}/sites/${targetId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!data.success) {
+        fetchSites();
+        showToast(data.message || 'Failed to update status', 'error');
+      } else {
+        fetchSites();
+      }
+    } catch (err) {
+      console.error('Error updating site status:', err);
+      fetchSites();
+      showToast('Error updating status', 'error');
+    }
+  };
+
+  const handleOpenTodoList = (site) => {
+    setActiveTodoSite(site);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const openAddModal = () => {
     let nextNum = 1;
     if (sites && sites.length > 0) {
@@ -133,7 +298,8 @@ const Sites = ({ onNavigate }) => {
 
       const payload = {
         ...formData,
-        siteCode: formattedCode
+        siteCode: formattedCode,
+        refName: formData.refFrom === 'Existing Customer' ? (formData.customerName || formData.refName) : formData.refName
       };
       const res = await fetch(`${API_BASE}/sites`, {
         method: 'POST',
@@ -200,6 +366,43 @@ const Sites = ({ onNavigate }) => {
     e.preventDefault();
     try {
       const targetId = editingSite.dbId || editingSite.id;
+
+      // Prerequisite check if user selected 'Completed' in the edit modal
+      if (editingSite.status === 'Completed') {
+        try {
+          const estRes = await fetch(`${API_BASE}/estimates`);
+          const estData = await estRes.json();
+          if (estData.success && Array.isArray(estData.estimates)) {
+            const siteDbId = String(editingSite.dbId || '');
+            const siteCode = String(editingSite.siteCode || editingSite.siteRef || editingSite.id || '').replace(/[^0-9]/g, '');
+
+            const siteEstimates = estData.estimates.filter(est => {
+              const eSiteId = String(est.site_id || '');
+              const rawNum = String(est.estimate_number || '');
+              const match = rawNum.match(/^(\d+)/);
+              const eCode = match ? match[1] : '';
+
+              return (siteDbId && eSiteId === siteDbId) || (siteCode && eCode === siteCode);
+            });
+
+            const pendingEstimates = siteEstimates.filter(
+              est => est.status !== 'Completed' && est.status !== 'Complete'
+            );
+
+            if (pendingEstimates.length > 0) {
+              setPendingEstimatesSite({
+                customerName: editingSite.customerName || 'Customer',
+                pendingCount: pendingEstimates.length
+              });
+              showToast('Estimates pending: complete all bills first', 'warning', 4000);
+              return;
+            }
+          }
+        } catch (checkErr) {
+          console.warn('Could not verify estimate statuses before completion:', checkErr);
+        }
+      }
+
       const cleanDigits = String(editingSite.siteCode || '').replace(/[^0-9]/g, '');
       const rawNum = parseInt(cleanDigits, 10);
       const formattedCode = !isNaN(rawNum)
@@ -208,7 +411,8 @@ const Sites = ({ onNavigate }) => {
 
       const payload = {
         ...editingSite,
-        siteCode: formattedCode
+        siteCode: formattedCode,
+        refName: editingSite.refFrom === 'Existing Customer' ? (editingSite.customerName || editingSite.refName) : editingSite.refName
       };
       const res = await fetch(`${API_BASE}/sites/${targetId}`, {
         method: 'PUT',
@@ -545,25 +749,39 @@ const Sites = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Filter and Search Bar (Modular) */}
-      <SitesFilterBar
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        counts={counts}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-      />
+      {/* Either show Single Order To-Do Content Area OR the Customer Table */}
+      {activeTodoSite ? (
+        <SiteTodoContentArea
+          site={activeTodoSite}
+          onBack={() => setActiveTodoSite(null)}
+          onNavigate={onNavigate}
+        />
+      ) : (
+        <>
+          {/* Filter and Search Bar (Modular) */}
+          <SitesFilterBar
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            counts={counts}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+          />
 
-      {/* Main Sites Table (Modular - Guaranteed No-Cutoff & No Scrollbar) */}
-      <SitesTable
-        sites={filteredSites}
-        getStatusBadge={getStatusBadge}
-        onView={setSelectedSite}
-        onEdit={openEditModal}
-        onDelete={handleDeleteSite}
-        onSticker={setStickerSite}
-        onOpenFolder={handleOpenFolder}
-      />
+          {/* Main Sites Table (Modular - Guaranteed No-Cutoff & No Scrollbar) */}
+          <SitesTable
+            sites={filteredSites}
+            getStatusBadge={getStatusBadge}
+            onView={setSelectedSite}
+            onEdit={openEditModal}
+            onDelete={handleDeleteSite}
+            onSticker={setStickerSite}
+            onOpenFolder={handleOpenFolder}
+            onOpenEstimate={handleOpenEstimate}
+            onOpenTodoList={handleOpenTodoList}
+            onShiftStatus={handleShiftSiteStatus}
+          />
+        </>
+      )}
 
       {/* Add Site Modal (Modular) */}
       <AddSiteModal
@@ -653,9 +871,9 @@ const Sites = ({ onNavigate }) => {
           top: '24px',
           right: '24px',
           zIndex: 2000,
-          background: toast.type === 'error' ? '#FEF2F2' : '#F0FDF4',
-          color: toast.type === 'error' ? '#991B1B' : '#166534',
-          border: `1.5px solid ${toast.type === 'error' ? '#FCA5A5' : '#86EFAC'}`,
+          background: toast.type === 'error' ? '#FEF2F2' : (toast.type === 'warning' ? '#FFFBEB' : '#F0FDF4'),
+          color: toast.type === 'error' ? '#991B1B' : (toast.type === 'warning' ? '#B45309' : '#166534'),
+          border: `1.5px solid ${toast.type === 'error' ? '#FCA5A5' : (toast.type === 'warning' ? '#FCD34D' : '#86EFAC')}`,
           padding: '12px 18px',
           borderRadius: '10px',
           boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
@@ -667,7 +885,7 @@ const Sites = ({ onNavigate }) => {
           maxWidth: '420px',
           boxSizing: 'border-box'
         }}>
-          <i className={toast.type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'} style={{fontSize: '16px'}}></i>
+          <i className={toast.type === 'error' ? 'fa-solid fa-circle-exclamation' : (toast.type === 'warning' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check')} style={{fontSize: '16px'}}></i>
           <span style={{flex: 1}}>{toast.message}</span>
           <button
             onClick={() => setToast(null)}
@@ -675,7 +893,7 @@ const Sites = ({ onNavigate }) => {
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              color: toast.type === 'error' ? '#991B1B' : '#166534',
+              color: toast.type === 'error' ? '#991B1B' : (toast.type === 'warning' ? '#B45309' : '#166534'),
               fontSize: '16px',
               padding: '0 0 0 8px',
               lineHeight: 1
@@ -903,6 +1121,241 @@ const Sites = ({ onNavigate }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+
+      {/* Client To-Do List Modal from 3-Dots Menu */}
+      {todoSite && (
+        <SiteTodoModal
+          site={todoSite}
+          onClose={() => setTodoSite(null)}
+          onNavigate={onNavigate}
+        />
+      )}
+
+      {/* Customer All Bills Selection Modal from 3-Dots Menu */}
+      {customerBillsData && (
+        <CustomerBillsModal
+          site={customerBillsData.site}
+          bills={customerBillsData.bills}
+          onSelectBill={(bill) => {
+            setCustomerBillsData(null);
+            setPreviewEstimate(bill);
+          }}
+          onClose={() => setCustomerBillsData(null)}
+          onNewBill={(st) => {
+            setCustomerBillsData(null);
+            if (onNavigate) {
+              onNavigate('estimates', { search: st.customerName });
+            }
+          }}
+        />
+      )}
+
+      {/* Client Estimate Preview Modal from 3-Dots Menu */}
+      {previewEstimate && (
+        <EstimatePreviewModal
+          estimate={previewEstimate}
+          onClose={() => setPreviewEstimate(null)}
+        />
+      )}
+
+      {/* No Estimate Found Prompt Modal */}
+      {noEstimatePromptSite && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(26, 17, 10, 0.65)',
+          backdropFilter: 'blur(3px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1300,
+          padding: '16px'
+        }} onClick={() => setNoEstimatePromptSite(null)}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '430px',
+            boxShadow: '0 20px 40px rgba(74, 44, 23, 0.25)',
+            border: '1.5px solid #D1C2AF',
+            padding: '24px',
+            textAlign: 'center'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              background: '#FAF4EE',
+              color: 'var(--gold, #A56A30)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '22px',
+              margin: '0 auto 14px auto',
+              border: '1px solid #EAD8C7'
+            }}>
+              <i className="fa-solid fa-file-invoice"></i>
+            </div>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '800', color: '#111827' }}>
+              No Estimate Found
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#6B7280', lineHeight: '1.5' }}>
+              No estimate quotation has been created yet for <strong>{noEstimatePromptSite.customerName}</strong>.
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setNoEstimatePromptSite(null)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '7px',
+                  border: '1px solid #D1C2AF',
+                  background: '#fff',
+                  color: '#4B5563',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+              {onNavigate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const clientName = noEstimatePromptSite.customerName;
+                    setNoEstimatePromptSite(null);
+                    onNavigate('estimates', { search: clientName });
+                  }}
+                  className="btn-primary"
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '7px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                  <span>Go to Estimates</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Neat & Clean Estimates Pending Warning Modal */}
+      {pendingEstimatesSite && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(26, 17, 10, 0.65)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1400,
+            padding: '16px'
+          }}
+          onClick={() => setPendingEstimatesSite(null)}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '14px',
+              width: '100%',
+              maxWidth: '380px',
+              boxShadow: '0 20px 45px rgba(74, 44, 23, 0.28)',
+              border: '1.5px solid #EAD8C7',
+              padding: '24px 22px 20px',
+              textAlign: 'center'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Warning Icon Badge */}
+            <div
+              style={{
+                width: '52px',
+                height: '52px',
+                borderRadius: '50%',
+                background: '#FEF3C7',
+                color: '#D97706',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '22px',
+                margin: '0 auto 12px auto',
+                border: '1.5px solid #FCD34D'
+              }}
+            >
+              <i className="fa-solid fa-triangle-exclamation"></i>
+            </div>
+
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: '800', color: '#1F2937' }}>
+              Estimates Pending
+            </h3>
+
+            <p style={{ margin: '0 0 18px 0', fontSize: '13px', color: '#6B7280', lineHeight: '1.45' }}>
+              Complete all customer bills before completing <strong>{pendingEstimatesSite.customerName}</strong>.
+            </p>
+
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setPendingEstimatesSite(null)}
+                style={{
+                  padding: '8px 26px',
+                  borderRadius: '7px',
+                  border: 'none',
+                  background: 'var(--gold, #A56A30)',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(165, 106, 48, 0.25)'
+                }}
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Estimate Feedback Overlay */}
+      {loadingEstimate && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(255, 255, 255, 0.75)',
+          backdropFilter: 'blur(2px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1400,
+          gap: '10px'
+        }}>
+          <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '32px', color: 'var(--gold, #A56A30)' }}></i>
+          <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#4A2C17' }}>Opening Client Estimate...</span>
         </div>
       )}
 

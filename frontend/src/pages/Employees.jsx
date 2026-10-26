@@ -24,7 +24,8 @@ const Employees = () => {
     password: '',
     role: '',
     dailySalary: 1000,
-    status: 'Active'
+    status: 'Active',
+    isPermanent: false
   });
 
   // Edit employee form data
@@ -37,7 +38,8 @@ const Employees = () => {
     password: '',
     role: '',
     dailySalary: 1000,
-    status: 'Active'
+    status: 'Active',
+    isPermanent: false
   });
 
   // Fetch employees from database
@@ -97,6 +99,7 @@ const Employees = () => {
       }
 
       setEmployees(prev => [...prev, data.employee]);
+      fetchEmployees();
       setShowAddModal(false);
       setSuccessMessage(`Employee "${data.employee.name}" added successfully! ID: ${data.employee.id} · Login PIN: ${data.employee.password}`);
       setTimeout(() => setSuccessMessage(''), 6000);
@@ -109,7 +112,8 @@ const Employees = () => {
         password: '',
         role: '',
         dailySalary: 1000,
-        status: 'Active'
+        status: 'Active',
+        isPermanent: false
       });
     } catch (err) {
       console.error('Error adding employee:', err);
@@ -133,7 +137,8 @@ const Employees = () => {
       password: emp.password || '',
       role: emp.role || '',
       dailySalary: emp.dailySalary !== undefined ? emp.dailySalary : 1000,
-      status: emp.status || 'Active'
+      status: emp.status || 'Active',
+      isPermanent: Boolean(emp.isPermanent)
     });
     setShowEditModal(true);
   };
@@ -172,8 +177,9 @@ const Employees = () => {
         return;
       }
 
-      // Update in state
+      // Update in state and refresh
       setEmployees(prev => prev.map(emp => (emp.dbId === data.employee.dbId ? data.employee : emp)));
+      fetchEmployees();
       setShowEditModal(false);
       setSuccessMessage(`Employee "${data.employee.name}" updated successfully!`);
       setTimeout(() => setSuccessMessage(''), 5000);
@@ -371,7 +377,30 @@ const Employees = () => {
 
                     {/* 2. Employee Name & Phone - Centered */}
                     <td style={{ padding: '10px 12px', verticalAlign: 'middle', textAlign: 'center' }}>
-                      <div style={{ fontWeight: '700', color: '#111827', fontSize: '12.5px' }}>{emp.name}</div>
+                      <div style={{
+                        fontWeight: '700',
+                        color: '#111827',
+                        fontSize: '12.5px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px'
+                      }}>
+                        <span>{emp.name}</span>
+                        {emp.isPermanent && (
+                          <span
+                            title="Permanent Staff Member (*)"
+                            style={{
+                              color: 'var(--gold, #A56A30)',
+                              fontWeight: '900',
+                              fontSize: '15px',
+                              lineHeight: 1
+                            }}
+                          >
+                            *
+                          </span>
+                        )}
+                      </div>
                       <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>{emp.phone || '-'}</div>
                     </td>
 
@@ -517,8 +546,9 @@ const Employees = () => {
                   type="text"
                   placeholder="e.g. Rahul Patil"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: toTitleCase(e.target.value) })}
-                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onBlur={() => setFormData(prev => ({ ...prev, name: toTitleCase(prev.name || '') }))}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px', textTransform: 'capitalize' }}
                   required
                 />
               </div>
@@ -603,8 +633,9 @@ const Employees = () => {
                     type="text"
                     placeholder="e.g. Carpenter, Painter (Optional)"
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: toTitleCase(e.target.value) })}
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    onBlur={() => setFormData(prev => ({ ...prev, role: toTitleCase(prev.role || '') }))}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px', textTransform: 'capitalize' }}
                   />
                 </div>
                 <div style={{ flex: 1 }}>
@@ -620,7 +651,7 @@ const Employees = () => {
                 </div>
               </div>
 
-              <div style={{ marginBottom: '22px' }}>
+              <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px' }}>
                   Daily Wage Rate / Per Day Salary (₹) <span style={{ color: '#DC2626' }}>*</span>
                 </label>
@@ -634,6 +665,77 @@ const Employees = () => {
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
                   required
                 />
+              </div>
+
+              {/* Permanent Employee Toggle */}
+              <div
+                onClick={() => setFormData(prev => ({ ...prev, isPermanent: !prev.isPermanent }))}
+                style={{
+                  marginBottom: '20px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: formData.isPermanent ? '1.5px solid var(--gold, #A56A30)' : '1px solid #E5E7EB',
+                  backgroundColor: formData.isPermanent ? '#FFFDF7' : '#F9FAFB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: formData.isPermanent ? 'rgba(165, 106, 48, 0.15)' : '#E5E7EB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: formData.isPermanent ? 'var(--gold, #A56A30)' : '#9CA3AF'
+                  }}>
+                    <i className="fa-solid fa-star" style={{ fontSize: '12px' }}></i>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#111827', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      Permanent Employee
+                      {formData.isPermanent && (
+                        <span style={{ fontSize: '11px', color: 'var(--gold, #A56A30)', fontWeight: '800' }}>* Permanent</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>
+                      {formData.isPermanent ? 'Marked as permanent employee (salary advantages apply)' : 'Regular / Daily wage staff'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Switch toggle control */}
+                <div
+                  role="switch"
+                  aria-checked={formData.isPermanent}
+                  style={{
+                    width: '44px',
+                    height: '24px',
+                    borderRadius: '12px',
+                    backgroundColor: formData.isPermanent ? 'var(--gold, #A56A30)' : '#D1D5DB',
+                    position: 'relative',
+                    transition: 'background-color 0.2s ease',
+                    flexShrink: 0
+                  }}
+                >
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FFFFFF',
+                    position: 'absolute',
+                    top: '3px',
+                    left: formData.isPermanent ? '23px' : '3px',
+                    transition: 'left 0.2s ease',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)'
+                  }} />
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
@@ -737,8 +839,9 @@ const Employees = () => {
                 <input
                   type="text"
                   value={editFormData.name}
-                  onChange={(e) => setEditFormData({ ...editFormData, name: toTitleCase(e.target.value) })}
-                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  onBlur={() => setEditFormData(prev => ({ ...prev, name: toTitleCase(prev.name || '') }))}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px', textTransform: 'capitalize' }}
                   required
                 />
               </div>
@@ -817,8 +920,9 @@ const Employees = () => {
                     type="text"
                     placeholder="e.g. Carpenter, Painter (Optional)"
                     value={editFormData.role}
-                    onChange={(e) => setEditFormData({ ...editFormData, role: toTitleCase(e.target.value) })}
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
+                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+                    onBlur={() => setEditFormData(prev => ({ ...prev, role: toTitleCase(prev.role || '') }))}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px', textTransform: 'capitalize' }}
                   />
                 </div>
                 <div style={{ flex: 1 }}>
@@ -834,7 +938,7 @@ const Employees = () => {
                 </div>
               </div>
 
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px' }}>
                   Daily Wage Rate / Per Day Salary (₹) <span style={{ color: '#DC2626' }}>*</span>
                 </label>
@@ -847,6 +951,77 @@ const Employees = () => {
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px' }}
                   required
                 />
+              </div>
+
+              {/* Permanent Employee Toggle */}
+              <div
+                onClick={() => setEditFormData(prev => ({ ...prev, isPermanent: !prev.isPermanent }))}
+                style={{
+                  marginBottom: '20px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: editFormData.isPermanent ? '1.5px solid var(--gold, #A56A30)' : '1px solid #E5E7EB',
+                  backgroundColor: editFormData.isPermanent ? '#FFFDF7' : '#F9FAFB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: editFormData.isPermanent ? 'rgba(165, 106, 48, 0.15)' : '#E5E7EB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: editFormData.isPermanent ? 'var(--gold, #A56A30)' : '#9CA3AF'
+                  }}>
+                    <i className="fa-solid fa-star" style={{ fontSize: '12px' }}></i>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#111827', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      Permanent Employee
+                      {editFormData.isPermanent && (
+                        <span style={{ fontSize: '11px', color: 'var(--gold, #A56A30)', fontWeight: '800' }}>* Permanent</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>
+                      {editFormData.isPermanent ? 'Marked as permanent employee (salary advantages apply)' : 'Regular / Daily wage staff'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Switch toggle control */}
+                <div
+                  role="switch"
+                  aria-checked={editFormData.isPermanent}
+                  style={{
+                    width: '44px',
+                    height: '24px',
+                    borderRadius: '12px',
+                    backgroundColor: editFormData.isPermanent ? 'var(--gold, #A56A30)' : '#D1D5DB',
+                    position: 'relative',
+                    transition: 'background-color 0.2s ease',
+                    flexShrink: 0
+                  }}
+                >
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FFFFFF',
+                    position: 'absolute',
+                    top: '3px',
+                    left: editFormData.isPermanent ? '23px' : '3px',
+                    transition: 'left 0.2s ease',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)'
+                  }} />
+                </div>
               </div>
 
               {/* Bottom Buttons: Delete (Red) on left, Cancel & Save on right */}

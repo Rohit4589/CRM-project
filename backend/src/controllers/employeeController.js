@@ -18,6 +18,7 @@ const getEmployees = async (req, res) => {
         avatar, 
         site_policy as "sitePolicy", 
         last_site as "lastSite",
+        COALESCE(is_permanent, false) as "isPermanent",
         created_at
       FROM public.users
       WHERE role = 'employee' AND COALESCE(status, 'Active') != 'Deleted'
@@ -43,6 +44,7 @@ const getEmployees = async (req, res) => {
         sitePolicy: row.sitePolicy || 'Flexible / Self-Pick',
         lastSite: row.lastSite || 'Not yet punched',
         status: row.status || 'Active',
+        isPermanent: Boolean(row.isPermanent),
         avatar: null,
       };
     });
@@ -122,6 +124,7 @@ const addEmployee = async (req, res) => {
 
     const cleanRole = (role && role.trim()) ? toTitleCase(role.trim()) : null;
     const cleanStatus = status || 'Active';
+    const isPermanent = Boolean(req.body.isPermanent);
     const randomAvatar = null;
 
     const existingCheck = await pool.query('SELECT id FROM public.users WHERE username = $1', [username]);
@@ -131,9 +134,9 @@ const addEmployee = async (req, res) => {
 
     const insertQuery = `
       INSERT INTO public.users 
-        (username, password, role, full_name, role_title, mobile, daily_rate, status, avatar, site_policy, last_site, emp_code)
+        (username, password, role, full_name, role_title, mobile, daily_rate, status, avatar, site_policy, last_site, emp_code, is_permanent)
       VALUES 
-        ($1, $2, 'employee', $3, $4, $5, $6, $7, $8, 'Flexible / Self-Pick', 'Not yet punched', $9)
+        ($1, $2, 'employee', $3, $4, $5, $6, $7, $8, 'Flexible / Self-Pick', 'Not yet punched', $9, $10)
       RETURNING 
         id, 
         emp_code,
@@ -147,7 +150,8 @@ const addEmployee = async (req, res) => {
         status, 
         avatar,
         site_policy as "sitePolicy",
-        last_site as "lastSite";
+        last_site as "lastSite",
+        COALESCE(is_permanent, false) as "isPermanent";
     `;
 
     const result = await pool.query(insertQuery, [
@@ -160,6 +164,7 @@ const addEmployee = async (req, res) => {
       cleanStatus,
       randomAvatar,
       cleanEmpCode,
+      isPermanent,
     ]);
 
     const row = result.rows[0];
@@ -184,6 +189,7 @@ const addEmployee = async (req, res) => {
       sitePolicy: row.sitePolicy,
       lastSite: row.lastSite,
       status: row.status,
+      isPermanent: Boolean(row.isPermanent),
       avatar: row.avatar,
     };
 
@@ -278,6 +284,8 @@ const updateEmployee = async (req, res) => {
       }
     }
 
+    const isPermanent = req.body.isPermanent !== undefined ? Boolean(req.body.isPermanent) : null;
+
     const updateQuery = `
       UPDATE public.users
       SET 
@@ -287,8 +295,9 @@ const updateEmployee = async (req, res) => {
         daily_rate = $4,
         status = $5,
         password = CASE WHEN $6::varchar IS NOT NULL AND $6::varchar <> '' THEN $6::varchar ELSE password END,
-        emp_code = CASE WHEN $7::varchar IS NOT NULL AND $7::varchar <> '' THEN $7::varchar ELSE emp_code END
-      WHERE id = $8 AND role = 'employee'
+        emp_code = CASE WHEN $7::varchar IS NOT NULL AND $7::varchar <> '' THEN $7::varchar ELSE emp_code END,
+        is_permanent = CASE WHEN $8::boolean IS NOT NULL THEN $8::boolean ELSE is_permanent END
+      WHERE id = $9 AND role = 'employee'
       RETURNING 
         id, 
         emp_code,
@@ -302,7 +311,8 @@ const updateEmployee = async (req, res) => {
         status, 
         avatar,
         site_policy as "sitePolicy",
-        last_site as "lastSite";
+        last_site as "lastSite",
+        COALESCE(is_permanent, false) as "isPermanent";
     `;
 
     const result = await pool.query(updateQuery, [
@@ -313,6 +323,7 @@ const updateEmployee = async (req, res) => {
       cleanStatus, 
       newPassword, 
       cleanEmpCode,
+      isPermanent,
       dbId
     ]);
 
@@ -338,6 +349,7 @@ const updateEmployee = async (req, res) => {
       sitePolicy: row.sitePolicy,
       lastSite: row.lastSite,
       status: row.status,
+      isPermanent: Boolean(row.isPermanent),
       avatar: row.avatar,
     };
 

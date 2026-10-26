@@ -210,7 +210,7 @@ const EstimateRoomSection = ({
             {/* Dark Chocolate Header matching Photo 1 Preview */}
             <tr>
               <th style={{ width: '21%' }}>PRODUCT NAME</th>
-              <th style={{ width: '29.5%', textAlign: 'center' }}>DISCRIPTION</th>
+              <th style={{ width: '29.5%', textAlign: 'center' }}>DESCRIPTION</th>
               <th style={{ width: '8.5%', textAlign: 'center' }}>WIDTH</th>
               <th style={{ width: '8.5%', textAlign: 'center' }}>HEIGHT</th>
               <th style={{ width: '7.5%', textAlign: 'center' }}>AREA</th>

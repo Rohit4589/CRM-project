@@ -73,7 +73,7 @@ const TodoList = ({ onNavigate }) => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Active', 'Completed'
+  const [statusFilter, setStatusFilter] = useState('Running'); // 'All', 'Active', 'Completed'
 
   // Today's date string for created tasks
   const todayDateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -100,6 +100,18 @@ const TodoList = ({ onNavigate }) => {
   // Editing state inside modal
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
+
+  // Inline expanded tasks state
+  const [expandedSiteIds, setExpandedSiteIds] = useState(new Set());
+
+  const toggleExpandSite = (siteId) => {
+    setExpandedSiteIds(prev => {
+      const next = new Set(prev);
+      if (next.has(siteId)) next.delete(siteId);
+      else next.add(siteId);
+      return next;
+    });
+  };
 
   // 1. Fetch sites and employees once on mount
   useEffect(() => {
@@ -213,8 +225,8 @@ const TodoList = ({ onNavigate }) => {
     }
   };
 
-  // Add Task to modal staged list (auto-sorted by priority!)
-  const handleAddTaskToModal = (e) => {
+  // Add Task to modal staged list and immediately persist to database
+  const handleAddTaskToModal = async (e) => {
     if (e) e.preventDefault();
     setFormError('');
 
@@ -240,9 +252,12 @@ const TodoList = ({ onNavigate }) => {
       assignedName = foundEmp ? foundEmp.name : '';
     }
 
+    const siteRawId = Number(activeSite.dbId || activeSite.id);
+    const tempId = 'staged_' + Date.now();
+
     const newTaskObj = {
-      id: 'staged_' + Date.now(),
-      siteId: Number(activeSite.dbId || activeSite.id),
+      id: tempId,
+      siteId: siteRawId,
       taskDate: todayDateStr,
       title: cleanTitle,
       priority: newTaskPriority,
@@ -254,34 +269,92 @@ const TodoList = ({ onNavigate }) => {
 
     setModalTasks(prev => sortTasksByPriority([...prev, newTaskObj]));
     setNewTaskTitle('');
-    setNewTaskPriority('Medium');
-    setNewTaskEmployeeId('');
     setNewTaskDueTime('');
+
+    // Immediately save to database so the task is never lost if user closes the modal!
+    try {
+      const res = await fetch(`${API_BASE}/site-tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          siteId: siteRawId,
+          taskDate: todayDateStr,
+          title: cleanTitle,
+          priority: newTaskPriority,
+          assignedEmployeeId: newTaskEmployeeId ? Number(newTaskEmployeeId) : null,
+          assignedEmployeeName: assignedName,
+          dueTime: newTaskDueTime.trim() || null
+        })
+      });
+
+      const data = await res.json();
+      if (data.success && data.task) {
+        setModalTasks(prev => prev.map(t => t.id === tempId ? { ...data.task, isCompleted: false } : t));
+        setToastNotice({ type: 'success', text: `Task "${cleanTitle}" saved!` });
+        fetchAllTasks();
+      } else {
+        setFormError(data.message || 'Failed to save task to database');
+      }
+    } catch (err) {
+      console.error('Error saving task:', err);
+    }
   };
 
   // Toggle task inside modal (re-sorts completed tasks to bottom)
-  const handleToggleModalTask = (taskId) => {
-    setModalTasks(prev => {
-      const updated = prev.map(t => 
-        t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t
-      );
-      return sortTasksByPriority(updated);
-    });
-  };
-
-  // Cycle priority directly on clicking priority pill in modal
-  const handleCycleModalPriority = (taskId) => {
-    const cycle = { Low: 'Medium', Medium: 'High', High: 'Urgent', Urgent: 'Low' };
+  const handleToggleModalTask = async (taskId) => {
+    let newStatus = false;
     setModalTasks(prev => {
       const updated = prev.map(t => {
         if (t.id === taskId) {
-          const next = cycle[t.priority || 'Medium'] || 'Medium';
-          return { ...t, priority: next };
+          newStatus = !t.isCompleted;
+          return { ...t, isCompleted: newStatus };
         }
         return t;
       });
       return sortTasksByPriority(updated);
     });
+
+    if (typeof taskId === 'number') {
+      try {
+        await fetch(`${API_BASE}/site-tasks/${taskId}/toggle`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isCompleted: newStatus })
+        });
+        fetchAllTasks();
+      } catch (err) {
+        console.error('Error toggling modal task:', err);
+      }
+    }
+  };
+
+  // Cycle priority directly on clicking priority pill in modal
+  const handleCycleModalPriority = async (taskId) => {
+    const cycle = { Low: 'Medium', Medium: 'High', High: 'Urgent', Urgent: 'Low' };
+    let nextPriority = 'Medium';
+    setModalTasks(prev => {
+      const updated = prev.map(t => {
+        if (t.id === taskId) {
+          nextPriority = cycle[t.priority || 'Medium'] || 'Medium';
+          return { ...t, priority: nextPriority };
+        }
+        return t;
+      });
+      return sortTasksByPriority(updated);
+    });
+
+    if (typeof taskId === 'number') {
+      try {
+        await fetch(`${API_BASE}/site-tasks/${taskId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ priority: nextPriority })
+        });
+        fetchAllTasks();
+      } catch (err) {
+        console.error('Error cycling priority:', err);
+      }
+    }
   };
 
   // Start inline editing task
@@ -291,18 +364,40 @@ const TodoList = ({ onNavigate }) => {
   };
 
   // Save inline edit
-  const handleSaveEdit = (taskId) => {
+  const handleSaveEdit = async (taskId) => {
     if (!editingTitle.trim()) return;
+    const cleanTitle = editingTitle.trim();
     setModalTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, title: editingTitle.trim() } : t
+      t.id === taskId ? { ...t, title: cleanTitle } : t
     ));
     setEditingTaskId(null);
     setEditingTitle('');
+
+    if (typeof taskId === 'number') {
+      try {
+        await fetch(`${API_BASE}/site-tasks/${taskId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: cleanTitle })
+        });
+        fetchAllTasks();
+      } catch (err) {
+        console.error('Error saving task edit:', err);
+      }
+    }
   };
 
-  // Delete task from modal staged list
-  const handleDeleteModalTask = (taskId) => {
+  // Delete task from modal staged list and DB
+  const handleDeleteModalTask = async (taskId) => {
     setModalTasks(prev => prev.filter(t => t.id !== taskId));
+    if (typeof taskId === 'number') {
+      try {
+        await fetch(`${API_BASE}/site-tasks/${taskId}`, { method: 'DELETE' });
+        fetchAllTasks();
+      } catch (err) {
+        console.error('Error deleting task:', err);
+      }
+    }
   };
 
   // Save Today's Plan button (Batch save to PostgreSQL DB)
@@ -313,6 +408,32 @@ const TodoList = ({ onNavigate }) => {
 
     const siteRawId = Number(activeSite.dbId || activeSite.id);
 
+    // If user typed in the input box and didn't hit + Add Task, automatically include it!
+    let tasksToSave = [...modalTasks];
+    if (newTaskTitle.trim()) {
+      const cleanTitle = newTaskTitle.trim();
+      const isDuplicate = tasksToSave.some(t => t.title.toLowerCase().trim() === cleanTitle.toLowerCase());
+      if (!isDuplicate) {
+        let assignedName = '';
+        if (newTaskEmployeeId) {
+          const foundEmp = employees.find(emp => String(emp.dbId || emp.id) === String(newTaskEmployeeId));
+          assignedName = foundEmp ? foundEmp.name : '';
+        }
+        tasksToSave.push({
+          id: 'staged_' + Date.now(),
+          siteId: siteRawId,
+          taskDate: todayDateStr,
+          title: cleanTitle,
+          priority: newTaskPriority,
+          assignedEmployeeId: newTaskEmployeeId ? Number(newTaskEmployeeId) : null,
+          assignedEmployeeName: assignedName,
+          dueTime: newTaskDueTime.trim() || null,
+          isCompleted: false
+        });
+        setNewTaskTitle('');
+      }
+    }
+
     try {
       const res = await fetch(`${API_BASE}/site-tasks/batch-save`, {
         method: 'POST',
@@ -320,7 +441,7 @@ const TodoList = ({ onNavigate }) => {
         body: JSON.stringify({
           siteId: siteRawId,
           taskDate: todayDateStr,
-          tasks: modalTasks
+          tasks: tasksToSave
         })
       });
 
@@ -343,7 +464,18 @@ const TodoList = ({ onNavigate }) => {
     }
   };
 
-  // Filter and sort sites dynamically by priority score & completion
+  // Dynamic folder counts matching Customer / Sites tab
+  const counts = {
+    all: (sites || []).length,
+    running: (sites || []).filter(s => {
+      const st = s.status || 'Running';
+      return st === 'Running' || (!s.status || (st !== 'Completed' && st !== 'Complete' && st !== 'On Hold' && st !== 'Cancelled' && st !== 'Hold'));
+    }).length,
+    completed: (sites || []).filter(s => s.status === 'Completed' || s.status === 'Complete').length,
+    onHold: (sites || []).filter(s => s.status === 'On Hold' || s.status === 'Cancelled' || s.status === 'Hold').length
+  };
+
+  // Filter and sort sites dynamically by folder status & priority score
   const filteredSites = useMemo(() => {
     return sites
       .filter(site => {
@@ -354,16 +486,19 @@ const TodoList = ({ onNavigate }) => {
 
         if (!nameMatch && !codeMatch && !locMatch && !phoneMatch) return false;
 
-        const siteTasks = getTasksForSite(site);
-        const total = siteTasks.length;
-        const completed = siteTasks.filter(t => t.isCompleted).length;
-        const isCompleted = total > 0 && completed === total;
-        const isActive = total > 0 && completed < total;
+        const s = site.status || 'Running';
+        let matchesStatus = true;
+        if (statusFilter === 'Running') {
+          matchesStatus = s === 'Running' || (!site.status || (s !== 'Completed' && s !== 'Complete' && s !== 'On Hold' && s !== 'Cancelled' && s !== 'Hold'));
+        } else if (statusFilter === 'Complete' || statusFilter === 'Completed') {
+          matchesStatus = s === 'Completed' || s === 'Complete';
+        } else if (statusFilter === 'Hold / Cancelled' || statusFilter === 'On Hold') {
+          matchesStatus = s === 'On Hold' || s === 'Cancelled' || s === 'Hold';
+        } else if (statusFilter === 'All') {
+          matchesStatus = true;
+        }
 
-        if (statusFilter === 'Active') return isActive;
-        if (statusFilter === 'Completed') return isCompleted;
-
-        return true;
+        return matchesStatus;
       })
       .sort((a, b) => {
         const tasksA = getTasksForSite(a);
@@ -469,25 +604,54 @@ const TodoList = ({ onNavigate }) => {
           />
         </div>
 
-        <div className="todo-task-filter-pills">
-          <button 
-            className={`todo-filter-btn ${statusFilter === 'All' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('All')}
-          >
-            All Sites ({sites.length})
-          </button>
-          <button 
-            className={`todo-filter-btn ${statusFilter === 'Active' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('Active')}
-          >
-            Work In Progress
-          </button>
-          <button 
-            className={`todo-filter-btn ${statusFilter === 'Completed' ? 'active' : ''}`}
-            onClick={() => setStatusFilter('Completed')}
-          >
-            Completed
-          </button>
+        <div className="todo-task-filter-pills" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          background: '#F3EDE6',
+          border: '1px solid #D1C2AF',
+          padding: '3px 4px',
+          borderRadius: '8px',
+          overflowX: 'auto',
+          flexWrap: 'nowrap'
+        }}>
+          {[
+            { key: 'Running', label: 'Running', count: counts.running },
+            { key: 'Complete', label: 'Completed', count: counts.completed },
+            { key: 'Hold / Cancelled', label: 'On Hold', count: counts.onHold },
+            { key: 'All', label: 'All', count: counts.all }
+          ].map(tab => {
+            const isActive =
+              statusFilter === tab.key ||
+              (tab.key === 'Complete' && statusFilter === 'Completed') ||
+              (tab.key === 'Hold / Cancelled' && (statusFilter === 'On Hold' || statusFilter === 'Cancelled'));
+
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                className={`todo-filter-btn ${isActive ? 'active' : ''}`}
+                onClick={() => setStatusFilter(tab.key)}
+                style={{
+                  border: 'none',
+                  borderRadius: '6px',
+                  background: isActive ? 'var(--gold, #4A2C17)' : 'transparent',
+                  color: isActive ? '#FFFFFF' : '#5C4E43',
+                  fontWeight: '600',
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  boxShadow: isActive ? '0 2px 6px rgba(74, 44, 23, 0.22)' : 'none',
+                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span>{tab.label} ({tab.count})</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -585,7 +749,7 @@ const TodoList = ({ onNavigate }) => {
                           </span>
                         ) : (
                           <div className="interactive-tasks-wrap">
-                            {siteTasksList.slice(0, 3).map(t => (
+                            {(expandedSiteIds.has(site.id) ? siteTasksList : siteTasksList.slice(0, 3)).map(t => (
                               <div 
                                 key={t.id} 
                                 className={`interactive-task-item ${t.isCompleted ? 'done' : ''}`}
@@ -603,9 +767,38 @@ const TodoList = ({ onNavigate }) => {
                             {siteTasksList.length > 3 && (
                               <span 
                                 className="more-tasks-link"
-                                onClick={() => openSiteModal(site)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleExpandSite(site.id);
+                                }}
+                                style={{
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  marginTop: '5px',
+                                  color: 'var(--gold, #A56A30)',
+                                  fontWeight: '700',
+                                  fontSize: '11.5px',
+                                  padding: '3px 8px',
+                                  borderRadius: '5px',
+                                  background: 'rgba(165, 106, 48, 0.08)',
+                                  border: '1px solid rgba(165, 106, 48, 0.2)',
+                                  width: 'fit-content',
+                                  userSelect: 'none'
+                                }}
                               >
-                                +{siteTasksList.length - 3} more tasks →
+                                {expandedSiteIds.has(site.id) ? (
+                                  <>
+                                    <span>Show less</span>
+                                    <i className="fa-solid fa-chevron-up" style={{ fontSize: '10px' }}></i>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>+{siteTasksList.length - 3} more tasks</span>
+                                    <i className="fa-solid fa-chevron-down" style={{ fontSize: '10px' }}></i>
+                                  </>
+                                )}
                               </span>
                             )}
                           </div>
