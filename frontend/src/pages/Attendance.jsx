@@ -950,6 +950,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
           const siteName = log.customerName || log.siteName || (site ? (site.customerName || site.name) : '');
           return {
             id: log.id,
+            attendanceDate: log.attendanceDate || log.date || targetDate,
             userId: String(log.userId || (emp ? (emp.dbId || emp.id) : '')),
             employeeName: empName,
             siteId: String(log.siteId || (site ? (site.dbId || site.id) : '')),
@@ -967,6 +968,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
         setBulkEditRows([
           {
             id: `new_${Date.now()}`,
+            attendanceDate: targetDate,
             userId: '',
             employeeName: '',
             siteId: defaultSite,
@@ -1000,6 +1002,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
       ...prev,
       {
         id: `new_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        attendanceDate: bulkEditNewDate || bulkEditDate,
         userId: '',
         employeeName: '',
         siteId: defaultSite,
@@ -1045,7 +1048,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
         focusBulkEditCell(rowIdx, colIdx - 1);
       }
     } else if (direction === 'right') {
-      if (colIdx < 3) {
+      if (colIdx < 4) {
         focusBulkEditCell(rowIdx, colIdx + 1);
       }
     }
@@ -1059,6 +1062,8 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
     } else if (colIdx === 2) {
       focusBulkEditCell(rowIdx, 3);
     } else if (colIdx === 3) {
+      focusBulkEditCell(rowIdx, 4);
+    } else if (colIdx === 4) {
       if (rowIdx < bulkEditRows.length - 1) {
         focusBulkEditCell(rowIdx + 1, 0);
       } else {
@@ -1073,6 +1078,10 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
   const handleBulkEditRowChange = (rowId, field, value) => {
     setBulkEditRows(prev => prev.map(r => {
       if (r.id !== rowId) return r;
+
+      if (field === 'attendanceDate') {
+        return { ...r, attendanceDate: value };
+      }
 
       if (field === 'userId') {
         const emp = employees.find(e => String(e.dbId) === String(value) || String(e.id) === String(value) || String(e.empCode) === String(value));
@@ -1133,6 +1142,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
 
         return {
           id: r.id,
+          attendanceDate: r.attendanceDate || bulkEditNewDate || bulkEditDate,
           userId: Number(r.userId),
           siteId: sId ? Number(sId) : null,
           inTime: inTimeStr,
@@ -1163,13 +1173,31 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
       }
 
       setShowBulkEditModal(false);
-      const finalDate = bulkEditNewDate || bulkEditDate;
-      setDateFilter(finalDate);
-      setShowAllDates(false);
-      setSuccessMessage(data.message || `Successfully updated attendance records for ${finalDate}!`);
-      setTimeout(() => setSuccessMessage(''), 6000);
+
+      const distinctRowDates = [...new Set(recordsPayload.map(r => r.attendanceDate).filter(Boolean))];
+      const hasMultipleDates = distinctRowDates.length > 1;
+
+      // Smart view switching:
+      // If records were split across multiple dates, switch to "All Dates" so user immediately sees all records
+      // If all rows were shifted to a single new date, switch view to that specific date
+      let finalDate = bulkEditNewDate || bulkEditDate;
+      if (hasMultipleDates) {
+        setShowAllDates(true);
+        fetchData(null, true);
+      } else if (distinctRowDates.length === 1 && distinctRowDates[0]) {
+        finalDate = distinctRowDates[0];
+        setDateFilter(finalDate);
+        setShowAllDates(false);
+        fetchData(finalDate, false);
+      } else {
+        setDateFilter(finalDate);
+        setShowAllDates(false);
+        fetchData(finalDate, false);
+      }
+
+      setSuccessMessage(data.message || `Successfully updated attendance records!`);
+      setTimeout(() => setSuccessMessage(''), 7000);
       window.dispatchEvent(new Event('attendance-changed'));
-      fetchData(finalDate, false);
     } catch (err) {
       console.error('Error saving bulk edit attendance:', err);
       setApiError('Server error while saving attendance changes.');
@@ -3793,7 +3821,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
             background: '#fff',
             borderRadius: '12px',
             width: '100%',
-            maxWidth: '1120px',
+            maxWidth: '1200px',
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
             overflow: 'hidden',
             maxHeight: '92vh',
@@ -3815,7 +3843,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                   Edit Attendance by Date
                 </h3>
                 <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#5C4E43' }}>
-                  Select any date to view and edit all employee attendance records together, adjust sites, hajeri values, or change the attendance date.
+                  Select any date to view and edit all employee attendance records together, adjust individual dates, sites, hajeri values, or change attendance dates.
                 </p>
               </div>
 
@@ -3904,7 +3932,13 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     <input
                       type="date"
                       value={bulkEditNewDate}
-                      onChange={(e) => setBulkEditNewDate(e.target.value)}
+                      onChange={(e) => {
+                        const newD = e.target.value;
+                        setBulkEditNewDate(newD);
+                        if (newD) {
+                          setBulkEditRows(prev => prev.map(r => ({ ...r, attendanceDate: newD })));
+                        }
+                      }}
                       style={{
                         padding: '7px 12px',
                         borderRadius: '6px',
@@ -3916,6 +3950,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                         background: bulkEditNewDate !== bulkEditDate ? '#FEF3C7' : '#FFFFFF',
                         cursor: 'pointer'
                       }}
+                      title="Shift all employee attendance rows to this new date"
                     />
                   </div>
                 </div>
@@ -3964,19 +3999,20 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
                     <thead style={{ background: '#FAF8F5', position: 'sticky', top: 0, zIndex: 2, borderBottom: '1.5px solid #E5E7EB' }}>
                       <tr>
-                        <th style={{ padding: '10px 10px', width: '38px', textAlign: 'center', color: '#4A2C17', fontWeight: '700' }}>#</th>
-                        <th style={{ padding: '10px 12px', width: '260px', color: '#4A2C17', fontWeight: '700' }}>Employee *</th>
-                        <th style={{ padding: '10px 12px', width: '280px', color: '#4A2C17', fontWeight: '700' }}>Assigned Site *</th>
-                        <th style={{ padding: '10px 12px', width: '180px', color: '#4A2C17', fontWeight: '700' }}>Day Value (Hajeri) *</th>
-                        <th style={{ padding: '10px 12px', width: '115px', textAlign: 'right', color: '#4A2C17', fontWeight: '700' }}>Day Salary</th>
-                        <th style={{ padding: '10px 12px', minWidth: '150px', color: '#4A2C17', fontWeight: '700' }}>Notes</th>
-                        <th style={{ padding: '10px 8px', width: '42px', textAlign: 'center' }}></th>
+                        <th style={{ padding: '10px 8px', width: '36px', textAlign: 'center', color: '#4A2C17', fontWeight: '700' }}>#</th>
+                        <th style={{ padding: '10px 10px', width: '135px', color: '#4A2C17', fontWeight: '700' }}>Date *</th>
+                        <th style={{ padding: '10px 12px', width: '230px', color: '#4A2C17', fontWeight: '700' }}>Employee *</th>
+                        <th style={{ padding: '10px 12px', width: '250px', color: '#4A2C17', fontWeight: '700' }}>Assigned Site *</th>
+                        <th style={{ padding: '10px 10px', width: '165px', color: '#4A2C17', fontWeight: '700' }}>Day Value (Hajeri) *</th>
+                        <th style={{ padding: '10px 10px', width: '100px', textAlign: 'right', color: '#4A2C17', fontWeight: '700' }}>Day Salary</th>
+                        <th style={{ padding: '10px 12px', minWidth: '130px', color: '#4A2C17', fontWeight: '700' }}>Notes</th>
+                        <th style={{ padding: '10px 6px', width: '38px', textAlign: 'center' }}></th>
                       </tr>
                     </thead>
                     <tbody>
                       {bulkEditRows.length === 0 ? (
                         <tr>
-                          <td colSpan="7" style={{ padding: '40px 20px', textAlign: 'center', color: '#6B7280' }}>
+                          <td colSpan="8" style={{ padding: '40px 20px', textAlign: 'center', color: '#6B7280' }}>
                             <i className="fa-solid fa-calendar-xmark" style={{ fontSize: '28px', color: '#D1D5DB', marginBottom: '8px', display: 'block' }}></i>
                             No attendance records exist on <strong>{formatToDMY(bulkEditDate)}</strong>.
                             <div style={{ marginTop: '8px' }}>
@@ -4002,25 +4038,65 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                       ) : (
                         bulkEditRows.map((row, idx) => {
                           const estSalary = Math.round((parseFloat(row.dayValue) || 0) * (row.dailyRate || 0));
+                          const isDateShifted = row.attendanceDate && row.attendanceDate !== bulkEditDate;
                           return (
                             <tr
                               key={row.id}
                               style={{
                                 borderBottom: '1px solid #F3F4F6',
-                                background: idx % 2 === 0 ? '#FFFFFF' : '#FAFAFA'
+                                background: isDateShifted ? '#FFFDF5' : (idx % 2 === 0 ? '#FFFFFF' : '#FAFAFA')
                               }}
                             >
                               {/* Row Index */}
-                              <td style={{ padding: '8px 10px', textAlign: 'center', color: '#9CA3AF', fontWeight: '600' }}>
+                              <td style={{ padding: '8px 8px', textAlign: 'center', color: '#9CA3AF', fontWeight: '600' }}>
                                 {idx + 1}
+                              </td>
+
+                              {/* Attendance Date (Per-Row Editable) */}
+                              <td style={{ padding: '8px 8px' }}>
+                                <input
+                                  id={`bulkedit-cell-${idx}-0`}
+                                  type="date"
+                                  value={row.attendanceDate || bulkEditNewDate || bulkEditDate}
+                                  onChange={(e) => handleBulkEditRowChange(row.id, 'attendanceDate', e.target.value)}
+                                  onFocus={(e) => e.target.select?.()}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'ArrowUp' && idx > 0) {
+                                      e.preventDefault();
+                                      focusBulkEditCell(idx - 1, 0);
+                                    } else if (e.key === 'ArrowDown' && idx < bulkEditRows.length - 1) {
+                                      e.preventDefault();
+                                      focusBulkEditCell(idx + 1, 0);
+                                    } else if (e.key === 'ArrowRight') {
+                                      focusBulkEditCell(idx, 1);
+                                    } else if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleBulkEditEnterNext(idx, 0);
+                                    }
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '5px 8px',
+                                    borderRadius: '6px',
+                                    border: isDateShifted ? '1.5px solid #D97706' : '1px solid #D1D5DB',
+                                    background: isDateShifted ? '#FEF3C7' : '#FFFFFF',
+                                    color: isDateShifted ? '#92400E' : '#1F2937',
+                                    fontSize: '11.5px',
+                                    fontWeight: isDateShifted ? '700' : '600',
+                                    outline: 'none',
+                                    cursor: 'pointer',
+                                    boxShadow: isDateShifted ? '0 1px 3px rgba(217, 119, 6, 0.15)' : 'none'
+                                  }}
+                                  title={isDateShifted ? `Shifted to ${formatToDMY(row.attendanceDate)} (Original: ${formatToDMY(bulkEditDate)})` : "Attendance date for this row"}
+                                />
                               </td>
 
                               {/* Employee Select */}
                               <td style={{ padding: '8px 10px', position: 'relative' }}>
                                 <EmployeeCombobox
-                                  id={`bulkedit-cell-${idx}-0`}
+                                  id={`bulkedit-cell-${idx}-1`}
                                   rowIndex={idx}
-                                  colIndex={0}
+                                  colIndex={1}
                                   onNavigate={handleBulkEditNavigate}
                                   onEnterNext={handleBulkEditEnterNext}
                                   value={row.userId}
@@ -4036,9 +4112,9 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                               {/* Site Select */}
                               <td style={{ padding: '8px 10px', position: 'relative' }}>
                                 <SiteCombobox
-                                  id={`bulkedit-cell-${idx}-1`}
+                                  id={`bulkedit-cell-${idx}-2`}
                                   rowIndex={idx}
-                                  colIndex={1}
+                                  colIndex={2}
                                   onNavigate={handleBulkEditNavigate}
                                   onEnterNext={handleBulkEditEnterNext}
                                   value={row.siteId}
@@ -4054,9 +4130,9 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                               {/* Day Value (Hajeri) */}
                               <td style={{ padding: '8px 8px', position: 'relative' }}>
                                 <DayValueCombobox
-                                  id={`bulkedit-cell-${idx}-2`}
+                                  id={`bulkedit-cell-${idx}-3`}
                                   rowIndex={idx}
-                                  colIndex={2}
+                                  colIndex={3}
                                   onNavigate={handleBulkEditNavigate}
                                   onEnterNext={handleBulkEditEnterNext}
                                   value={row.dayValue}
@@ -4083,7 +4159,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                               {/* Notes */}
                               <td style={{ padding: '8px 8px' }}>
                                 <input
-                                  id={`bulkedit-cell-${idx}-3`}
+                                  id={`bulkedit-cell-${idx}-4`}
                                   type="text"
                                   placeholder="Work details..."
                                   value={row.notes}
@@ -4091,16 +4167,16 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                                   onKeyDown={(e) => {
                                     if (e.key === 'ArrowUp' && idx > 0) {
                                       e.preventDefault();
-                                      focusBulkEditCell(idx - 1, 3);
+                                      focusBulkEditCell(idx - 1, 4);
                                     } else if (e.key === 'ArrowDown' && idx < bulkEditRows.length - 1) {
                                       e.preventDefault();
-                                      focusBulkEditCell(idx + 1, 3);
+                                      focusBulkEditCell(idx + 1, 4);
                                     } else if (e.key === 'ArrowLeft' && e.target.selectionStart === 0) {
                                       e.preventDefault();
-                                      focusBulkEditCell(idx, 2);
+                                      focusBulkEditCell(idx, 3);
                                     } else if (e.key === 'Enter') {
                                       e.preventDefault();
-                                      handleBulkEditEnterNext(idx, 3);
+                                      handleBulkEditEnterNext(idx, 4);
                                     }
                                   }}
                                   onChange={(e) => handleBulkEditRowChange(row.id, 'notes', e.target.value)}
@@ -4168,6 +4244,11 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                       ₹{bulkEditRows.reduce((acc, r) => acc + Math.round((parseFloat(r.dayValue) || 0) * (r.dailyRate || 0)), 0).toLocaleString('en-IN')}
                     </strong>
                   </div>
+                  {bulkEditRows.some(r => r.attendanceDate && r.attendanceDate !== bulkEditDate) && (
+                    <div style={{ fontSize: '12px', color: '#D97706', fontWeight: '700' }}>
+                      ({bulkEditRows.filter(r => r.attendanceDate && r.attendanceDate !== bulkEditDate).length} row(s) shifted to another date)
+                    </div>
+                  )}
                   {bulkEditDeletedIds.length > 0 && (
                     <div style={{ fontSize: '12px', color: '#DC2626', fontWeight: '700' }}>
                       ({bulkEditDeletedIds.length} record(s) queued for deletion)

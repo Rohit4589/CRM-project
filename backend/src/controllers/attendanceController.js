@@ -673,12 +673,16 @@ const updateAttendance = async (req, res) => {
     // Refresh site snapshot if site changed or was missing
     let siteName = current.site_name;
     let siteRef = current.site_ref;
-    if (newSiteId && (!siteName || newSiteId !== current.site_id)) {
-      const sRes = await pool.query('SELECT customer_name, site_ref FROM public.sites WHERE id = $1', [newSiteId]);
+    let finalSiteId = null;
+    if (newSiteId) {
+      const sRes = await pool.query('SELECT id, customer_name, site_ref FROM public.sites WHERE id = $1', [newSiteId]);
       if (sRes.rows.length > 0) {
+        finalSiteId = sRes.rows[0].id;
         siteName = sRes.rows[0].customer_name;
         siteRef = sRes.rows[0].site_ref;
       }
+    } else {
+      finalSiteId = current.site_id;
     }
 
     const updateQuery = `
@@ -701,12 +705,12 @@ const updateAttendance = async (req, res) => {
         site_ref = $15,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $16
-      RETURNING *;
+      RETURNING *, TO_CHAR(attendance_date, 'YYYY-MM-DD') as "attendanceDate";
     `;
 
     const updateRes = await pool.query(updateQuery, [
       newUserId,
-      newSiteId,
+      finalSiteId,
       newDate,
       newInTime,
       newOutTime,
@@ -1278,10 +1282,20 @@ const bulkUpdateAttendance = async (req, res) => {
 
     // 2. Fetch all users and sites to resolve names/rates
     const allUsers = await client.query('SELECT id, full_name, emp_code, role_title, daily_rate FROM public.users');
-    const userMap = new Map(allUsers.rows.map(u => [u.id, u]));
+    const userMap = new Map();
+    const userCodeMap = new Map();
+    for (const u of allUsers.rows) {
+      userMap.set(Number(u.id), u);
+      if (u.emp_code) userCodeMap.set(String(u.emp_code).trim(), u);
+    }
 
     const allSites = await client.query('SELECT id, customer_name, site_ref FROM public.sites');
-    const siteMap = new Map(allSites.rows.map(s => [s.id, s]));
+    const siteMap = new Map();
+    const siteRefMap = new Map();
+    for (const s of allSites.rows) {
+      siteMap.set(Number(s.id), s);
+      if (s.site_ref) siteRefMap.set(String(s.site_ref).trim(), s);
+    }
 
     const savedRecords = [];
     const userShiftCounts = new Map();
@@ -1290,11 +1304,35 @@ const bulkUpdateAttendance = async (req, res) => {
     for (const rec of records) {
       if (!rec.userId) continue;
 
-      const userId = Number(rec.userId);
+      const recordDate = rec.attendanceDate || rec.date || targetDate;
+
+      let userId = Number(rec.userId);
+      let uData = userMap.get(userId);
+      if (!uData && rec.userId) {
+        const byCode = userCodeMap.get(String(rec.userId).trim());
+        if (byCode) {
+          userId = byCode.id;
+          uData = byCode;
+        }
+      }
+      if (!uData) {
+        continue;
+      }
+
       const currentShiftIdx = userShiftCounts.get(userId) || 0;
       userShiftCounts.set(userId, currentShiftIdx + 1);
 
-      const siteId = rec.siteId ? Number(rec.siteId) : null;
+      let siteId = rec.siteId ? Number(rec.siteId) : null;
+      let sData = siteId ? siteMap.get(siteId) : null;
+      if (!sData && rec.siteId) {
+        const byRef = siteRefMap.get(String(rec.siteId).trim());
+        if (byRef) {
+          siteId = byRef.id;
+          sData = byRef;
+        } else {
+          siteId = null;
+        }
+      }
       let inTime = rec.inTime || '09:00 AM';
       let outTime = rec.outTime || '06:00 PM';
       const isGift = inTime === 'EXTRA' || inTime === 'GIFT' || outTime === 'ADDED' || outTime === 'BONUS';
@@ -1326,13 +1364,11 @@ const bulkUpdateAttendance = async (req, res) => {
       const attStatus = rec.status || 'Approved';
       const notes = rec.notes || '';
 
-      const uData = userMap.get(userId) || {};
       const empName = uData.full_name || 'Staff Member';
       const empCode = uData.emp_code || String(userId + 100);
       const empRole = uData.role_title || 'Carpenter';
       const empRate = Number(uData.daily_rate || 0);
 
-      const sData = siteId ? siteMap.get(siteId) : null;
       const siteName = sData ? sData.customer_name : (isGift ? 'Extra Attendance' : null);
       const siteRef = sData ? sData.site_ref : (isGift ? 'EXTRA' : null);
 
@@ -1358,12 +1394,12 @@ const bulkUpdateAttendance = async (req, res) => {
             site_ref = $15,
             updated_at = CURRENT_TIMESTAMP
           WHERE id = $16
-          RETURNING *;
+          RETURNING *, TO_CHAR(attendance_date, 'YYYY-MM-DD') as "attendanceDate";
         `;
         const updateValues = [
           userId,
           siteId,
-          targetDate,
+          recordDate,
           inTime,
           outTime,
           workHours,
@@ -1402,12 +1438,12 @@ const bulkUpdateAttendance = async (req, res) => {
             site_name,
             site_ref
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-          RETURNING *;
+          RETURNING *, TO_CHAR(attendance_date, 'YYYY-MM-DD') as "attendanceDate";
         `;
         const insertValues = [
           userId,
           siteId,
-          targetDate,
+          recordDate,
           inTime,
           outTime,
           workHours,
@@ -1428,12 +1464,18 @@ const bulkUpdateAttendance = async (req, res) => {
 
     await client.query('COMMIT');
 
+    const distinctDates = [...new Set(savedRecords.map(r => r.attendanceDate || (r.attendance_date ? String(r.attendance_date).substring(0, 10) : targetDate)))];
+    const dateMsg = distinctDates.length > 1 
+      ? `across ${distinctDates.length} dates (${distinctDates.join(', ')})` 
+      : `on ${distinctDates[0] || targetDate}`;
+
     return res.status(200).json({
       success: true,
-      message: `Successfully updated attendance for ${savedRecords.length} worker(s) on ${targetDate}!`,
+      message: `Successfully updated attendance for ${savedRecords.length} worker(s) ${dateMsg}!`,
       count: savedRecords.length,
       records: savedRecords,
       targetDate,
+      dates: distinctDates
     });
   } catch (error) {
     await client.query('ROLLBACK');

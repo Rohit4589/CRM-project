@@ -1,17 +1,46 @@
 // Centralized API configuration supporting web browser (localhost, LAN, Cloud) and mobile Capacitor app
 const CLOUD_BACKEND_URL = 'https://modern-interior-backend.onrender.com';
 
-const getBaseUrl = () => {
-  // Check if running inside Capacitor native mobile container
-  const isNativeApp = typeof window !== 'undefined' && (
-    (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) ||
-    window.location.protocol === 'capacitor:' ||
-    window.location.protocol === 'ionic:' ||
-    (typeof window.origin === 'string' && window.origin.includes('capacitor://'))
-  );
+const isNativeApp = () => {
+  if (typeof window === 'undefined') return false;
 
+  // 1. Capacitor native object check
+  if (window.Capacitor) {
+    if (typeof window.Capacitor.isNativePlatform === 'function') {
+      return window.Capacitor.isNativePlatform();
+    }
+    return true;
+  }
+
+  // 2. Protocols and origins used by Capacitor / Cordova / Ionic
+  const protocol = window.location.protocol || '';
+  const origin = typeof window.origin === 'string' ? window.origin : '';
+  if (
+    protocol === 'capacitor:' ||
+    protocol === 'ionic:' ||
+    origin.includes('capacitor://')
+  ) {
+    return true;
+  }
+
+  // 3. Android WebView detection
+  const ua = navigator.userAgent || '';
+  if (/Android.*wv/i.test(ua) || (ua.includes('Android') && ua.includes('Version/'))) {
+    return true;
+  }
+
+  // 4. Capacitor androidScheme: "http" loads from http://localhost WITHOUT port
+  // Laptop Vite dev server always has a port (e.g. :5173, :3000)
+  if (window.location.hostname === 'localhost' && !window.location.port) {
+    return true;
+  }
+
+  return false;
+};
+
+const getBaseUrl = () => {
   // 1. If running as native mobile app on phone
-  if (isNativeApp) {
+  if (isNativeApp()) {
     const envUrl = import.meta.env.VITE_API_URL;
     if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('192.168.')) {
       return envUrl.replace(/\/+$/, '');

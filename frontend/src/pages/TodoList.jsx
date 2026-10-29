@@ -142,8 +142,11 @@ const TodoList = ({ onNavigate }) => {
     fetchInitialData();
   }, []);
 
+  const [syncingTasks, setSyncingTasks] = useState(false);
+
   // 2. Fetch all site tasks from backend database (site-centric & persistent)
-  const fetchAllTasks = async () => {
+  const fetchAllTasks = async (showSpinner = false) => {
+    if (showSpinner) setSyncingTasks(true);
     try {
       const res = await fetch(`${API_BASE}/site-tasks`);
       const data = await res.json();
@@ -152,11 +155,25 @@ const TodoList = ({ onNavigate }) => {
       }
     } catch (err) {
       console.error('Error fetching site tasks from database:', err);
+    } finally {
+      if (showSpinner) setTimeout(() => setSyncingTasks(false), 500);
     }
   };
 
   useEffect(() => {
     fetchAllTasks();
+
+    // Auto-sync when user switches back to this browser tab (reflects mobile app edits immediately!)
+    const handleFocus = () => fetchAllTasks();
+    window.addEventListener('focus', handleFocus);
+
+    // Background interval poll every 20s so mobile app tasks reflect live without manual reload
+    const pollId = setInterval(() => fetchAllTasks(), 20000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(pollId);
+    };
   }, []);
 
   // Support ESC key to close modal
@@ -653,6 +670,32 @@ const TodoList = ({ onNavigate }) => {
             );
           })}
         </div>
+
+        <button
+          type="button"
+          onClick={() => fetchAllTasks(true)}
+          title="Sync latest tasks from mobile app & database"
+          disabled={syncingTasks}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 14px',
+            borderRadius: '8px',
+            background: '#FFFFFF',
+            border: '1px solid #D1C2AF',
+            color: '#4A2C17',
+            fontWeight: '700',
+            fontSize: '12px',
+            cursor: syncingTasks ? 'not-allowed' : 'pointer',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            transition: 'all 0.15s ease',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <i className={`fa-solid fa-arrows-rotate ${syncingTasks ? 'fa-spin' : ''}`} style={{ color: 'var(--gold, #A56A30)' }}></i>
+          <span>{syncingTasks ? 'Syncing...' : 'Sync Tasks'}</span>
+        </button>
       </div>
 
       {/* Sites Directory Table */}
