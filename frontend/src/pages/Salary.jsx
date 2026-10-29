@@ -1264,162 +1264,233 @@ const Salary = ({ onOpenFestivals }) => {
               {activeEmployee.attendanceLogs.length > 0 && (
                 <tfoot>
                   {/* =========================================================
-                      SCREEN FOOTER (6 Columns)
+                      SCREEN FOOTER (Clean, Professional Alignment)
                       ========================================================= */}
                   {/* 1. Base Shifts Subtotal */}
                   <tr className="no-print" style={{
                     background: '#FAF8F5',
-                    borderTop: '1.5px solid #EAE3DA',
-                    fontWeight: '800'
+                    borderTop: '2px solid #EAE3DA',
+                    borderBottom: '1px solid #EAE3DA'
                   }}>
-                    <td colSpan="3" style={{ padding: '12px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800' }}>
+                    <td colSpan="3" style={{ padding: '13px 18px', fontSize: '13px', color: '#111827', fontWeight: '800' }}>
                       Shifts Subtotal (Worked on Site)
                     </td>
-                    <td style={{ padding: '12px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800', textAlign: 'center' }}>
+                    <td style={{ padding: '13px 18px', fontSize: '12.5px', color: '#4B5563', fontWeight: '700', textAlign: 'center' }}>
                       {totalResolvedHours} hrs
                     </td>
-                    <td style={{ padding: '12px 18px', fontSize: '13px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
+                    <td style={{ padding: '13px 18px', fontSize: '13.5px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
                       {formatDays(activeEmployee.totalDays)} Days
                     </td>
-                    <td style={{ padding: '12px 18px', fontSize: '14px', fontWeight: '800', color: '#4A2C17', textAlign: 'right' }}>
+                    <td style={{ padding: '13px 18px', fontSize: '14.5px', fontWeight: '800', color: '#111827', textAlign: 'right' }}>
                       ₹{activeEmployee.baseAmount.toLocaleString('en-IN')}
                     </td>
                   </tr>
 
-                  {/* 2. Thursday Benefit (Permanent Member Only) */}
+                  {/* 2. Thursday Off Allowance (Permanent Member) */}
                   {activeEmployee.isPermanent && (
-                    <tr className="no-print" style={{ background: '#F8FBF8', borderTop: '1px dashed #CBD5E1' }}>
-                      <td colSpan="3" style={{ padding: '10px 18px', fontSize: '13px', fontWeight: '700', color: '#047857' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>➕ Thursday Off Benefit (Permanent Member)</span>
+                    <tr className="no-print" style={{ background: '#FFFFFF', borderBottom: '1px solid #F0EAE4' }}>
+                      <td colSpan="4" style={{ padding: '13px 18px', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '800', color: '#111827' }}>
+                            Thursday Off
+                          </span>
+                          <span style={{
+                            background: '#ECFDF5',
+                            color: '#065F46',
+                            border: '1px solid #A7F3D0',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '700'
+                          }}>
+                            Permanent Member
+                          </span>
                           <button
                             type="button"
                             onClick={() => handleOpenBenefitModal(activeEmployee)}
                             title="Edit Thursday Benefit Days"
                             style={{
-                              background: '#ECFDF5',
-                              border: '1px solid #A7F3D0',
-                              color: '#065F46',
+                              background: '#FFFFFF',
+                              border: '1px solid #D1C2AF',
+                              color: '#4A2C17',
                               borderRadius: '4px',
                               padding: '2px 8px',
                               fontSize: '11px',
                               fontWeight: '700',
-                              cursor: 'pointer'
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
                             }}
                           >
-                            ✏️ Edit
+                            <i className="fa-solid fa-pen" style={{ fontSize: '9px', color: 'var(--gold, #A56A30)' }}></i>
+                            Edit
                           </button>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#059669', fontWeight: '500', marginTop: '2px' }}>
-                          {activeEmployee.qualifiedThursdays?.length > 0 
-                            ? `Qualified ${activeEmployee.qualifiedThursdays.length} of ${activeEmployee.totalThursdaysCount} Thursdays (${activeEmployee.qualifiedThursdays.map(d => formatToDMY(d)).join(', ')})`
-                            : 'No Thursdays qualified (requires working at least 2 days of Wed, Thu, Fri)'}
+                        <div style={{ fontSize: '11.5px', color: '#6B7280', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span>
+                            {activeEmployee.qualifiedThursdays?.length > 0 
+                              ? `Qualified ${activeEmployee.qualifiedThursdays.length} of ${activeEmployee.totalThursdaysCount} Thursdays:`
+                              : 'No Thursdays qualified (requires working ≥ 2 days of Wed, Thu, Fri)'}
+                          </span>
+                          {activeEmployee.qualifiedThursdays?.length > 0 && (
+                            <span style={{ display: 'inline-flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {activeEmployee.qualifiedThursdays.map(d => {
+                                const p = d.split('-');
+                                const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                                return (
+                                  <span key={d} style={{
+                                    background: '#F9FAFB',
+                                    border: '1px solid #E5E7EB',
+                                    color: '#374151',
+                                    padding: '1px 6px',
+                                    borderRadius: '3px',
+                                    fontSize: '10.5px',
+                                    fontWeight: '700'
+                                  }}>
+                                    {p[2]} {mNames[parseInt(p[1],10)-1] || ''}
+                                  </span>
+                                );
+                              })}
+                            </span>
+                          )}
                           {activeEmployee.userOverride?.thursdayDays !== undefined && (
-                            <span style={{ marginLeft: '6px', color: '#D97706', fontWeight: '700' }}>
-                              (Manually Adjusted from {activeEmployee.autoThursdayDays})
+                            <span style={{ color: '#D97706', fontWeight: '700', marginLeft: '4px' }}>
+                              · Manually Adjusted
                             </span>
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '10px 18px', textAlign: 'center', fontSize: '12px', color: '#6B7280' }}>
-                        --
-                      </td>
-                      <td style={{ padding: '10px 18px', textAlign: 'center', fontSize: '13px', fontWeight: '800', color: '#047857' }}>
+                      <td style={{ padding: '13px 18px', textAlign: 'center', fontSize: '13.5px', fontWeight: '800', color: '#047857' }}>
                         +{formatDays(activeEmployee.finalThursdayDays)} Days
                       </td>
-                      <td style={{ padding: '10px 18px', textAlign: 'right', fontSize: '14px', fontWeight: '800', color: '#047857' }}>
+                      <td style={{ padding: '13px 18px', textAlign: 'right', fontSize: '14.5px', fontWeight: '800', color: '#047857' }}>
                         +₹{activeEmployee.thursdayAmount.toLocaleString('en-IN')}
                       </td>
                     </tr>
                   )}
 
-                  {/* 3. Festival Benefit (Permanent Member Only) */}
+                  {/* 3. Festival Holiday Benefit (Permanent Member) */}
                   {activeEmployee.isPermanent && (
-                    <tr className="no-print" style={{ background: '#FFFDF5', borderTop: '1px dashed #CBD5E1' }}>
-                      <td colSpan="3" style={{ padding: '10px 18px', fontSize: '13px', fontWeight: '700', color: '#B45309' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>➕ Festival Holiday Benefit (Permanent Member)</span>
+                    <tr className="no-print" style={{ background: '#FFFFFF', borderBottom: '1px solid #F0EAE4' }}>
+                      <td colSpan="4" style={{ padding: '13px 18px', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '800', color: '#111827' }}>
+                            Festival Holiday
+                          </span>
+                          {activeEmployee.monthFestivals?.length > 0 && (
+                            <span style={{
+                              background: '#FFFBEB',
+                              color: '#92400E',
+                              border: '1px solid #FDE68A',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: '700'
+                            }}>
+                              {activeEmployee.monthFestivals.map(f => f.label).join(', ')}
+                            </span>
+                          )}
                           <button
                             type="button"
                             onClick={() => handleOpenBenefitModal(activeEmployee)}
                             title="Edit Festival Benefit Days"
                             style={{
-                              background: '#FEF3C7',
-                              border: '1px solid #FDE68A',
-                              color: '#92400E',
+                              background: '#FFFFFF',
+                              border: '1px solid #D1C2AF',
+                              color: '#4A2C17',
                               borderRadius: '4px',
                               padding: '2px 8px',
                               fontSize: '11px',
                               fontWeight: '700',
-                              cursor: 'pointer'
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
                             }}
                           >
-                            ✏️ Edit
+                            <i className="fa-solid fa-pen" style={{ fontSize: '9px', color: 'var(--gold, #A56A30)' }}></i>
+                            Edit
                           </button>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#D97706', fontWeight: '500', marginTop: '2px' }}>
-                          {activeEmployee.monthFestivals?.length > 0 
-                            ? activeEmployee.monthFestivals.map(f => `${f.label} (${formatToDMY(f.date)})`).join(', ')
-                            : 'No festival holidays scheduled this month'}
+                        <div style={{ fontSize: '11.5px', color: '#6B7280', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span>
+                            {activeEmployee.monthFestivals?.length > 0 
+                              ? activeEmployee.monthFestivals.map(f => {
+                                  const p = f.date ? f.date.split('-') : [];
+                                  const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                                  const dt = p.length === 3 ? `${p[2]} ${mNames[parseInt(p[1],10)-1] || ''}` : f.date;
+                                  return `${f.label} (${dt})`;
+                                }).join(' • ')
+                              : 'No festival holidays scheduled this month'}
+                          </span>
                           {activeEmployee.userOverride?.festivalDays !== undefined && (
-                            <span style={{ marginLeft: '6px', color: '#D97706', fontWeight: '700' }}>
-                              (Manually Adjusted from {activeEmployee.autoFestivalDays})
+                            <span style={{ color: '#D97706', fontWeight: '700', marginLeft: '4px' }}>
+                              · Manually Adjusted
                             </span>
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '10px 18px', textAlign: 'center', fontSize: '12px', color: '#6B7280' }}>
-                        --
-                      </td>
-                      <td style={{ padding: '10px 18px', textAlign: 'center', fontSize: '13px', fontWeight: '800', color: '#B45309' }}>
+                      <td style={{ padding: '13px 18px', textAlign: 'center', fontSize: '13.5px', fontWeight: '800', color: '#B45309' }}>
                         +{formatDays(activeEmployee.finalFestivalDays)} Days
                       </td>
-                      <td style={{ padding: '10px 18px', textAlign: 'right', fontSize: '14px', fontWeight: '800', color: '#B45309' }}>
+                      <td style={{ padding: '13px 18px', textAlign: 'right', fontSize: '14.5px', fontWeight: '800', color: '#B45309' }}>
                         +₹{activeEmployee.festivalAmount.toLocaleString('en-IN')}
                       </td>
                     </tr>
                   )}
 
-                  {/* 4. Screen Grand Total Row */}
+                  {/* 4. Total Net Payable Row */}
                   <tr className="no-print" style={{
                     background: '#FAF4EE',
-                    borderTop: '2px solid var(--gold, #A56A30)',
-                    borderBottom: '2px solid var(--gold, #A56A30)',
-                    fontWeight: '800'
+                    borderTop: '2.5px solid var(--gold, #A56A30)',
+                    borderBottom: '2.5px solid var(--gold, #A56A30)'
                   }}>
-                    <td colSpan="3" style={{ padding: '14px 18px', fontSize: '14px', color: '#4A2C17', fontWeight: '900' }}>
-                      💰 GRAND TOTAL NET PAYABLE
+                    <td colSpan="4" style={{ padding: '15px 18px', textAlign: 'left' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '14px', color: '#4A2C17', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                          Total Net Payable Salary
+                        </span>
+                        <span style={{ fontSize: '11.5px', color: '#8C5521', fontWeight: '600' }}>
+                          (Base Site Shifts {activeEmployee.isPermanent ? '+ Permanent Member Allowances' : ''})
+                        </span>
+                      </div>
                     </td>
-                    <td style={{ padding: '14px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800', textAlign: 'center' }}>
-                      {totalResolvedHours} hrs
-                    </td>
-                    <td style={{ padding: '14px 18px', fontSize: '15px', color: '#8C5521', fontWeight: '900', textAlign: 'center' }}>
+                    <td style={{ padding: '15px 18px', fontSize: '15.5px', color: '#8C5521', fontWeight: '900', textAlign: 'center' }}>
                       {formatDays(activeEmployee.totalCombinedDays)} Days
                     </td>
-                    <td style={{ padding: '14px 18px', fontSize: '18px', fontWeight: '900', color: '#4A2C17', textAlign: 'right' }}>
+                    <td style={{ padding: '15px 18px', fontSize: '19px', fontWeight: '900', color: '#4A2C17', textAlign: 'right' }}>
                       ₹{activeEmployee.grossAmount.toLocaleString('en-IN')}
                     </td>
                   </tr>
+                </tfoot>
+              )}
 
-                  {/* =========================================================
-                      PRINT/PDF FOOTER (4 Columns: Col 1 & 2 combined, Days, Amount)
-                      ========================================================= */}
+              {/* =========================================================
+                  PRINT/PDF SUMMARY ROWS
+                  Placed in a separate tbody so browser print engines NEVER repeat
+                  them across page splits (only prints once on the final page)
+                  ========================================================= */}
+              {activeEmployee.attendanceLogs.length > 0 && (
+                <tbody className="salary-print-summary-group" style={{ display: 'none' }}>
                   <tr className="salary-print-total-row" style={{ display: 'none', background: '#FAF8F5', borderTop: '1.5px solid #111827' }}>
-                    <td colSpan="2" style={{ padding: '8px 14px', fontSize: '12px', color: '#4A2C17', fontWeight: '700', textAlign: 'left' }}>
-                      Shifts Subtotal (Worked on Site)
+                    <td colSpan="2" style={{ padding: '8px 14px', fontSize: '12px', color: '#111827', fontWeight: '700', textAlign: 'left' }}>
+                      Shifts Subtotal (Worked on Site · {totalResolvedHours} hrs)
                     </td>
                     <td style={{ padding: '8px 14px', fontSize: '12px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
                       {formatDays(activeEmployee.totalDays)} Days
                     </td>
-                    <td style={{ padding: '8px 14px', fontSize: '13px', fontWeight: '800', color: '#4A2C17', textAlign: 'right' }}>
+                    <td style={{ padding: '8px 14px', fontSize: '13px', fontWeight: '800', color: '#111827', textAlign: 'right' }}>
                       ₹{activeEmployee.baseAmount.toLocaleString('en-IN')}
                     </td>
                   </tr>
 
                   {activeEmployee.isPermanent && (
-                    <tr className="salary-print-total-row" style={{ display: 'none', background: '#FFFFFF', borderTop: '1px dashed #CBD5E1' }}>
+                    <tr className="salary-print-total-row" style={{ display: 'none', background: '#FFFFFF', borderTop: '1px solid #E5E7EB' }}>
                       <td colSpan="2" style={{ padding: '7px 14px', fontSize: '12px', color: '#047857', fontWeight: '700', textAlign: 'left' }}>
-                        ➕ Thursday Off Benefit ({activeEmployee.qualifiedThursdays?.length || 0} Thursdays Qualified)
+                        Thursday Off
                       </td>
                       <td style={{ padding: '7px 14px', fontSize: '12px', color: '#047857', fontWeight: '800', textAlign: 'center' }}>
                         +{formatDays(activeEmployee.finalThursdayDays)} Days
@@ -1431,9 +1502,15 @@ const Salary = ({ onOpenFestivals }) => {
                   )}
 
                   {activeEmployee.isPermanent && (
-                    <tr className="salary-print-total-row" style={{ display: 'none', background: '#FFFFFF', borderTop: '1px dashed #CBD5E1' }}>
+                    <tr className="salary-print-total-row" style={{ display: 'none', background: '#FFFFFF', borderTop: '1px solid #E5E7EB' }}>
                       <td colSpan="2" style={{ padding: '7px 14px', fontSize: '12px', color: '#B45309', fontWeight: '700', textAlign: 'left' }}>
-                        ➕ Festival Holiday Benefit ({activeEmployee.monthFestivals?.map(f => f.label).join(', ') || 'Festivals'})
+                        {(() => {
+                          const festNames = (activeEmployee.monthFestivals || [])
+                            .map(f => (f.label || f.name || '').replace(/\s*\([^)]*\)/g, '').trim())
+                            .filter(Boolean)
+                            .join(', ');
+                          return festNames ? `Festival: ${festNames}` : 'Festival Holiday';
+                        })()}
                       </td>
                       <td style={{ padding: '7px 14px', fontSize: '12px', color: '#B45309', fontWeight: '800', textAlign: 'center' }}>
                         +{formatDays(activeEmployee.finalFestivalDays)} Days
@@ -1446,7 +1523,7 @@ const Salary = ({ onOpenFestivals }) => {
 
                   <tr className="salary-print-total-row" style={{ display: 'none', background: '#FAF4EE', borderTop: '2px solid #111827', borderBottom: '2px solid #111827' }}>
                     <td colSpan="2" style={{ padding: '10px 14px', fontSize: '13px', color: '#111827', fontWeight: '900', textAlign: 'left' }}>
-                      GRAND TOTAL NET PAYABLE
+                      TOTAL NET PAYABLE SALARY
                     </td>
                     <td style={{ padding: '10px 14px', fontSize: '14px', color: '#8C5521', fontWeight: '900', textAlign: 'center' }}>
                       {formatDays(activeEmployee.totalCombinedDays)} Days
@@ -1455,7 +1532,7 @@ const Salary = ({ onOpenFestivals }) => {
                       ₹{activeEmployee.grossAmount.toLocaleString('en-IN')}
                     </td>
                   </tr>
-                </tfoot>
+                </tbody>
               )}
             </table>
           </div>
@@ -3030,7 +3107,7 @@ const Salary = ({ onOpenFestivals }) => {
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#111827' }}>
-                    Thursday Off Benefit Days:
+                    Thursday Off Days:
                   </label>
                   <button
                     type="button"
@@ -3078,7 +3155,7 @@ const Salary = ({ onOpenFestivals }) => {
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#111827' }}>
-                    Festival Holiday Benefit Days:
+                    Festival Holiday Days:
                   </label>
                   <button
                     type="button"
