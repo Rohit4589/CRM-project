@@ -360,11 +360,22 @@ const Estimates = ({ onNavigate }) => {
     const generatedRooms = activeRooms.map((roomName, rIdx) => {
       const cleanRoomUpper = roomName.trim().toUpperCase();
 
+      // Find category object in catalog matching this room name
+      const catObj = (catalog?.categories || []).find(
+        c => (c.name || '').trim().toUpperCase() === cleanRoomUpper
+      );
+
       // Find all products in catalog assigned to this room
       const matchingCatalogProds = (catalog?.products || []).filter(p => {
+        // 1. If category has explicit product_ids linked in DB, use that strict list
+        if (catObj && Array.isArray(catObj.product_ids) && catObj.product_ids.length > 0) {
+          return catObj.product_ids.includes(p.id);
+        }
+
+        // 2. Otherwise match by product's assigned category names
         const catNames = (Array.isArray(p.category_names) && p.category_names.length > 0)
           ? p.category_names.map(c => (c || '').toUpperCase())
-          : [(p.category || '').toUpperCase()];
+          : [(p.category || '').toUpperCase()].filter(Boolean);
 
         return catNames.includes(cleanRoomUpper) ||
           catNames.some(c => 
@@ -671,53 +682,8 @@ const Estimates = ({ onNavigate }) => {
 
   return (
     <main className="dashboard-content estimates-container" style={{ padding: 'clamp(16px, 2.5vw, 28px)', width: '100%', boxSizing: 'border-box' }}>
-      {/* Page Header */}
-      <div className="estimates-header">
-        <h1>Estimates</h1>
-        <p>Client budget proposals</p>
-      </div>
-
-      {/* KPI Cards */}
-      <EstimateKPICards estimates={filteredEstimates} />
-
-      {/* Filter & Action Bar */}
-      <EstimateFilterBar
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        counts={counts}
-        typeFilter={typeFilter}
-        setTypeFilter={setTypeFilter}
-        onCreateNew={() => setShowWizard(true)}
-      />
-
-      {/* Estimates Table */}
-      <EstimateTable
-        estimates={filteredEstimates}
-        loading={loading}
-        onView={(est) => setPreviewEstimate(est)}
-        onEdit={(est) => setEditingEstimate(est)}
-        onRevision={handleCreateRevision}
-        onDownload={(est) => setPreviewEstimate(est)}
-        onShare={handleShareWhatsApp}
-        onDelete={handleDeleteEstimate}
-        onStatusChange={handleStatusChange}
-      />
-
-      {/* Wizard Modal */}
-      {showWizard && (
-        <EstimateWizardModal
-          sites={sites}
-          catalog={catalog}
-          estimates={estimates}
-          onClose={() => setShowWizard(false)}
-          onProceed={handleWizardProceed}
-        />
-      )}
-
-      {/* Editor Modal */}
-      {editingEstimate && (
+      {/* 1. In-Content Estimate Editor View */}
+      {editingEstimate ? (
         <EstimateEditorModal
           key={editingEstimate.id ? `estimate-${editingEstimate.id}` : `new-${editingEstimate.order_no || Date.now()}`}
           estimate={editingEstimate}
@@ -726,7 +692,55 @@ const Estimates = ({ onNavigate }) => {
           onClose={() => setEditingEstimate(null)}
           onPreview={(draft) => setPreviewEstimate(draft)}
           saving={saving}
+          inline={true}
         />
+      ) : showWizard ? (
+        /* 2. In-Content Estimate Wizard View */
+        <EstimateWizardModal
+          sites={sites}
+          catalog={catalog}
+          estimates={estimates}
+          onClose={() => setShowWizard(false)}
+          onProceed={handleWizardProceed}
+          inline={true}
+        />
+      ) : (
+        /* 3. Main Estimates List View */
+        <>
+          {/* Page Header */}
+          <div className="estimates-header">
+            <h1>Estimates</h1>
+            <p>Client budget proposals</p>
+          </div>
+
+          {/* KPI Cards */}
+          <EstimateKPICards estimates={filteredEstimates} />
+
+          {/* Filter & Action Bar */}
+          <EstimateFilterBar
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            counts={counts}
+            typeFilter={typeFilter}
+            setTypeFilter={setTypeFilter}
+            onCreateNew={() => setShowWizard(true)}
+          />
+
+          {/* Estimates Table */}
+          <EstimateTable
+            estimates={filteredEstimates}
+            loading={loading}
+            onView={(est) => setPreviewEstimate(est)}
+            onEdit={(est) => setEditingEstimate(est)}
+            onRevision={handleCreateRevision}
+            onDownload={(est) => setPreviewEstimate(est)}
+            onShare={handleShareWhatsApp}
+            onDelete={handleDeleteEstimate}
+            onStatusChange={handleStatusChange}
+          />
+        </>
       )}
 
       {/* Preview & Print Modal */}

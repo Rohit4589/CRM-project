@@ -10,16 +10,19 @@ const EstimateEditorModal = ({
   onSave,
   onClose,
   onPreview,
-  saving = false
+  saving = false,
+  inline = false
 }) => {
   const modalBodyRef = useRef(null);
 
   // Always start at the top of the estimate when editor opens
   useEffect(() => {
-    if (modalBodyRef.current) {
+    if (inline) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (modalBodyRef.current) {
       modalBodyRef.current.scrollTop = 0;
     }
-  }, []);
+  }, [inline]);
   const [customerName, setCustomerName] = useState(estimate.customer_name || '');
   const [phone, setPhone] = useState(estimate.phone || '');
   const [email, setEmail] = useState(estimate.email || '');
@@ -573,22 +576,111 @@ const EstimateEditorModal = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [roomToDelete, showAddRoomModal, onClose, customerName, phone, email, address, date, projectType, furnitureLevel, status, rooms, designFeePct, gstPct, roundOff, notes, termsConditions, paymentTerms, bankDetails]);
 
-  return (
-    <div className="estimate-modal-overlay">
-      <div className="estimate-modal modal-large">
-        <div className="estimate-modal-header">
-          <h2>
-            <i className="fa-solid fa-pen-ruler" style={{ color: '#4A2C17' }}></i>
-            {estimate.id
-              ? `Edit Estimate: ${estimate.estimate_number || ''}`
-              : (estimate.is_revision
-                  ? `Create Next Bill / Revision (Order #${estimate.order_no || estimate.site_ref || ''})`
-                  : 'New Estimate Editor')}
-          </h2>
+  const content = (
+    <div className={inline ? "estimate-content-card" : "estimate-modal modal-large"}>
+      <div className="estimate-modal-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          {inline && (
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: '#FFFFFF',
+                border: '1.5px solid #D1C2AF',
+                borderRadius: '8px',
+                padding: '8px 14px',
+                color: '#4A2C17',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 1px 3px rgba(74, 44, 23, 0.08)'
+              }}
+              title="Back to Estimates List"
+            >
+              <i className="fa-solid fa-arrow-left"></i>
+              <span>Back to Estimates</span>
+            </button>
+          )}
+          <div>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#2B2520', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="fa-solid fa-pen-ruler" style={{ color: '#4A2C17' }}></i>
+              {estimate.id
+                ? `Edit Estimate: ${estimate.estimate_number || ''}`
+                : (estimate.is_revision
+                    ? `Create Next Bill / Revision (Order #${estimate.order_no || estimate.site_ref || ''})`
+                    : 'New Estimate Editor')}
+            </h2>
+            {inline && (
+              <div style={{ fontSize: '12px', color: '#7A6F66', marginTop: '2px' }}>
+                {customerName ? (
+                  <>Client: <strong style={{ color: '#4A2C17' }}>{customerName}</strong> {estimate.site_ref ? `· Order #${estimate.site_ref}` : ''}</>
+                ) : (
+                  'Client Budget Proposal Editor'
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {inline ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn-action-icon"
+              style={{ width: 'auto', padding: '8px 16px', fontSize: '13px' }}
+              onClick={onClose}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn-action-icon"
+              style={{
+                width: 'auto',
+                padding: '8px 16px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#FAF8F5',
+                border: '1.5px solid #DCD4CA',
+                color: '#4A2C17',
+                fontWeight: '600',
+                fontSize: '13px',
+                cursor: 'pointer'
+              }}
+              onClick={handlePreviewDraft}
+              title="Preview finalized A4 bill & Print without editing controls"
+            >
+              <i className="fa-solid fa-file-invoice"></i> Preview & Print
+            </button>
+            <button
+              type="button"
+              className="btn-create-estimate"
+              style={{ padding: '8px 18px', fontSize: '13px' }}
+              onClick={handleSaveSubmit}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <i className="fa-solid fa-spinner fa-spin"></i> Saving...
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-check"></i> Save Estimate
+                </>
+              )}
+            </button>
+          </div>
+        ) : (
           <button className="modal-close-btn" onClick={onClose}>
             <i className="fa-solid fa-xmark"></i>
           </button>
-        </div>
+        )}
+      </div>
 
         <form ref={modalBodyRef} onSubmit={handleSaveSubmit} className="estimate-modal-body">
           {/* Header Customer & Tier Config */}
@@ -762,6 +854,11 @@ const EstimateEditorModal = ({
           </div>
         </form>
       </div>
+  );
+
+  return (
+    <>
+      {inline ? content : <div className="estimate-modal-overlay">{content}</div>}
 
       {/* Delete Room Confirmation Modal */}
       {roomToDelete !== null && (
@@ -874,7 +971,7 @@ const EstimateEditorModal = ({
         furnitureTier={furnitureLevel}
         onAddRooms={handleAddNewRooms}
       />
-    </div>
+    </>
   );
 };
 

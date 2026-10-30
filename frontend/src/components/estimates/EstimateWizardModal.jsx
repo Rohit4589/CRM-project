@@ -5,7 +5,8 @@ const EstimateWizardModal = ({
   catalog,
   estimates = [],
   onClose,
-  onProceed
+  onProceed,
+  inline = false
 }) => {
   const [selectedSiteId, setSelectedSiteId] = useState('');
   const [orderNo, setOrderNo] = useState('');
@@ -37,6 +38,13 @@ const EstimateWizardModal = ({
       document.removeEventListener('mousedown', handleOutsideClick);
     };
   }, [showSiteDropdown]);
+
+  // Scroll to top when opening in content area
+  useEffect(() => {
+    if (inline) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [inline]);
 
   // Close wizard modal or site dropdown on Escape key
   useEffect(() => {
@@ -244,18 +252,79 @@ const EstimateWizardModal = ({
 
   const hasNoSites = !sites || sites.length === 0;
 
-  return (
-    <div className="estimate-modal-overlay">
-      <div className="estimate-modal">
-        <div className="estimate-modal-header">
-          <h2>
-            <i className="fa-solid fa-wand-magic-sparkles" style={{ color: '#4A2C17' }}></i>
-            Create New Estimate
-          </h2>
+  const content = (
+    <div className={inline ? "estimate-content-card" : "estimate-modal"}>
+      <div className="estimate-modal-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          {inline && (
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: '#FFFFFF',
+                border: '1.5px solid #D1C2AF',
+                borderRadius: '8px',
+                padding: '8px 14px',
+                color: '#4A2C17',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 1px 3px rgba(74, 44, 23, 0.08)'
+              }}
+              title="Back to Estimates List"
+            >
+              <i className="fa-solid fa-arrow-left"></i>
+              <span>Back to Estimates</span>
+            </button>
+          )}
+          <div>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#2B2520', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="fa-solid fa-wand-magic-sparkles" style={{ color: '#4A2C17' }}></i>
+              Create New Estimate
+            </h2>
+            {inline && (
+              <div style={{ fontSize: '12px', color: '#7A6F66', marginTop: '2px' }}>
+                Select registered customer, project type and package collection
+              </div>
+            )}
+          </div>
+        </div>
+
+        {inline ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              type="button"
+              className="btn-action-icon"
+              style={{ width: 'auto', padding: '8px 16px', fontSize: '13px' }}
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn-create-estimate"
+              disabled={hasNoSites || !selectedSiteId}
+              onClick={handleSubmit}
+              style={{
+                padding: '8px 18px',
+                fontSize: '13px',
+                opacity: (hasNoSites || !selectedSiteId) ? 0.55 : 1,
+                cursor: (hasNoSites || !selectedSiteId) ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <i className="fa-solid fa-arrow-right"></i>
+              <span>Generate & Edit</span>
+            </button>
+          </div>
+        ) : (
           <button className="modal-close-btn" onClick={onClose}>
             <i className="fa-solid fa-xmark"></i>
           </button>
-        </div>
+        )}
+      </div>
 
         <form onSubmit={handleSubmit} className="estimate-modal-body">
           {/* Customer / Site Selection */}
@@ -850,8 +919,9 @@ const EstimateWizardModal = ({
           </div>
         </form>
       </div>
-    </div>
   );
+
+  return inline ? content : <div className="estimate-modal-overlay">{content}</div>;
 };
 
 export default EstimateWizardModal;

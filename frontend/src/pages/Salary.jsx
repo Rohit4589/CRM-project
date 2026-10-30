@@ -92,6 +92,7 @@ const Salary = ({ onOpenFestivals }) => {
   const [activeSiteId, setActiveSiteId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [siteTableTab, setSiteTableTab] = useState('workers'); // 'workers' | 'attendance'
+  const [includeSiteBreakdownInPrint, setIncludeSiteBreakdownInPrint] = useState(true);
 
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -747,6 +748,57 @@ const Salary = ({ onOpenFestivals }) => {
     }, 0);
   }, [employeeGroupedShifts]);
 
+  // Site-Wise Breakdown of shifts worked by activeEmployee (Unit & Amount)
+  const siteWiseBreakdown = useMemo(() => {
+    if (!employeeGroupedShifts || employeeGroupedShifts.length === 0) return [];
+    
+    const siteMap = new Map();
+
+    employeeGroupedShifts.forEach(group => {
+      group.shifts.forEach(shift => {
+        if (shift.isBonus) {
+          const bonusKey = '__BONUS__';
+          if (!siteMap.has(bonusKey)) {
+            siteMap.set(bonusKey, {
+              siteRef: 'EXTRA',
+              customerName: 'Extra Attendance (Admin Added)',
+              location: '',
+              days: 0,
+              shiftsCount: 0,
+              amount: 0,
+              isBonus: true
+            });
+          }
+          const b = siteMap.get(bonusKey);
+          b.days += (Number(shift.dayVal) || 0);
+          b.shiftsCount += 1;
+          b.amount += (Number(shift.daySalary) || 0);
+          return;
+        }
+
+        const key = shift.siteRef || shift.customerName || 'Other Site';
+        if (!siteMap.has(key)) {
+          siteMap.set(key, {
+            siteRef: shift.siteRef || '---',
+            customerName: shift.customerName || 'Assigned Site',
+            location: shift.siteLocation || '',
+            days: 0,
+            shiftsCount: 0,
+            amount: 0,
+            isBonus: false
+          });
+        }
+
+        const item = siteMap.get(key);
+        item.days += (Number(shift.dayVal) || 0);
+        item.shiftsCount += 1;
+        item.amount += (Number(shift.daySalary) || 0);
+      });
+    });
+
+    return Array.from(siteMap.values());
+  }, [employeeGroupedShifts]);
+
   return (
     <main className="dashboard-content" style={{ padding: '24px 30px', maxWidth: '1600px', margin: '0 auto' }}>
       
@@ -952,6 +1004,29 @@ const Salary = ({ onOpenFestivals }) => {
                   <i className="fa-solid fa-plus" style={{ color: 'var(--gold, #A56A30)' }}></i> Add Days
                 </button>
                 <button
+                  type="button"
+                  onClick={() => setIncludeSiteBreakdownInPrint(prev => !prev)}
+                  title={includeSiteBreakdownInPrint ? "Site Breakdown is included in Print / PDF. Click to exclude." : "Site Breakdown is excluded from Print / PDF. Click to include."}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '7px',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: includeSiteBreakdownInPrint ? '#ECFDF5' : '#FFFDF5',
+                    color: includeSiteBreakdownInPrint ? '#065F46' : '#6B7280',
+                    border: includeSiteBreakdownInPrint ? '1.5px solid #A7F3D0' : '1.5px solid #D1D5DB',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <i className="fa-solid fa-building-user" style={{ color: includeSiteBreakdownInPrint ? '#059669' : '#9CA3AF' }}></i>
+                  <span>Print Sites: <strong>{includeSiteBreakdownInPrint ? 'ON' : 'OFF'}</strong></span>
+                </button>
+                <button
                   onClick={() => window.print()}
                   className="btn-primary"
                   style={{
@@ -1035,8 +1110,8 @@ const Salary = ({ onOpenFestivals }) => {
                   <th className="col-salary" style={{ padding: '14px 18px', width: '13%', textAlign: 'right', fontWeight: '800', color: '#4A2C17' }}>Day Salary</th>
                 </tr>
               </thead>
-              <tbody>
-                {employeeGroupedShifts.length === 0 ? (
+              {employeeGroupedShifts.length === 0 ? (
+                <tbody>
                   <tr>
                     <td colSpan="6" style={{ padding: '50px 20px', textAlign: 'center', color: '#9CA3AF' }}>
                       <i className="fa-regular fa-calendar-xmark" style={{ fontSize: '32px', color: '#D1D5DB', marginBottom: '10px', display: 'block' }}></i>
@@ -1044,9 +1119,11 @@ const Salary = ({ onOpenFestivals }) => {
                       <div style={{ fontSize: '13px', marginTop: '4px' }}>No shifts recorded for {activeEmployee.name} in {formatMonthName(selectedMonth)}.</div>
                     </td>
                   </tr>
-                ) : (
-                  employeeGroupedShifts.map((group) => {
-                    return group.shifts.map((shift, sIdx) => {
+                </tbody>
+              ) : (
+                employeeGroupedShifts.map((group) => (
+                  <tbody key={group.dateKey} className="salary-date-group" style={{ pageBreakInside: group.shifts.length > 1 ? 'avoid' : 'auto', breakInside: group.shifts.length > 1 ? 'avoid' : 'auto' }}>
+                    {group.shifts.map((shift, sIdx) => {
                       const isFirstShiftOfDate = sIdx === 0;
                       const isLastShiftOfDate = sIdx === group.shifts.length - 1;
                       const isMultiSite = group.shifts.length > 1;
@@ -1057,7 +1134,9 @@ const Salary = ({ onOpenFestivals }) => {
                           style={{
                             borderBottom: isLastShiftOfDate ? '1.5px solid #CBD5E1' : '1px dashed #E2E8F0',
                             background: shift.isBonus ? 'rgba(165, 106, 48, 0.03)' : (isMultiSite ? '#FAFCFF' : 'transparent'),
-                            transition: 'background 0.15s ease'
+                            transition: 'background 0.15s ease',
+                            pageBreakInside: 'avoid',
+                            breakInside: 'avoid'
                           }}
                         >
                           {/* DATE COLUMN: Rendered only once per date using rowSpan */}
@@ -1067,7 +1146,7 @@ const Salary = ({ onOpenFestivals }) => {
                               rowSpan={group.shifts.length} 
                               style={{ 
                                 padding: '14px 18px', 
-                                verticalAlign: 'top', 
+                                verticalAlign: 'middle', 
                                 textAlign: 'left',
                                 borderRight: isMultiSite ? '1.5px solid #E2E8F0' : 'transparent',
                                 background: isMultiSite ? '#F8FAFC' : 'inherit'
@@ -1078,30 +1157,7 @@ const Salary = ({ onOpenFestivals }) => {
                                   {group.formattedDate}
                                 </span>
 
-                                {isMultiSite && (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
-                                    <span style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      padding: '3px 8px',
-                                      background: '#FAF4EE',
-                                      color: '#7A4518',
-                                      border: '1px solid #EAD8C7',
-                                      borderRadius: '12px',
-                                      fontSize: '11px',
-                                      fontWeight: '800',
-                                      width: 'fit-content',
-                                      whiteSpace: 'nowrap'
-                                    }}>
-                                      <i className="fa-solid fa-layer-group" style={{ fontSize: '10px' }}></i>
-                                      {group.shifts.length} Sites ({formatDays(group.totalDayValue)} Days)
-                                    </span>
-                                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#8C5521', paddingLeft: '2px' }}>
-                                      Day Total: ₹{group.totalDaySalary.toLocaleString('en-IN')}
-                                    </span>
-                                  </div>
-                                )}
+                                
 
                                 {/* Date Notes */}
                                 {group.shifts.some(s => s.notes) && (
@@ -1257,10 +1313,10 @@ const Salary = ({ onOpenFestivals }) => {
                           </td>
                         </tr>
                       );
-                    });
-                  })
-                )}
-              </tbody>
+                    })}
+                  </tbody>
+                ))
+              )}
               {activeEmployee.attendanceLogs.length > 0 && (
                 <tfoot>
                   {/* =========================================================
@@ -1536,6 +1592,170 @@ const Salary = ({ onOpenFestivals }) => {
               )}
             </table>
           </div>
+
+          {/* Site-Wise Work Breakdown (Unit & Amount) */}
+          {siteWiseBreakdown.length > 0 && (
+            <div 
+              className={`panel salary-site-breakdown-card ${!includeSiteBreakdownInPrint ? 'no-print' : ''}`}
+              style={{
+                background: '#fff',
+                borderRadius: '10px',
+                border: '1px solid #EAE3DA',
+                boxShadow: '0 2px 8px rgba(74, 44, 23, 0.04)',
+                marginTop: '18px',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Header with Title and Toggle Button */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 18px',
+                background: '#FAF8F5',
+                borderBottom: '1.5px solid #EAE3DA',
+                flexWrap: 'wrap',
+                gap: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="fa-solid fa-building-user" style={{ color: 'var(--gold, #A56A30)', fontSize: '14px' }}></i>
+                  <span style={{ fontSize: '13px', fontWeight: '800', color: '#4A2C17', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Site-Wise Work Breakdown
+                  </span>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: '#8C5521',
+                    background: '#FAF4EE',
+                    border: '1px solid #EAD8C7',
+                    padding: '1px 8px',
+                    borderRadius: '10px'
+                  }}>
+                    {siteWiseBreakdown.length} {siteWiseBreakdown.length === 1 ? 'Site' : 'Sites'}
+                  </span>
+                </div>
+
+                {/* Print/PDF Inclusion Toggle Button (Screen Only) */}
+                <button
+                  type="button"
+                  onClick={() => setIncludeSiteBreakdownInPrint(prev => !prev)}
+                  className="no-print"
+                  title={includeSiteBreakdownInPrint ? "Currently included in Print / PDF. Click to exclude." : "Currently excluded from Print / PDF. Click to include."}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: includeSiteBreakdownInPrint ? '#ECFDF5' : '#F9FAFB',
+                    border: includeSiteBreakdownInPrint ? '1.5px solid #A7F3D0' : '1.5px solid #D1D5DB',
+                    color: includeSiteBreakdownInPrint ? '#065F46' : '#6B7280',
+                    borderRadius: '6px',
+                    padding: '4px 10px',
+                    fontSize: '11.5px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <i className="fa-solid fa-print"></i>
+                  {includeSiteBreakdownInPrint ? (
+                    <>
+                      <i className="fa-solid fa-check" style={{ fontSize: '10px' }}></i>
+                      <span>Print / PDF: <strong>Included</strong></span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-xmark" style={{ fontSize: '10px' }}></i>
+                      <span>Print / PDF: <strong>Excluded</strong></span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Breakdown Table (Unit & Amount) */}
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table className="salary-site-breakdown-table" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                  <thead>
+                    <tr style={{
+                      background: '#FFFFFF',
+                      borderBottom: '1px solid #EAE3DA',
+                      color: '#4A2C17',
+                      fontSize: '11px',
+                      fontWeight: '800',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      <th style={{ padding: '10px 18px', textAlign: 'left', width: '68%' }}>Site / Customer</th>
+                      <th style={{ padding: '10px 18px', textAlign: 'center', width: '16%' }}>Unit</th>
+                      <th style={{ padding: '10px 18px', textAlign: 'right', width: '16%' }}>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {siteWiseBreakdown.map((item, idx) => (
+                      <tr 
+                        key={item.siteRef || idx}
+                        style={{
+                          borderBottom: '1px solid #F0EAE4',
+                          background: item.isBonus ? 'rgba(165, 106, 48, 0.03)' : (idx % 2 === 0 ? '#FFFFFF' : '#FAF8F5')
+                        }}
+                      >
+                        <td style={{ padding: '10px 18px', textAlign: 'left', verticalAlign: 'middle' }}>
+                          <div style={{ fontWeight: '700', color: '#111827', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <i className={item.isBonus ? "fa-solid fa-gift" : "fa-solid fa-location-dot"} style={{ color: 'var(--gold, #A56A30)', fontSize: '11px', flexShrink: 0 }}></i>
+                            <span>{item.siteRef}: {item.customerName}</span>
+                          </div>
+                          {item.location && (
+                            <div style={{ fontSize: '11px', color: '#6B7280', paddingLeft: '17px', marginTop: '2px' }}>
+                              {item.location}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 18px', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <span style={{
+                            background: '#FAF4EE',
+                            color: '#8C5521',
+                            border: '1px solid #EAD8C7',
+                            padding: '3px 9px',
+                            borderRadius: '10px',
+                            fontSize: '11.5px',
+                            fontWeight: '700',
+                            display: 'inline-block'
+                          }}>
+                            {formatDays(item.days)} Day{item.days !== 1 ? 's' : ''}
+                          </span>
+                          {!item.isBonus && (
+                            <span style={{ fontSize: '11px', color: '#6B7280', marginLeft: '6px' }}>
+                              ({item.shiftsCount} {item.shiftsCount === 1 ? 'shift' : 'shifts'})
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 18px', textAlign: 'right', verticalAlign: 'middle', fontWeight: '800', color: '#111827', fontSize: '13px' }}>
+                          ₹{item.amount.toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{
+                      background: '#FAF4EE',
+                      borderTop: '2px solid var(--gold, #A56A30)',
+                      fontWeight: '800'
+                    }}>
+                      <td style={{ padding: '11px 18px', textAlign: 'left', fontSize: '12.5px', color: '#4A2C17', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                        Total Site Work
+                      </td>
+                      <td style={{ padding: '11px 18px', textAlign: 'center', fontSize: '13px', color: '#8C5521' }}>
+                        {formatDays(activeEmployee.totalDays)} Days
+                      </td>
+                      <td style={{ padding: '11px 18px', textAlign: 'right', fontSize: '14.5px', color: '#4A2C17' }}>
+                        ₹{activeEmployee.baseAmount.toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Printable Signatures & Authorization (Only visible on print) */}
           <div className="salary-print-footer" style={{ display: 'none' }}>

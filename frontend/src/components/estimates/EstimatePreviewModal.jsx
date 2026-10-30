@@ -5,6 +5,7 @@ import scannerImg from '../../assets/scanner.jpg';
 import SCANNER_QR_BASE64 from '../../assets/scannerDataUri';
 import { getMaterialSpecsForCollection } from '../../data/collectionSpecs';
 import { downloadEstimatePdf, printEstimateSheet } from '../../utils/estimatePdfGenerator';
+import { toTitleCase } from '../../utils/autoCapitalize';
 
 const EstimatePreviewModal = ({
   estimate,
@@ -307,77 +308,41 @@ const EstimatePreviewModal = ({
             {/* Header Brand with Logo on Left and Customer Info on Right */}
             {/* Unified Creative Estimate Header matching Cardboard Sketch */}
             <div className="print-unified-header">
-              {/* 1. Logo (65% height) + Collection Name (35% height) Column */}
-              <div className="print-unified-col print-col-logo">
-                <div className="print-logo-top" style={{ height: '65%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px 8px', background: '#FFFFFF' }}>
-                  <img
-                    src={LOGO_BASE64 || modernLogo}
-                    alt="Modern Interior"
-                    style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = LOGO_BASE64 || '/logo.png';
-                    }}
-                  />
+              {/* Left Brand Block: Top Row (Logo + GST/Address) + Bottom Banner (Collection Name spanning across both) */}
+              <div className="print-header-brand-block">
+                <div className="print-brand-top-row">
+                  {/* Box 1: Logo */}
+                  <div className="print-col-logo-box">
+                    <img
+                      src={LOGO_BASE64 || modernLogo}
+                      alt="Modern Interior"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = LOGO_BASE64 || '/logo.png';
+                      }}
+                    />
+                  </div>
+
+                  {/* Box 2: Company GST & Address */}
+                  <div className="print-col-company-box">
+                    <div className="print-company-gst">
+                      <strong>GSTIN:</strong> <span>27BIPPS2002G1ZA</span>
+                    </div>
+                    <div className="print-company-address">
+                      <strong>Registered Address:</strong><br />
+                      Sr. No. 5/3/3, Pawar Nagar, Gujarwadi Road, Katraj, Pune, Maharashtra – 411046.
+                    </div>
+                  </div>
                 </div>
-                <div
-                  className="print-col-pkg-bottom"
-                  style={{
-                    height: '35%',
-                    background: '#4A2C17',
-                    color: '#FFFFFF',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    padding: '3px 6px',
-                    boxSizing: 'border-box',
-                    borderTop: '1px solid #4A2C17'
-                  }}
-                >
-                  <div
-                    className="print-pkg-title"
-                    style={{
-                      fontSize: '9.5px',
-                      fontWeight: '800',
-                      color: '#FFFFFF',
-                      letterSpacing: '0.4px',
-                      lineHeight: '1.2',
-                      textTransform: 'uppercase'
-                    }}
-                  >
+
+                {/* Collection Name Banner Spanning Across Both Logo and Company Details */}
+                <div className="print-col-pkg-bottom">
+                  <div className="print-pkg-title">
                     {activeTier}
                   </div>
-                  <div
-                    className="print-pkg-subtitle"
-                    style={{
-                      fontSize: '6.5px',
-                      fontWeight: '600',
-                      color: '#E8D5C4',
-                      letterSpacing: '0.2px',
-                      lineHeight: '1.1',
-                      marginTop: '2px',
-                      paddingTop: '2px',
-                      borderTop: '1px solid rgba(232, 213, 196, 0.4)',
-                      whiteSpace: 'nowrap',
-                      textAlign: 'center',
-                      width: '100%'
-                    }}
-                  >
+                  <div className="print-pkg-subtitle">
                     Furniture &amp; Interior Quotation
                   </div>
-                </div>
-              </div>
-
-              {/* 2. Company GST & Address Section */}
-              <div className="print-unified-col print-col-company">
-                <div className="print-company-gst">
-                  <strong>GSTIN:</strong> <span>27BIPPS2002G1ZA</span>
-                </div>
-                <div className="print-company-address">
-                  <strong>Registered Address:</strong><br />
-                  Sr. No. 5/3/3, Pawar Nagar, Gujarwadi Road, Katraj, Pune, Maharashtra – 411046.
                 </div>
               </div>
 
@@ -387,32 +352,32 @@ const EstimatePreviewModal = ({
                   <tbody>
                     <tr>
                       <td>
-                        <span className="print-field-label">ORDER NO:</span>
+                        <span className="print-field-label">Order No:</span>
                         <span className="print-field-value highlight-order">{orderNumber}</span>
                       </td>
                       <td>
-                        <span className="print-field-label">DATE:</span>
+                        <span className="print-field-label">Date:</span>
                         <span className="print-field-value">{formattedDate}</span>
                       </td>
                     </tr>
                     <tr>
                       <td>
-                        <span className="print-field-label">CUSTOMER:</span>
-                        <span className="print-field-value">{estimate.customer_name?.toUpperCase() || '-'}</span>
+                        <span className="print-field-label">Customer:</span>
+                        <span className="print-field-value">{toTitleCase(estimate.customer_name) || '-'}</span>
                       </td>
                       <td>
-                        <span className="print-field-label">REF NAME:</span>
-                        <span className="print-field-value">{estimate.reference_name || cleanRef || '-'}</span>
+                        <span className="print-field-label">Ref Name:</span>
+                        <span className="print-field-value">{toTitleCase(estimate.reference_name || cleanRef) || '-'}</span>
                       </td>
                     </tr>
                     <tr>
                       <td>
-                        <span className="print-field-label">MOBILE:</span>
+                        <span className="print-field-label">Mobile:</span>
                         <span className="print-field-value">{estimate.phone || '-'}</span>
                       </td>
                       <td>
-                        <span className="print-field-label">ADDRESS:</span>
-                        <span className="print-field-value">{estimate.address || '-'}</span>
+                        <span className="print-field-label">Address:</span>
+                        <span className="print-field-value">{toTitleCase(estimate.address) || '-'}</span>
                       </td>
                     </tr>
                   </tbody>
@@ -425,39 +390,39 @@ const EstimatePreviewModal = ({
               <table key={rIdx} className="print-room-table">
                 <thead className="print-room-thead" style={{ display: 'table-row-group' }}>
                   <tr className="print-room-title-row">
-                    <td colSpan="8" style={{ textAlign: 'left', paddingLeft: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#4A2C17', fontWeight: '800', fontSize: '12px' }}>
-                      {room.roomName}
+                    <td colSpan="8" style={{ textAlign: 'left', paddingLeft: '10px', letterSpacing: '0.5px', color: '#4A2C17', fontWeight: '800', fontSize: '12px' }}>
+                      {toTitleCase(room.roomName)}
                     </td>
                   </tr>
                   <tr>
-                    <th style={{ width: '18%', textAlign: 'left' }}>PRODUCT NAME</th>
-                    <th style={{ width: '38%', textAlign: 'center' }}>DESCRIPTION</th>
-                    <th style={{ width: '8%', textAlign: 'center' }}>WIDTH</th>
-                    <th style={{ width: '8%', textAlign: 'center' }}>HEIGHT</th>
-                    <th style={{ width: '7%', textAlign: 'center' }}>AREA</th>
-                    <th style={{ width: '7%', textAlign: 'center' }}>UNIT</th>
-                    <th style={{ width: '7%', textAlign: 'center' }}>RATE</th>
-                    <th style={{ width: '7%', textAlign: 'right' }}>AMOUNT</th>
+                    <th style={{ width: '18%', textAlign: 'left' }}>Product Name</th>
+                    <th style={{ width: '38%', textAlign: 'center' }}>Description</th>
+                    <th style={{ width: '8%', textAlign: 'center' }}>Width</th>
+                    <th style={{ width: '8%', textAlign: 'center' }}>Height</th>
+                    <th style={{ width: '7%', textAlign: 'center' }}>Area</th>
+                    <th style={{ width: '7%', textAlign: 'center' }}>Unit</th>
+                    <th style={{ width: '7%', textAlign: 'center' }}>Rate</th>
+                    <th style={{ width: '7%', textAlign: 'right' }}>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(room.items || []).map((it, iIdx) => (
                     <tr key={iIdx}>
-                      <td style={{ textAlign: 'left', fontWeight: '700', color: '#000000', wordBreak: 'normal', overflowWrap: 'normal', whiteSpace: 'normal', lineHeight: '1.25' }}>{it.productName}</td>
-                      <td style={{ fontSize: '10.5px', color: '#000000', fontWeight: '600', textAlign: 'center', lineHeight: '1.3', textTransform: 'capitalize' }}>{it.description}</td>
-                      <td style={{ textAlign: 'center', color: '#000000', fontWeight: '600' }}>{it.widthMm || '-'}</td>
-                      <td style={{ textAlign: 'center', color: '#000000', fontWeight: '600' }}>{it.heightMm || '-'}</td>
-                      <td style={{ textAlign: 'center', fontWeight: '700', color: '#000000' }}>{it.totalArea ?? '-'}</td>
-                      <td style={{ textAlign: 'center', color: '#000000', fontWeight: '600' }}>{it.unit || 'Sq.Ft.'}</td>
-                      <td style={{ textAlign: 'center', color: '#000000', fontWeight: '600' }}>₹{(Number(it.rate) || 0).toLocaleString('en-IN')}</td>
-                      <td style={{ textAlign: 'right', fontWeight: '800', color: '#000000' }}>
+                      <td style={{ textAlign: 'left', fontWeight: '700', color: '#111827', wordBreak: 'normal', overflowWrap: 'normal', whiteSpace: 'normal', lineHeight: '1.25' }}>{toTitleCase(it.productName)}</td>
+                      <td style={{ fontSize: '10px', color: '#374151', fontWeight: '400', textAlign: 'center', lineHeight: '1.3', textTransform: 'capitalize' }}>{it.description}</td>
+                      <td style={{ textAlign: 'center', color: '#4B5563', fontWeight: '400' }}>{it.widthMm || '-'}</td>
+                      <td style={{ textAlign: 'center', color: '#4B5563', fontWeight: '400' }}>{it.heightMm || '-'}</td>
+                      <td style={{ textAlign: 'center', fontWeight: '500', color: '#1F2937' }}>{it.totalArea ?? '-'}</td>
+                      <td style={{ textAlign: 'center', color: '#4B5563', fontWeight: '400' }}>{it.unit || 'Sq.Ft.'}</td>
+                      <td style={{ textAlign: 'center', color: '#374151', fontWeight: '500' }}>₹{(Number(it.rate) || 0).toLocaleString('en-IN')}</td>
+                      <td style={{ textAlign: 'right', fontWeight: '700', color: '#111827' }}>
                         ₹{(Number(it.amount) || 0).toLocaleString('en-IN')}
                       </td>
                     </tr>
                   ))}
                   <tr className="print-room-total-row">
-                    <td colSpan="6" style={{ textAlign: 'right', fontWeight: '800', color: '#4A2C17', padding: '9px 12px', verticalAlign: 'middle', textTransform: 'uppercase', letterSpacing: '0.4px', fontSize: '13.5px' }}>
-                      <span style={{ fontSize: '13.5px', fontWeight: '800', color: '#4A2C17' }}>{room.roomName} TOTAL:</span>
+                    <td colSpan="6" style={{ textAlign: 'right', fontWeight: '800', color: '#4A2C17', padding: '9px 12px', verticalAlign: 'middle', letterSpacing: '0.4px', fontSize: '13.5px' }}>
+                      <span style={{ fontSize: '13.5px', fontWeight: '800', color: '#4A2C17' }}>{toTitleCase(room.roomName)} Total:</span>
                     </td>
                     <td colSpan="2" style={{ textAlign: 'right', fontWeight: '900', color: '#4A2C17', fontSize: '16px', padding: '9px 12px', verticalAlign: 'middle', letterSpacing: '0.3px' }}>
                       <span style={{ fontSize: '16px', fontWeight: '900', color: '#4A2C17' }}>₹{(Number(room.roomTotal) || 0).toLocaleString('en-IN')}</span>
@@ -472,7 +437,7 @@ const EstimatePreviewModal = ({
               <tbody>
                 <tr className="print-sub-total-row">
                   <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', fontSize: '14px', padding: '10px 16px', background: '#F5EBE1', color: '#4A2C17', letterSpacing: '0.4px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: '800', color: '#4A2C17' }}>SUB TOTAL:</span>
+                    <span style={{ fontSize: '14px', fontWeight: '800', color: '#4A2C17' }}>Sub Total:</span>
                   </td>
                   <td colSpan="2" style={{ textAlign: 'right', fontWeight: '900', fontSize: '17px', padding: '10px 12px', background: '#F5EBE1', color: '#4A2C17', letterSpacing: '0.3px' }}>
                     <span style={{ fontSize: '17px', fontWeight: '900', color: '#4A2C17' }}>₹{Number(estimate.sub_total || 0).toLocaleString('en-IN')}</span>
@@ -480,7 +445,7 @@ const EstimatePreviewModal = ({
                 </tr>
                 <tr>
                   <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', fontSize: '12px', padding: '8px 16px', background: '#FFFFFF', color: '#4A2C17' }}>
-                    DESIGNING AND CONSULTING FEE ({Number(estimate.design_fee_pct ?? 10)}%):
+                    Designing And Consulting Fee ({Number(estimate.design_fee_pct ?? 10)}%):
                   </td>
                   <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', fontSize: '13.5px', padding: '8px 12px', background: '#FFFFFF', color: '#4A2C17' }}>
                     ₹{Number(estimate.design_fee_amount || 0).toLocaleString('en-IN')}
@@ -499,7 +464,7 @@ const EstimatePreviewModal = ({
                 {Number(estimate.round_off) > 0 && (
                   <tr>
                     <td colSpan="6" style={{ textAlign: 'left', fontWeight: '800', fontSize: '12px', padding: '8px 16px', background: '#FFFFFF', color: '#4A2C17' }}>
-                      ROUND OFF / DISCOUNT:
+                      Round Off / Discount:
                     </td>
                     <td colSpan="2" style={{ textAlign: 'right', fontWeight: '800', fontSize: '13.5px', padding: '8px 12px', background: '#FFFFFF', color: '#4A2C17' }}>
                       - ₹{Number(estimate.round_off).toLocaleString('en-IN')}
@@ -508,7 +473,7 @@ const EstimatePreviewModal = ({
                 )}
                 <tr className="print-grand-total-row">
                   <td colSpan="6" style={{ textAlign: 'left', fontWeight: '900', fontSize: '15px', background: '#4A2C17', color: '#FFFFFF', padding: '11px 16px', border: '1px solid #4A2C17', letterSpacing: '0.6px' }}>
-                    <span style={{ color: '#FFFFFF', fontWeight: '900', fontSize: '15px' }}>FINAL TOTAL:</span>
+                    <span style={{ color: '#FFFFFF', fontWeight: '900', fontSize: '15px' }}>Final Total:</span>
                   </td>
                   <td colSpan="2" style={{ textAlign: 'right', fontWeight: '900', fontSize: '18px', background: '#4A2C17', color: '#FFFFFF', padding: '11px 12px', border: '1px solid #4A2C17', letterSpacing: '0.4px' }}>
                     <span style={{ color: '#FFFFFF', fontWeight: '900', fontSize: '18px' }}>₹{Number(estimate.final_total || 0).toLocaleString('en-IN')}</span>
