@@ -164,10 +164,16 @@ const AddRoomModal = ({
 
       // If preset didn't have items, check dynamic catalog products assigned to this room category
       if (items.length === 0 && loadPresets) {
+        const catObj = (catalog?.categories || []).find(
+          c => (c.name || '').trim().toUpperCase() === roomName.toUpperCase()
+        );
         const matchingCatalog = (catalog?.products || []).filter(p => {
+          if (catObj && Array.isArray(catObj.product_ids) && catObj.product_ids.length > 0) {
+            return catObj.product_ids.includes(p.id);
+          }
           const catNames = (Array.isArray(p.category_names) && p.category_names.length > 0)
             ? p.category_names.map(c => (c || '').toUpperCase())
-            : [(p.category || '').toUpperCase()];
+            : [(p.category || '').toUpperCase()].filter(Boolean);
           return catNames.includes(roomName.toUpperCase());
         });
 
