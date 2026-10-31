@@ -2,17 +2,17 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 /**
- * Generate and download a PDF from a printable DOM element.
+ * Builds a jsPDF instance from a printable DOM element.
  * Splits content into logical chunks (header, rooms, summary, terms, etc.)
  * and places each chunk on pages so that no row/section is cut mid-content.
  *
  * @param {HTMLElement} element - The DOM element containing the estimate sheet
- * @param {string} filename - Desired PDF filename
+ * @returns {Promise<jsPDF|null>} - The configured jsPDF instance
  */
-export async function downloadEstimatePdf(element, filename = 'Modern_Interior_Estimate.pdf') {
+export async function buildEstimatePdf(element) {
   if (!element) {
     console.error('Element not found for PDF generation');
-    return false;
+    return null;
   }
 
   try {
@@ -27,12 +27,8 @@ export async function downloadEstimatePdf(element, filename = 'Modern_Interior_E
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
     // Gather all direct child sections of the printable sheet.
-    // Each section is rendered separately to a canvas, then placed on pages
-    // without splitting.
     const children = Array.from(element.children);
 
-    // Group children into logical sections that should not be split.
-    // We render each child separately to its own canvas.
     const sections = [];
     for (const child of children) {
       const canvas = await html2canvas(child, {
@@ -50,14 +46,13 @@ export async function downloadEstimatePdf(element, filename = 'Modern_Interior_E
     const elementWidthPx = element.offsetWidth * 2; // scale factor is 2
     const pxPerMm = elementWidthPx / CONTENT_W;
 
-    let currentY = MARGIN_Y; // current Y position on current page (mm)
+    let currentY = MARGIN_Y;
     let isFirstPage = true;
 
     for (let sIdx = 0; sIdx < sections.length; sIdx++) {
       const { canvas } = sections[sIdx];
       const sectionHeightMm = (canvas.height / pxPerMm);
 
-      // If this section fits on current page, place it
       if (currentY + sectionHeightMm <= PAGE_H - MARGIN_Y) {
         pdf.addImage(
           canvas.toDataURL('image/png'),
@@ -69,7 +64,6 @@ export async function downloadEstimatePdf(element, filename = 'Modern_Interior_E
         );
         currentY += sectionHeightMm;
       } else if (sectionHeightMm <= CONTENT_H) {
-        // Section fits on a fresh page
         if (!isFirstPage || currentY > MARGIN_Y) {
           pdf.addPage();
         }
@@ -85,9 +79,6 @@ export async function downloadEstimatePdf(element, filename = 'Modern_Interior_E
         currentY += sectionHeightMm;
         isFirstPage = false;
       } else {
-        // Section is taller than a full page — slice it carefully
-        // (e.g. a very large room table)
-        const imgData = canvas.toDataURL('image/png');
         const totalImgH = sectionHeightMm;
         let remainingH = totalImgH;
         let srcYOffset = 0;
@@ -96,8 +87,6 @@ export async function downloadEstimatePdf(element, filename = 'Modern_Interior_E
           const spaceOnPage = (PAGE_H - MARGIN_Y) - currentY;
           const sliceH = Math.min(spaceOnPage, remainingH);
 
-          // We draw the full image but clip it via position offset
-          // Since jsPDF addImage doesn't support clipping, we use sub-canvas
           const sliceHeightPx = (sliceH / totalImgH) * canvas.height;
           const srcYPx = (srcYOffset / totalImgH) * canvas.height;
 
@@ -133,13 +122,87 @@ export async function downloadEstimatePdf(element, filename = 'Modern_Interior_E
       }
     }
 
+    return pdf;
+  } catch (err) {
+    console.error('PDF building error:', err);
+    return null;
+  }
+}
+
+/**
+ * Generate and download a PDF from a printable DOM element.
+ *
+ * @param {HTMLElement} element - The DOM element containing the estimate sheet
+ * @param {string} filename - Desired PDF filename
+ */
+export async function downloadEstimatePdf(element, filename = 'Modern_Interior_Estimate.pdf') {
+  if (!element) {
+    console.error('Element not found for PDF generation');
+    return false;
+  }
+
+  try {
+    const pdf = await buildEstimatePdf(element);
+    if (!pdf) {
+      window.print();
+      return false;
+    }
+
     pdf.save(filename);
     return true;
   } catch (err) {
-    console.error('PDF generation error:', err);
-    // Fallback to browser print if generation fails
+    console.error('PDF download error:', err);
     window.print();
     return false;
+  }
+}
+
+/**
+ * Direct WhatsApp Share: Generates the PDF and triggers native file sharing.
+ * Sends ONLY the PDF file without any text message or captions.
+ *
+ * @param {HTMLElement} element - The printable DOM element
+ * @param {string} filename - Desired PDF filename (e.g. Modern_Interior_Estimate_187.pdf)
+ * @returns {Promise<{ success: boolean, method: string }>}
+ */
+export async function shareEstimatePdfOnWhatsApp(element, filename = 'Modern_Interior_Estimate.pdf') {
+  if (!element) {
+    console.error('Element not found for WhatsApp share');
+    return { success: false, method: 'no_element' };
+  }
+
+  try {
+    const pdf = await buildEstimatePdf(element);
+    if (!pdf) {
+      return { success: false, method: 'build_failed' };
+    }
+
+    const blob = pdf.output('blob');
+    const pdfFile = new File([blob], filename, { type: 'application/pdf' });
+
+    // 1. Direct Native File Sharing via Web Share API Level 2 (Mobile / Tablet / Supported PC)
+    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      await navigator.share({
+        files: [pdfFile]
+        // Strictly NO text and NO message — user wants only the PDF document sent
+      });
+      return { success: true, method: 'native' };
+    }
+
+    // 2. Desktop Fallback (for PC browsers where direct OS file injection is not supported)
+    // Download the PDF immediately so user has it ready
+    pdf.save(filename);
+
+    // Open WhatsApp Web
+    window.open('https://web.whatsapp.com', '_blank');
+
+    return { success: true, method: 'download_fallback' };
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      return { success: true, method: 'cancelled' };
+    }
+    console.error('WhatsApp PDF share error:', err);
+    return { success: false, method: 'error' };
   }
 }
 

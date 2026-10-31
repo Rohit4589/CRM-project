@@ -1,10 +1,11 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import { API_BASE } from '../../config/api';
 import modernLogo from '../../assets/logo.png';
 import LOGO_BASE64 from '../../assets/logoDataUri';
 import scannerImg from '../../assets/scanner.jpg';
 import SCANNER_QR_BASE64 from '../../assets/scannerDataUri';
 import { getMaterialSpecsForCollection } from '../../data/collectionSpecs';
-import { downloadEstimatePdf, printEstimateSheet } from '../../utils/estimatePdfGenerator';
+import { downloadEstimatePdf, printEstimateSheet, shareEstimatePdfOnWhatsApp } from '../../utils/estimatePdfGenerator';
 import { toTitleCase } from '../../utils/autoCapitalize';
 
 const EstimatePreviewModal = ({
@@ -13,6 +14,36 @@ const EstimatePreviewModal = ({
   onShare
 }) => {
   const printSheetRef = useRef(null);
+  const [isSharingWp, setIsSharingWp] = useState(false);
+  const [shareToast, setShareToast] = useState('');
+
+  const handleSharePdfWhatsApp = async () => {
+    if (isSharingWp) return;
+    if (!printSheetRef.current) return;
+
+    try {
+      setIsSharingWp(true);
+      const filename = `${pdfFileName}.pdf`;
+      const res = await shareEstimatePdfOnWhatsApp(printSheetRef.current, filename);
+
+      if (estimate?.id) {
+        fetch(`${API_BASE}/estimates/${estimate.id}/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel: 'whatsapp' })
+        }).catch(() => {});
+      }
+
+      if (res && res.method === 'download_fallback') {
+        setShareToast('PDF downloaded! Drag & drop it into the WhatsApp chat to send.');
+        setTimeout(() => setShareToast(''), 7000);
+      }
+    } catch (err) {
+      console.error('Error sharing estimate on WhatsApp:', err);
+    } finally {
+      setIsSharingWp(false);
+    }
+  };
 
   // Close preview modal on Escape key
   useEffect(() => {
@@ -210,6 +241,27 @@ const EstimatePreviewModal = ({
   return (
     <div className="estimate-modal-overlay estimate-preview-modal-overlay">
       <div className="estimate-modal modal-large estimate-preview-modal-card">
+        {shareToast && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '24px',
+            background: '#065F46',
+            color: '#FFFFFF',
+            padding: '11px 20px',
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+            fontSize: '13px',
+            fontWeight: '700',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            zIndex: 99999
+          }}>
+            <i className="fa-solid fa-circle-check" style={{ color: '#A7F3D0', fontSize: '16px' }}></i>
+            <span>{shareToast}</span>
+          </div>
+        )}
         <div className="estimate-modal-header no-print">
           <h2>
             <i className="fa-solid fa-file-invoice" style={{ color: '#4A2C17' }}></i>
@@ -252,13 +304,19 @@ const EstimatePreviewModal = ({
                 background: '#2E7D32',
                 color: '#fff',
                 border: 'none',
-                cursor: 'pointer',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                cursor: isSharingWp ? 'wait' : 'pointer',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                opacity: isSharingWp ? 0.75 : 1
               }}
-              onClick={() => onShare && onShare(estimate)}
-              title="Share via WhatsApp (Desktop / Web)"
+              onClick={handleSharePdfWhatsApp}
+              disabled={isSharingWp}
+              title={isSharingWp ? "Preparing PDF Document..." : "Send PDF via WhatsApp"}
             >
-              <i className="fa-brands fa-whatsapp"></i>
+              {isSharingWp ? (
+                <i className="fa-solid fa-spinner fa-spin"></i>
+              ) : (
+                <i className="fa-brands fa-whatsapp"></i>
+              )}
             </button>
             <button
               className="btn-action-icon"
