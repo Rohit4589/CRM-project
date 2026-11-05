@@ -2,10 +2,11 @@ import React from 'react';
 
 const SitesFilterBar = ({ statusFilter, setStatusFilter, counts, searchTerm, setSearchTerm }) => {
   const filterTabs = [
-    { key: 'Running', label: 'Running', count: counts.running },
-    { key: 'Complete', label: 'Completed', count: counts.completed },
-    { key: 'Hold / Cancelled', label: 'On Hold', count: counts.onHold },
-    { key: 'All', label: 'All', count: counts.all }
+    { key: 'Running', label: 'Running', count: counts.running || 0 },
+    { key: 'On Hold', label: 'On Hold', count: counts.onHold || 0 },
+    { key: 'Completed', label: 'Completed', count: counts.completed || 0 },
+    { key: 'Cancelled', label: 'Cancelled', count: counts.cancelled || 0 },
+    { key: 'All', label: 'All', count: counts.all || 0 }
   ];
 
   return (
@@ -39,8 +40,8 @@ const SitesFilterBar = ({ statusFilter, setStatusFilter, counts, searchTerm, set
         {filterTabs.map((item) => {
           const isActive = 
             statusFilter === item.key || 
-            (item.key === 'Complete' && statusFilter === 'Completed') || 
-            (item.key === 'Hold / Cancelled' && (statusFilter === 'On Hold' || statusFilter === 'Cancelled'));
+            (item.key === 'Completed' && (statusFilter === 'Complete' || statusFilter === 'Completed')) || 
+            (item.key === 'On Hold' && statusFilter === 'Hold / Cancelled');
 
           return (
             <button

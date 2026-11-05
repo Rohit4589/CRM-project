@@ -41,18 +41,18 @@ function App() {
     }
   });
 
-  // Always land on Dashboard when opening or refreshing the website
+  // Always land on Customers (Sites) when opening or refreshing the website
   const [activeTab, setActiveTab] = useState(() => {
     try {
       localStorage.removeItem('mi_crm_tab');
       const savedUser = localStorage.getItem('mi_crm_user');
       if (savedUser) {
         const parsed = JSON.parse(savedUser);
-        return parsed?.role === 'employee' ? 'emp-dashboard' : 'dashboard';
+        return parsed?.role === 'employee' ? 'emp-dashboard' : 'sites';
       }
-      return 'dashboard';
+      return 'sites';
     } catch {
-      return 'dashboard';
+      return 'sites';
     }
   });
 
@@ -108,13 +108,13 @@ function App() {
     // Restore this user's preferred language, or default to English
     const savedUserLang = localStorage.getItem(getUserLangKey(user)) || 'en';
     setLang(savedUserLang);
-    const defaultTab = user.role === 'employee' ? 'emp-dashboard' : 'dashboard';
+    const defaultTab = user.role === 'employee' ? 'emp-dashboard' : 'sites';
     setActiveTab(defaultTab);
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    setActiveTab('dashboard');
+    setActiveTab('sites');
     localStorage.removeItem('mi_crm_user');
     localStorage.removeItem('mi_crm_tab');
     // Reset back to English default
@@ -142,8 +142,6 @@ function App() {
 
     // Admin Panel Routing
     switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard onNavigate={handleTabChange} user={currentUser} lang={lang} />;
       case 'sites':
       case 'customers':
       case 'projects':
@@ -163,7 +161,7 @@ function App() {
       case 'products-rates':
         return <ProductsRates onNavigate={handleTabChange} />;
       default:
-        return <Dashboard onNavigate={handleTabChange} user={currentUser} lang={lang} onOpenFestivals={() => setShowFestivalModal(true)} />;
+        return <Sites onNavigate={handleTabChange} />;
     }
   };
 

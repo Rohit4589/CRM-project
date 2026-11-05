@@ -605,10 +605,12 @@ const Sites = ({ onNavigate }) => {
     let matchesStatus = true;
     if (statusFilter === 'Running') {
       matchesStatus = site.status === 'Running' || (!site.status || (site.status !== 'Completed' && site.status !== 'On Hold' && site.status !== 'Cancelled'));
+    } else if (statusFilter === 'On Hold' || statusFilter === 'Hold / Cancelled') {
+      matchesStatus = site.status === 'On Hold';
     } else if (statusFilter === 'Complete' || statusFilter === 'Completed') {
       matchesStatus = site.status === 'Completed';
-    } else if (statusFilter === 'Hold / Cancelled' || statusFilter === 'On Hold') {
-      matchesStatus = site.status === 'On Hold' || site.status === 'Cancelled';
+    } else if (statusFilter === 'Cancelled') {
+      matchesStatus = site.status === 'Cancelled';
     } else if (statusFilter === 'All') {
       matchesStatus = true;
     }
@@ -625,8 +627,9 @@ const Sites = ({ onNavigate }) => {
   const counts = {
     all: (sites || []).length,
     running: (sites || []).filter(s => s?.status === 'Running' || (!s?.status || (s?.status !== 'Completed' && s?.status !== 'On Hold' && s?.status !== 'Cancelled'))).length,
+    onHold: (sites || []).filter(s => s?.status === 'On Hold').length,
     completed: (sites || []).filter(s => s?.status === 'Completed').length,
-    onHold: (sites || []).filter(s => s?.status === 'On Hold' || s?.status === 'Cancelled').length
+    cancelled: (sites || []).filter(s => s?.status === 'Cancelled').length
   };
 
   const getStatusBadge = (status) => {
@@ -684,6 +687,25 @@ const Sites = ({ onNavigate }) => {
           }}>
             <span style={{width: '6px', height: '6px', borderRadius: '50%', background: '#b06000'}}></span>
             On Hold
+          </span>
+        );
+      case 'Cancelled':
+        return (
+          <span style={{
+            background: '#F3F4F6',
+            color: '#4B5563',
+            border: '1px solid #D1D5DB',
+            padding: '4px 10px',
+            borderRadius: '20px',
+            fontSize: '11.5px',
+            fontWeight: '600',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{width: '6px', height: '6px', borderRadius: '50%', background: '#9CA3AF'}}></span>
+            Cancelled
           </span>
         );
       default:
