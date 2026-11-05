@@ -2772,7 +2772,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                 {/* Notes */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                    Notes / Site Work Details (Optional)
+                    Notes
                   </label>
                   <input
                     type="text"
@@ -2864,7 +2864,7 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                   gap: '10px',
                   flexWrap: 'wrap'
                 }}>
-                  {/* Attendance Date */}
+                  {/* Date */}
                   <div>
                     <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#4B5563', textTransform: 'uppercase', marginBottom: '4px' }}>
                       Attendance Date *

@@ -766,7 +766,7 @@ const Sites = ({ onNavigate }) => {
           </button>
 
           <button className="btn-primary" onClick={openAddModal} style={{boxShadow: '0 2px 8px rgba(74, 44, 23, 0.28)'}}>
-            <i className="fa-solid fa-plus"></i> Add Site
+            <i className="fa-solid fa-plus"></i> Add Customer
           </button>
         </div>
       </div>

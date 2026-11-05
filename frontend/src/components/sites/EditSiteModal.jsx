@@ -128,7 +128,7 @@ const EditSiteModal = ({
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '16px 22px', borderBottom: '1px solid #E5E7EB'
         }}>
-          <h2 style={{margin: 0, fontSize: '17px', fontWeight: '700', color: '#111827'}}>
+          <h2 style={{margin: 0, fontSize: '15px', fontWeight: '700', color: '#111827'}}>
             Edit Customer: #{orderDisplay}
           </h2>
           <button
@@ -151,18 +151,13 @@ const EditSiteModal = ({
           }}>
             {/* LEFT COLUMN: Customer & Order */}
             <div>
-              <div style={{
-                fontSize: '11px', fontWeight: '700', color: 'var(--gold, #A56A30)',
-                textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px'
-              }}>
-                Customer &amp; Order
-              </div>
+              
 
               {/* Row 1: Order Number & Status */}
               <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
                 <div style={{flex: '1 1 50%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                    Order Number *
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
+                    Order No *
                   </label>
                   <input
                     type="text"
@@ -186,7 +181,7 @@ const EditSiteModal = ({
                     }}
                     style={{
                       width: '100%',
-                      padding: '8px 11px',
+                      padding: '7px 9px',
                       borderRadius: '6px',
                       border: '1.5px solid #D1D5DB',
                       boxSizing: 'border-box',
@@ -201,16 +196,16 @@ const EditSiteModal = ({
                 </div>
 
                 <div style={{flex: '1 1 50%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Status
                   </label>
                   <select
                     value={editingSite.status || 'Running'}
                     onChange={(e) => setEditingSite({...editingSite, status: e.target.value})}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      backgroundColor: '#fff', fontSize: '13px'
+                      backgroundColor: '#fff', fontSize: '12.5px'
                     }}
                   >
                     <option value="Running">Running</option>
@@ -221,10 +216,10 @@ const EditSiteModal = ({
                 </div>
               </div>
 
-              {/* Row 2: Customer Name & Reference Name (Side-by-Side) */}
+              {/* Row 2: Customer Name & Ref / Site (Side-by-Side) */}
               <div style={{display: 'flex', gap: '12px', marginBottom: '8px'}}>
                 <div style={{flex: '1 1 50%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Customer Name *
                   </label>
                   <input
@@ -250,16 +245,16 @@ const EditSiteModal = ({
                       });
                     }}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px', textTransform: 'capitalize'
+                      fontSize: '12.5px', textTransform: 'capitalize'
                     }}
                     required
                   />
                 </div>
 
                 <div style={{flex: '1 1 50%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Reference Name
                   </label>
                   <input
@@ -269,9 +264,9 @@ const EditSiteModal = ({
                     onChange={(e) => setEditingSite({...editingSite, location: e.target.value})}
                     onBlur={() => setEditingSite(prev => ({...prev, location: toTitleCase(prev.location || '')}))}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px', textTransform: 'capitalize'
+                      fontSize: '12.5px', textTransform: 'capitalize'
                     }}
                   />
                 </div>
@@ -290,10 +285,10 @@ const EditSiteModal = ({
                 <span>Folder: <strong style={{color: '#374151'}}>{folderPreview || '___'}</strong></span>
               </div>
 
-              {/* Row 3: Customer Ref From & Contact Person Name (Side-by-Side) */}
+              {/* Row 3: Referral Source & Contact Person (Side-by-Side) */}
               <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
                 <div style={{flex: '1 1 50%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Customer Ref From
                   </label>
                   <select
@@ -316,9 +311,9 @@ const EditSiteModal = ({
                       }
                     }}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      backgroundColor: '#fff', fontSize: '13px'
+                      backgroundColor: '#fff', fontSize: '12.5px'
                     }}
                   >
                     <option value="">-- Referral Source --</option>
@@ -351,7 +346,7 @@ const EditSiteModal = ({
                 </div>
 
                 <div style={{flex: '1 1 50%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Contact Person Name
                   </label>
                   <input
@@ -361,9 +356,9 @@ const EditSiteModal = ({
                     onChange={(e) => handleContactPersonNameChange(e.target.value)}
                     onBlur={() => handleContactPersonNameChange(toTitleCase(primaryContactName || ''))}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px', textTransform: 'capitalize'
+                      fontSize: '12.5px', textTransform: 'capitalize'
                     }}
                   />
                 </div>
@@ -408,9 +403,9 @@ const EditSiteModal = ({
                       }
                     }}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1.5px solid #D97706', boxSizing: 'border-box', outline: 'none',
-                      backgroundColor: '#FFFFFF', fontSize: '13px'
+                      backgroundColor: '#FFFFFF', fontSize: '12.5px'
                     }}
                   >
                     <option value="">-- Choose Referring Customer --</option>
@@ -442,10 +437,10 @@ const EditSiteModal = ({
                 </div>
               )}
 
-              {/* Row 4: Mobile Number & Email Address (Side-by-Side) */}
+              {/* Row 4: Mobile & Email (Side-by-Side) */}
               <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
                 <div style={{flex: '1 1 50%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Mobile Number
                   </label>
                   <input
@@ -454,14 +449,14 @@ const EditSiteModal = ({
                     value={editingSite.phone || ''}
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px'
+                      fontSize: '12.5px'
                     }}
                   />
                 </div>
                 <div style={{flex: '1 1 50%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Email Address
                   </label>
                   <input
@@ -470,9 +465,9 @@ const EditSiteModal = ({
                     value={editingSite.email || ''}
                     onChange={(e) => setEditingSite({...editingSite, email: e.target.value})}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px'
+                      fontSize: '12.5px'
                     }}
                   />
                 </div>
@@ -543,18 +538,13 @@ const EditSiteModal = ({
 
             {/* RIGHT COLUMN: Site Address & Timeline */}
             <div>
-              <div style={{
-                fontSize: '11px', fontWeight: '700', color: 'var(--gold, #A56A30)',
-                textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px'
-              }}>
-                Site Address &amp; Timeline
-              </div>
+              
 
               {/* Site Address with Pick on Map button */}
               <div style={{marginBottom: '12px'}}>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
-                  <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                    Site Address *
+                  <label style={{color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
+                    Address *
                   </label>
                   <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
                     {editingSite.latLng && (
@@ -615,9 +605,9 @@ const EditSiteModal = ({
                   onChange={(e) => setEditingSite({...editingSite, fullAddress: e.target.value})}
                   onBlur={() => setEditingSite(prev => ({...prev, fullAddress: toTitleCase(prev.fullAddress || '')}))}
                   style={{
-                    width: '100%', padding: '8px 11px', borderRadius: '6px',
+                    width: '100%', padding: '7px 9px', borderRadius: '6px',
                     border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                    resize: 'vertical', fontFamily: 'inherit', fontSize: '13px',
+                    resize: 'vertical', fontFamily: 'inherit', fontSize: '12.5px',
                     textTransform: 'capitalize'
                   }}
                   required
@@ -637,7 +627,7 @@ const EditSiteModal = ({
               {/* Start Date, Target Date & Progress */}
               <div style={{display: 'flex', gap: '10px', marginBottom: '12px'}}>
                 <div style={{flex: '1 1 35%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Start Date
                   </label>
                   <input
@@ -645,13 +635,13 @@ const EditSiteModal = ({
                     value={editingSite.startDate || ''}
                     onChange={(e) => setEditingSite({...editingSite, startDate: e.target.value})}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
-                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
+                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '12.5px'
                     }}
                   />
                 </div>
                 <div style={{flex: '1 1 35%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Target Date
                   </label>
                   <input
@@ -659,13 +649,13 @@ const EditSiteModal = ({
                     value={editingSite.targetDate || ''}
                     onChange={(e) => setEditingSite({...editingSite, targetDate: e.target.value})}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
-                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
+                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '12.5px'
                     }}
                   />
                 </div>
                 <div style={{flex: '1 1 30%'}}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Progress %
                   </label>
                   <input
@@ -675,8 +665,8 @@ const EditSiteModal = ({
                     value={editingSite.progress !== undefined ? editingSite.progress : 0}
                     onChange={(e) => setEditingSite({...editingSite, progress: Number(e.target.value)})}
                     style={{
-                      width: '100%', padding: '8px 11px', borderRadius: '6px',
-                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '13px'
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
+                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none', fontSize: '12.5px'
                     }}
                   />
                 </div>
@@ -692,11 +682,11 @@ const EditSiteModal = ({
                   onChange={(e) => setEditingSite({...editingSite, status: e.target.value})}
                   style={{
                     width: '100%',
-                    padding: '8px 11px',
+                    padding: '7px 9px',
                     borderRadius: '6px',
                     border: '1.5px solid #D1C2AF',
                     background: '#FAF8F5',
-                    fontSize: '13px',
+                    fontSize: '12.5px',
                     fontWeight: '700',
                     color: editingSite.status === 'Completed' ? '#5F6368' : (editingSite.status === 'On Hold' ? '#B45309' : (editingSite.status === 'Cancelled' ? '#4B5563' : '#1E8E3E')),
                     cursor: 'pointer',
@@ -715,7 +705,7 @@ const EditSiteModal = ({
 
               {/* Notes */}
               <div style={{marginBottom: '12px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                   Notes
                 </label>
                 <textarea
@@ -724,9 +714,9 @@ const EditSiteModal = ({
                   value={editingSite.notes || ''}
                   onChange={(e) => setEditingSite({...editingSite, notes: e.target.value})}
                   style={{
-                    width: '100%', padding: '8px 11px', borderRadius: '6px',
+                    width: '100%', padding: '7px 9px', borderRadius: '6px',
                     border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                    resize: 'vertical', fontFamily: 'inherit', fontSize: '13px'
+                    resize: 'vertical', fontFamily: 'inherit', fontSize: '12.5px'
                   }}
                 ></textarea>
               </div>
@@ -740,7 +730,7 @@ const EditSiteModal = ({
               onClick={() => setEditingSite(null)}
               style={{
                 padding: '8px 16px', borderRadius: '6px', border: '1px solid #D1D5DB',
-                background: '#fff', color: '#374151', cursor: 'pointer', fontWeight: '500', fontSize: '13px'
+                background: '#fff', color: '#374151', cursor: 'pointer', fontWeight: '500', fontSize: '12.5px'
               }}
             >
               Cancel
@@ -748,7 +738,7 @@ const EditSiteModal = ({
             <button
               type="submit"
               className="btn-primary"
-              style={{padding: '8px 20px', fontSize: '13px'}}
+              style={{padding: '8px 20px', fontSize: '12.5px'}}
             >
               <i className="fa-solid fa-check"></i> Update Customer
             </button>
