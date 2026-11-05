@@ -37,7 +37,7 @@ const SitesTable = ({
     }}>
       <table style={{
         width: '100%',
-        minWidth: '1050px',
+        minWidth: '1100px',
         borderCollapse: 'collapse',
         tableLayout: 'fixed',
         margin: 0
@@ -52,13 +52,13 @@ const SitesTable = ({
             textTransform: 'uppercase',
             letterSpacing: '0.8px'
           }}>
-            <th style={{padding: '12px 14px', width: '8%', minWidth: '70px'}}>Code</th>
-            <th style={{padding: '12px 14px', width: '22%', minWidth: '180px'}}>Client / Site</th>
-            <th style={{padding: '12px 14px', width: '15%', minWidth: '130px'}}>Contact</th>
-            <th style={{padding: '12px 14px', width: '22%', minWidth: '160px'}}>Address</th>
+            <th style={{padding: '12px 14px', width: '7%', minWidth: '65px'}}>Code</th>
+            <th style={{padding: '12px 14px', width: '22%', minWidth: '170px'}}>Client / Site</th>
+            <th style={{padding: '12px 14px', width: '14%', minWidth: '120px'}}>Contact</th>
+            <th style={{padding: '12px 14px', width: '22%', minWidth: '150px'}}>Address</th>
             <th style={{padding: '12px 14px', width: '10%', minWidth: '95px'}}>Start Date</th>
             <th style={{padding: '12px 14px', width: '10%', minWidth: '95px'}}>Status</th>
-            <th style={{padding: '12px 14px', width: '13%', minWidth: '135px', textAlign: 'right'}}>Actions</th>
+            <th style={{padding: '12px 14px', width: '15%', minWidth: '160px', textAlign: 'right'}}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -286,7 +286,7 @@ const SitesTable = ({
                         <div style={{ padding: '4px 10px', fontSize: '10px', fontWeight: '800', color: '#78716C', textTransform: 'uppercase' }}>
                           Shift Status:
                         </div>
-                        {['Running', 'Completed', 'On Hold'].map((st) => (
+                        {['Running', 'On Hold', 'Completed', 'Cancelled'].map((st) => (
                           <button
                             key={st}
                             type="button"
@@ -302,7 +302,7 @@ const SitesTable = ({
                               padding: '7px 12px',
                               border: 'none',
                               background: site.status === st ? '#FAF4EE' : 'transparent',
-                              color: st === 'Running' ? '#1E8E3E' : (st === 'Completed' ? '#15803D' : '#B45309'),
+                              color: st === 'Running' ? '#1E8E3E' : (st === 'On Hold' ? '#B45309' : (st === 'Completed' ? '#5F6368' : '#4B5563')),
                               fontSize: '12px',
                               fontWeight: site.status === st ? '800' : '600',
                               cursor: 'pointer',
@@ -324,13 +324,52 @@ const SitesTable = ({
                 </td>
 
                 {/* Actions - View, Folder, and 3-Dots Dropdown Menu */}
-                <td style={{padding: '12px 14px', minWidth: '135px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap'}}>
+                <td style={{padding: '12px 14px', minWidth: '160px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap'}}>
                   <div style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'flex-end',
                     gap: '6px'
                   }}>
+                    {/* Reopen File button (symbol only) for Cancelled customers */}
+                    {site.status === 'Cancelled' && (
+                      <button
+                        type="button"
+                        title="Reopen Customer File"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onShiftStatus && onShiftStatus(site, 'Running');
+                        }}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          background: '#FAF8F5',
+                          border: '1px solid #D1C2AF',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          color: '#4A2C17',
+                          fontSize: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.15s ease',
+                          padding: 0,
+                          flexShrink: 0
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#4A2C17';
+                          e.currentTarget.style.borderColor = '#4A2C17';
+                          e.currentTarget.style.color = '#FFFFFF';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#FAF8F5';
+                          e.currentTarget.style.borderColor = '#D1C2AF';
+                          e.currentTarget.style.color = '#4A2C17';
+                        }}
+                      >
+                        <i className="fa-solid fa-rotate-left"></i>
+                      </button>
+                    )}
                     {/* 1. View Details */}
                     <button
                       type="button"
@@ -482,6 +521,48 @@ const SitesTable = ({
                               <span>Customer Actions</span>
                               <span style={{ fontSize: '10px', color: '#9CA3AF', fontFamily: 'monospace' }}>#{site.siteCode || site.id}</span>
                             </div>
+                            {site.status === 'Cancelled' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  onShiftStatus && onShiftStatus(site, 'Running');
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '10px',
+                                  padding: '9px 14px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: '#4A2C17',
+                                  fontSize: '13px',
+                                  fontWeight: '700',
+                                  cursor: 'pointer',
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  transition: 'all 0.12s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = '#FAF4EE'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                              >
+                                <span style={{
+                                  width: '26px',
+                                  height: '26px',
+                                  borderRadius: '6px',
+                                  background: '#FAF4EE',
+                                  color: '#4A2C17',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '12px',
+                                  border: '1px solid #EAD8C7'
+                                }}>
+                                  <i className="fa-solid fa-rotate-left"></i>
+                                </span>
+                                <span>Reopen File (Move to Running)</span>
+                              </button>
+                            )}
 
                             {/* 1. Estimate */}
                             <button

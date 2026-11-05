@@ -45,14 +45,14 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lan
         <div className="sidebar-brand">
           <div 
             className="sidebar-brand-inner"
-            onClick={(e) => handleItemClick(e, isEmployee ? 'emp-dashboard' : 'dashboard')}
+            onClick={(e) => handleItemClick(e, isEmployee ? 'emp-dashboard' : 'sites')}
             style={{ cursor: 'pointer' }}
-            title="Go to Dashboard"
+            title="Go to Customers"
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                handleItemClick(e, isEmployee ? 'emp-dashboard' : 'dashboard');
+                handleItemClick(e, isEmployee ? 'emp-dashboard' : 'sites');
               }
             }}
           >
@@ -135,16 +135,6 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onClose, user, onLogout, lan
                ADMIN FULL NAVIGATION
                ========================================= */
             <>
-              <div className="menu-group">
-                <div className="menu-title">{t.main}</div>
-                <a 
-                  href="#" 
-                  className={`menu-item ${activeTab === 'dashboard' ? 'active' : ''}`} 
-                  onClick={(e) => handleItemClick(e, 'dashboard')}
-                >
-                  <i className="fa-solid fa-chart-pie"></i> {t.dashboard}
-                </a>
-              </div>
 
               <div className="menu-group">
                 <div className="menu-title">{t.management}</div>

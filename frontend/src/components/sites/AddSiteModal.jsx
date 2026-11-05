@@ -219,8 +219,9 @@ const AddSiteModal = ({
                     }}
                   >
                     <option value="Running">Running</option>
-                    <option value="Completed">Completed</option>
                     <option value="On Hold">On Hold</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
                   </select>
                 </div>
               </div>

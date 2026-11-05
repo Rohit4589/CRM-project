@@ -214,8 +214,9 @@ const EditSiteModal = ({
                     }}
                   >
                     <option value="Running">Running</option>
-                    <option value="Completed">Completed</option>
                     <option value="On Hold">On Hold</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
                   </select>
                 </div>
               </div>
@@ -697,14 +698,15 @@ const EditSiteModal = ({
                     background: '#FAF8F5',
                     fontSize: '13px',
                     fontWeight: '700',
-                    color: editingSite.status === 'Completed' ? '#15803D' : (editingSite.status === 'On Hold' ? '#B45309' : '#1E8E3E'),
+                    color: editingSite.status === 'Completed' ? '#5F6368' : (editingSite.status === 'On Hold' ? '#B45309' : (editingSite.status === 'Cancelled' ? '#4B5563' : '#1E8E3E')),
                     cursor: 'pointer',
                     outline: 'none'
                   }}
                 >
                   <option value="Running" style={{ color: '#1E8E3E', fontWeight: '700' }}>● Running</option>
-                  <option value="Completed" style={{ color: '#15803D', fontWeight: '700' }}>✓ Completed</option>
                   <option value="On Hold" style={{ color: '#B45309', fontWeight: '700' }}>⏸ On Hold</option>
+                  <option value="Completed" style={{ color: '#5F6368', fontWeight: '700' }}>✓ Completed</option>
+                  <option value="Cancelled" style={{ color: '#4B5563', fontWeight: '700' }}>✕ Cancelled</option>
                 </select>
                 <div style={{ fontSize: '11px', color: '#78716C', marginTop: '3px' }}>
                   Shifting this customer automatically updates their To-Do List folder and all linked Estimates.
