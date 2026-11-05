@@ -1016,4 +1016,20 @@ body[data-lang="hi"] textarea {
     border-bottom: 1.5px solid #94A3B8 !important;
   }
 }
-
+
+
+/* Global Compact Design System */
+.page-title {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+.page-header {
+  margin-bottom: 12px !important;
+}
+
+.page-header p,
+.page-subtitle {
+  display: none !important;
+}

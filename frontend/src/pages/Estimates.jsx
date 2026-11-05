@@ -709,8 +709,7 @@ const Estimates = ({ onNavigate }) => {
         <>
           {/* Page Header */}
           <div className="estimates-header">
-            <h1>Estimates</h1>
-            <p>Client budget proposals</p>
+            <h1 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>Estimates</h1>
           </div>
 
           {/* KPI Cards */}

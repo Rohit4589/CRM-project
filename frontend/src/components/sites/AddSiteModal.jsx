@@ -129,10 +129,10 @@ const AddSiteModal = ({
         {/* Modal Header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '14px 18px', borderBottom: '1px solid #E5E7EB', background: '#FAF8F5'
+          padding: '10px 16px', borderBottom: '1px solid #E5E7EB', background: '#FAF8F5'
         }}>
-          <h2 style={{margin: 0, fontSize: '17px', fontWeight: '700', color: '#111827'}}>
-            Add New Customer / Site
+          <h2 style={{margin: 0, fontSize: '15px', fontWeight: '700', color: '#111827'}}>
+            New Customer
           </h2>
           <button
             onClick={onClose}
@@ -156,18 +156,13 @@ const AddSiteModal = ({
           }}>
             {/* LEFT COLUMN: Customer & Order */}
             <div style={{ minWidth: 0, width: '100%' }}>
-              <div style={{
-                fontSize: '11px', fontWeight: '700', color: 'var(--gold, #A56A30)',
-                textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px'
-              }}>
-                Customer &amp; Order
-              </div>
+              
 
               {/* Row 1: Order Number & Status */}
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '12px', width: '100%', boxSizing: 'border-box'}}>
                 <div style={{ minWidth: 0 }}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                    Order Number *
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
+                    Order No *
                   </label>
                   <input
                     type="text"
@@ -191,7 +186,7 @@ const AddSiteModal = ({
                     }}
                     style={{
                       width: '100%',
-                      padding: '8px 10px',
+                      padding: '7px 9px',
                       borderRadius: '6px',
                       border: '1.5px solid #D1D5DB',
                       boxSizing: 'border-box',
@@ -206,16 +201,16 @@ const AddSiteModal = ({
                 </div>
 
                 <div style={{ minWidth: 0 }}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Status
                   </label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({...formData, status: e.target.value})}
                     style={{
-                      width: '100%', padding: '8px 10px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      backgroundColor: '#fff', fontSize: '13px'
+                      backgroundColor: '#fff', fontSize: '12.5px'
                     }}
                   >
                     <option value="Running">Running</option>
@@ -226,10 +221,10 @@ const AddSiteModal = ({
                 </div>
               </div>
 
-              {/* Row 2: Customer Name & Reference Name (Side-by-Side) */}
+              {/* Row 2: Customer Name & Ref / Site (Side-by-Side) */}
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '8px', width: '100%', boxSizing: 'border-box'}}>
                 <div style={{ minWidth: 0 }}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Customer Name *
                   </label>
                   <input
@@ -255,16 +250,16 @@ const AddSiteModal = ({
                       });
                     }}
                     style={{
-                      width: '100%', padding: '8px 10px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px', textTransform: 'capitalize'
+                      fontSize: '12.5px', textTransform: 'capitalize'
                     }}
                     required
                   />
                 </div>
 
                 <div style={{ minWidth: 0 }}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Reference Name
                   </label>
                   <input
@@ -274,9 +269,9 @@ const AddSiteModal = ({
                     onChange={(e) => setFormData({...formData, location: e.target.value})}
                     onBlur={() => setFormData(prev => ({...prev, location: toTitleCase(prev.location || '')}))}
                     style={{
-                      width: '100%', padding: '8px 10px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px', textTransform: 'capitalize'
+                      fontSize: '12.5px', textTransform: 'capitalize'
                     }}
                   />
                 </div>
@@ -295,10 +290,10 @@ const AddSiteModal = ({
                 <span>Folder: <strong style={{color: '#374151'}}>{folderPreview || '___'}</strong></span>
               </div>
 
-              {/* Row 3: Customer Ref From & Contact Person Name (Side-by-Side) */}
+              {/* Row 3: Referral Source & Contact Person (Side-by-Side) */}
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '12px', width: '100%', boxSizing: 'border-box'}}>
                 <div style={{ minWidth: 0 }}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Customer Ref From
                   </label>
                   <select
@@ -321,9 +316,9 @@ const AddSiteModal = ({
                       }
                     }}
                     style={{
-                      width: '100%', padding: '8px 10px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      backgroundColor: '#fff', fontSize: '13px'
+                      backgroundColor: '#fff', fontSize: '12.5px'
                     }}
                   >
                     <option value="">-- Referral Source --</option>
@@ -356,7 +351,7 @@ const AddSiteModal = ({
                 </div>
 
                 <div style={{ minWidth: 0 }}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Contact Person Name
                   </label>
                   <input
@@ -366,9 +361,9 @@ const AddSiteModal = ({
                     onChange={(e) => handleContactPersonNameChange(e.target.value)}
                     onBlur={() => handleContactPersonNameChange(toTitleCase(primaryContactName || ''))}
                     style={{
-                      width: '100%', padding: '8px 10px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px', textTransform: 'capitalize'
+                      fontSize: '12.5px', textTransform: 'capitalize'
                     }}
                   />
                 </div>
@@ -415,7 +410,7 @@ const AddSiteModal = ({
                     style={{
                       width: '100%', padding: '8px 11px', borderRadius: '6px',
                       border: '1.5px solid #D97706', boxSizing: 'border-box', outline: 'none',
-                      backgroundColor: '#FFFFFF', fontSize: '13px'
+                      backgroundColor: '#FFFFFF', fontSize: '12.5px'
                     }}
                   >
                     <option value="">-- Choose Referring Customer --</option>
@@ -447,10 +442,10 @@ const AddSiteModal = ({
                 </div>
               )}
 
-              {/* Row 4: Mobile Number & Email Address (Side-by-Side) */}
+              {/* Row 4: Mobile & Email (Side-by-Side) */}
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '12px', width: '100%', boxSizing: 'border-box'}}>
                 <div style={{ minWidth: 0 }}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Mobile Number
                   </label>
                   <input
@@ -459,14 +454,14 @@ const AddSiteModal = ({
                     value={formData.phone || ''}
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     style={{
-                      width: '100%', padding: '8px 10px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px'
+                      fontSize: '12.5px'
                     }}
                   />
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Email Address
                   </label>
                   <input
@@ -475,9 +470,9 @@ const AddSiteModal = ({
                     value={formData.email || ''}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     style={{
-                      width: '100%', padding: '8px 10px', borderRadius: '6px',
+                      width: '100%', padding: '7px 9px', borderRadius: '6px',
                       border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      fontSize: '13px'
+                      fontSize: '12.5px'
                     }}
                   />
                 </div>
@@ -548,18 +543,13 @@ const AddSiteModal = ({
 
             {/* RIGHT COLUMN: Site Address & Timeline */}
             <div style={{ minWidth: 0, width: '100%' }}>
-              <div style={{
-                fontSize: '11px', fontWeight: '700', color: 'var(--gold, #A56A30)',
-                textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px'
-              }}>
-                Site Address &amp; Timeline
-              </div>
+              
 
               {/* Site Address with Pick on Map button */}
               <div style={{marginBottom: '12px'}}>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '6px'}}>
-                  <label style={{color: '#374151', fontWeight: '600', fontSize: '12px'}}>
-                    Site Address *
+                  <label style={{color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
+                    Address *
                   </label>
                   <div style={{display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap'}}>
                     {formData.latLng && (
@@ -622,9 +612,9 @@ const AddSiteModal = ({
                   onChange={(e) => setFormData({...formData, fullAddress: e.target.value})}
                   onBlur={() => setFormData(prev => ({...prev, fullAddress: toTitleCase(prev.fullAddress || '')}))}
                   style={{
-                    width: '100%', padding: '8px 10px', borderRadius: '6px',
+                    width: '100%', padding: '7px 9px', borderRadius: '6px',
                     border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                    resize: 'vertical', fontFamily: 'inherit', fontSize: '13px',
+                    resize: 'vertical', fontFamily: 'inherit', fontSize: '12.5px',
                     textTransform: 'capitalize'
                   }}
                   required
@@ -644,7 +634,7 @@ const AddSiteModal = ({
               {/* Start Date & Target Date */}
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '12px', width: '100%', boxSizing: 'border-box'}}>
                 <div style={{ minWidth: 0 }}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Start Date
                   </label>
                   <input
@@ -658,7 +648,7 @@ const AddSiteModal = ({
                   />
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                  <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                     Target Date
                   </label>
                   <input
@@ -675,7 +665,7 @@ const AddSiteModal = ({
 
               {/* Notes */}
               <div style={{marginBottom: '12px'}}>
-                <label style={{display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px'}}>
+                <label style={{display: 'block', marginBottom: '3px', color: '#4B5563', fontWeight: '600', fontSize: '11px'}}>
                   Notes
                 </label>
                 <textarea
@@ -686,7 +676,7 @@ const AddSiteModal = ({
                   style={{
                     width: '100%', padding: '8px 11px', borderRadius: '6px',
                     border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                    resize: 'vertical', fontFamily: 'inherit', fontSize: '13px'
+                    resize: 'vertical', fontFamily: 'inherit', fontSize: '12.5px'
                   }}
                 ></textarea>
               </div>
@@ -700,7 +690,7 @@ const AddSiteModal = ({
               onClick={onClose}
               style={{
                 padding: '8px 16px', borderRadius: '6px', border: '1px solid #D1D5DB',
-                background: '#fff', color: '#374151', cursor: 'pointer', fontWeight: '500', fontSize: '13px'
+                background: '#fff', color: '#374151', cursor: 'pointer', fontWeight: '500', fontSize: '12.5px'
               }}
             >
               Cancel
@@ -708,7 +698,7 @@ const AddSiteModal = ({
             <button
               type="submit"
               className="btn-primary"
-              style={{padding: '8px 20px', fontSize: '13px'}}
+              style={{padding: '8px 20px', fontSize: '12.5px'}}
             >
               <i className="fa-solid fa-check"></i> Save Customer
             </button>

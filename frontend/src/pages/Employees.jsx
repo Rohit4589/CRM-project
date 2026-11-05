@@ -245,7 +245,7 @@ const Employees = () => {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h1 className="page-title" style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--navy, #111827)' }}>
+            <h1 className="page-title" style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--navy, #111827)' }}>
               Employees
             </h1>
             <span style={{
@@ -505,11 +505,11 @@ const Employees = () => {
 
             <form onSubmit={handleAddEmployee} onKeyDown={handleFormKeyDown}>
 
-              {/* Employee ID (3 or 4 digits) */}
+              {/* Emp ID */}
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                   <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>
-                    Employee ID (3 or 4 digits)
+                    Emp ID
                   </label>
                   <span style={{ color: '#6B7280', fontWeight: 'normal', fontSize: '11px' }}>
                     Optional (auto-assigned if blank)
@@ -540,7 +540,7 @@ const Employees = () => {
 
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontWeight: '600', fontSize: '12px' }}>
-                  Full Name *
+                  Name *
                 </label>
                 <input
                   type="text"
@@ -556,7 +556,7 @@ const Employees = () => {
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                   <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>
-                    Mobile Number
+                    Mobile
                   </label>
                   <span style={{ color: '#6B7280', fontWeight: 'normal', fontSize: '11px' }}>
                     Optional
@@ -584,7 +584,7 @@ const Employees = () => {
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                   <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>
-                    Login Password / PIN *
+                    Password / PIN *
                   </label>
                   <span style={{ color: 'var(--gold, #A56A30)', fontWeight: '600', fontSize: '11px' }}>
                     Admin creates password
@@ -626,7 +626,7 @@ const Employees = () => {
               <div style={{ display: 'flex', gap: '15px', marginBottom: '14px' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                    <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>Trade / Role</label>
+                    <label style={{ color: '#374151', fontWeight: '600', fontSize: '12px' }}>Role</label>
                     <span style={{ color: '#6B7280', fontWeight: 'normal', fontSize: '11px' }}>Optional</span>
                   </div>
                   <input
