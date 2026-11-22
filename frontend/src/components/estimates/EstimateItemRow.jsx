@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { toTitleCase } from '../../utils/autoCapitalize';
 
 // Helper to strip unwanted leading zeros (e.g. "0100" -> "100", "05" -> "5", "00" -> "0")
 const cleanNumberInput = (v) => {
@@ -6,13 +7,20 @@ const cleanNumberInput = (v) => {
   return String(v).replace(/^0+(?=\d)/, '');
 };
 
-// Helper to auto-capitalize every word (Title Case)
-const capitalizeWords = (str) => {
-  if (!str) return '';
-  return str.replace(/(^\s*|[\s\n\r/\\-]+)([a-z])/g, (match, separator, letter) => {
-    return separator + letter.toUpperCase();
-  });
-};
+// Minor helping words to keep lowercase in title case (unless at sentence start)
+const MINOR_WORDS = new Set([
+  'a', 'an', 'the',
+  'and', 'or', 'nor', 'but',
+  'of', 'in', 'on', 'at', 'to', 'for', 'by', 'with', 'from', 'into', 'onto', 'as', 'per', 'etc'
+]);
+
+// Interior industry acronyms to keep or format as uppercase
+const KNOWN_ACRONYMS = new Set([
+  'SS', 'BWR', 'PVC', 'LED', 'PU', 'MS', 'CNC', 'HDHMR', 'MDF', 'GI', 'CP', 'WPC', 'ACP', 'MM', 'RFT', 'SQFT', 'NOS'
+]);
+
+// Use central toTitleCase
+const toSmartTitleCase = toTitleCase;
 
 const EstimateItemRow = ({
   item,
@@ -27,7 +35,8 @@ const EstimateItemRow = ({
   onMoveUp,
   onMoveDown,
   onChange,
-  onRemove
+  onRemove,
+  onOpenCreateProduct
 }) => {
   // Standard units plus any custom unit label entered
   const standardUnits = ['Sq.Ft.', 'SET', 'Nos', 'Pcs', 'RFT.', 'APPROX', 'Meter', 'Pair', 'Sheet', 'Lump Sum'];
@@ -71,58 +80,78 @@ const EstimateItemRow = ({
     };
   }, [showCatalogDropdown]);
 
-  // Extract unique categories from catalog products, putting current room's category first
-  const cleanRoomUpper = (roomName || '').trim().toUpperCase();
+  // Filter catalog products for auto-recommendations as user types (All in 1 list)
+  const query = (item.productName || '').trim();
+  const normalizedQuery = query.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-  // Filter catalog products for auto-recommendations as user types
-  const query = (item.productName || '').trim().toUpperCase();
   const productSuggestions = useMemo(() => {
-    if (!query) {
-      const inRoom = catalogProducts.filter(p => {
-        const catNames = (Array.isArray(p.category_names) && p.category_names.length > 0)
-          ? p.category_names.map(c => (c || '').toUpperCase())
-          : [(p.category || '').toUpperCase()];
-        return catNames.includes(cleanRoomUpper);
-      });
-      return inRoom.length > 0 ? inRoom.slice(0, 8) : catalogProducts.slice(0, 8);
+    if (!catalogProducts || catalogProducts.length === 0) return [];
+
+    if (!normalizedQuery) {
+      // Return ALL products in catalog, sorted alphabetically
+      return [...catalogProducts].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
-    const startsWith = [];
-    const includes = [];
-    for (const p of catalogProducts) {
-      const pUpper = (p.name || '').toUpperCase();
-      if (pUpper.startsWith(query)) {
-        startsWith.push(p);
-      } else if (pUpper.includes(query)) {
-        includes.push(p);
+
+    const seen = new Set();
+    const result = [];
+    const addProduct = (p) => {
+      const key = p.id || p.name;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(p);
       }
-      if (startsWith.length + includes.length >= 14) break;
+    };
+
+    const qUpper = query.toUpperCase();
+
+    // 1. Starts with query
+    for (const p of catalogProducts) {
+      if ((p.name || '').toUpperCase().startsWith(qUpper)) addProduct(p);
     }
-    return [...startsWith, ...includes];
-  }, [query, catalogProducts, cleanRoomUpper]);
+    // 2. Substring match
+    for (const p of catalogProducts) {
+      if ((p.name || '').toUpperCase().includes(qUpper)) addProduct(p);
+    }
+    // 3. Space-insensitive match (e.g. 'tv' or 't v' matches 'T V UNIT')
+    for (const p of catalogProducts) {
+      const pNorm = (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (pNorm.includes(normalizedQuery)) addProduct(p);
+    }
 
-  const rawCats = Array.from(new Set(catalogProducts.flatMap(p =>
-    (Array.isArray(p.category_names) && p.category_names.length > 0)
-      ? p.category_names
-      : [p.category || 'General']
-  )));
-  const categories = rawCats.sort((a, b) => {
-    const aMatch = a.toUpperCase() === cleanRoomUpper;
-    const bMatch = b.toUpperCase() === cleanRoomUpper;
-    if (aMatch && !bMatch) return -1;
-    if (!aMatch && bMatch) return 1;
-    return a.localeCompare(b);
-  });
+    return result;
+  }, [query, normalizedQuery, catalogProducts]);
 
-  // Filter catalog products for the searchable catalog dropdown popup
+  // Filter catalog products for the 3-lines catalog popup
   const filteredCatalogProducts = useMemo(() => {
-    if (!catalogSearch.trim()) return catalogProducts;
-    const q = catalogSearch.trim().toUpperCase();
-    return catalogProducts.filter(p => {
-      const nameMatch = (p.name || '').toUpperCase().includes(q);
-      const catMatch = (p.category || '').toUpperCase().includes(q) ||
-        (Array.isArray(p.category_names) && p.category_names.some(c => c.toUpperCase().includes(q)));
-      return nameMatch || catMatch;
-    });
+    if (!catalogProducts || catalogProducts.length === 0) return [];
+    if (!catalogSearch.trim()) {
+      return [...catalogProducts].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+    const qUpper = catalogSearch.trim().toUpperCase();
+    const qNorm = catalogSearch.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    const seen = new Set();
+    const result = [];
+    const addProduct = (p) => {
+      const key = p.id || p.name;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(p);
+      }
+    };
+
+    for (const p of catalogProducts) {
+      if ((p.name || '').toUpperCase().startsWith(qUpper)) addProduct(p);
+    }
+    for (const p of catalogProducts) {
+      if ((p.name || '').toUpperCase().includes(qUpper)) addProduct(p);
+    }
+    for (const p of catalogProducts) {
+      const pNorm = (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (pNorm.includes(qNorm)) addProduct(p);
+    }
+
+    return result;
   }, [catalogProducts, catalogSearch]);
 
   // When a catalog product is selected
@@ -279,7 +308,7 @@ const EstimateItemRow = ({
 
     onChange({
       ...item,
-      productName: selectedName,
+      productName: toTitleCase(selectedName),
       description: newDesc,
       essentialDesc,
       signatureDesc,
@@ -371,12 +400,19 @@ const EstimateItemRow = ({
               data-nav-item="true"
               data-col="0"
               value={item.productName || ''}
-              placeholder="PRODUCT NAME..."
+              placeholder="Product Name..."
               onFocus={() => setShowProductSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowProductSuggestions(false), 200)}
+              onBlur={() => {
+                setTimeout(() => setShowProductSuggestions(false), 200);
+                if (item.productName) {
+                  const formatted = toTitleCase(item.productName);
+                  if (formatted !== item.productName) {
+                    onChange({ ...item, productName: formatted });
+                  }
+                }
+              }}
               onChange={(e) => {
-                const val = e.target.value.toUpperCase();
-                onChange({ ...item, productName: val });
+                onChange({ ...item, productName: e.target.value });
                 setShowProductSuggestions(true);
               }}
               onKeyDown={(e) => {
@@ -408,8 +444,8 @@ const EstimateItemRow = ({
               title="Type letters (e.g. 'b' for Bed) to get catalog recommendations"
             />
 
-            {/* Floating Suggestions / Recommendations Menu */}
-            {showProductSuggestions && productSuggestions.length > 0 && (
+            {/* Floating Suggestions Dropdown (All In 1 - No Room Tags) */}
+            {showProductSuggestions && (
               <div
                 style={{
                   position: 'absolute',
@@ -417,92 +453,131 @@ const EstimateItemRow = ({
                     ? { bottom: '100%', marginBottom: '4px' }
                     : { top: '100%', marginTop: '3px' }),
                   left: 0,
-                  minWidth: '260px',
-                  maxWidth: '340px',
-                  maxHeight: '220px',
+                  width: '320px',
+                  maxHeight: '260px',
                   overflowY: 'auto',
                   background: '#FFFFFF',
-                  border: '1px solid #DCD4CA',
-                  borderRadius: '6px',
-                  boxShadow: '0 8px 24px rgba(43, 37, 32, 0.25)',
+                  border: '1.5px solid #4A2C17',
+                  borderRadius: '8px',
+                  boxShadow: '0 10px 28px rgba(43, 37, 32, 0.28)',
                   zIndex: 99999,
                   textAlign: 'left'
                 }}
               >
+                {/* 1. TOP ITEM: + Create New Product Option */}
                 <div
-                  style={{
-                    padding: '5px 8px',
-                    fontSize: '10px',
-                    fontWeight: '700',
-                    color: '#8C827A',
-                    background: '#FAF8F5',
-                    borderBottom: '1px solid #F0ECE6',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    display: 'flex',
-                    justifyContent: 'space-between'
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setShowProductSuggestions(false);
+                    if (onOpenCreateProduct) {
+                      onOpenCreateProduct({
+                        itemIndex: index,
+                        defaultRoomName: roomName,
+                        initialName: item.productName || ''
+                      });
+                    }
                   }}
+                  style={{
+                    padding: '8.5px 12px',
+                    cursor: 'pointer',
+                    background: '#FAF5EE',
+                    borderBottom: '1.5px solid #EAE2D8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    color: '#4A2C17',
+                    fontWeight: '700',
+                    fontSize: '12px',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 2,
+                    transition: 'background 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F2E8DC'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#FAF5EE'; }}
                 >
-                  <span>Recommended Products</span>
-                  <span>{productSuggestions.length} items</span>
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    background: '#4A2C17',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    flexShrink: 0
+                  }}>
+                    <i className="fa-solid fa-plus"></i>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {query ? (
+                      <span>Create <strong style={{ color: '#2B2520' }}>"{query}"</strong> as New Product...</span>
+                    ) : (
+                      <span>+ Create New Product</span>
+                    )}
+                  </div>
                 </div>
-                {productSuggestions.map((prod) => {
-                  const rate = Number(
-                    furnitureTier === 'Essential Collection' || furnitureTier === 'Modern'
-                      ? (prod.essentialRate || prod.modern)
-                      : furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury'
-                        ? (prod.eliteRate || prod.luxury)
-                        : (prod.signatureRate || prod.luxuryModern)
-                  ) || 0;
-                  const unit = prod.defaultUnit || 'Sq.Ft.';
-                  return (
-                    <div
-                      key={prod.name}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        handleProductSelect(prod.name);
-                        setShowProductSuggestions(false);
-                      }}
-                      style={{
-                        padding: '7px 10px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid #F5F1EC',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '8px',
-                        transition: 'background 0.15s ease'
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#F9F6F0'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: '700', fontSize: '11.5px', color: '#2B2520' }}>
-                          {prod.name}
-                        </div>
-                        {prod.category && (
-                          <div style={{ fontSize: '10px', color: '#8C827A', marginTop: '1px' }}>
-                            📂 {prod.category}
+
+                {/* 2. All Catalog Products (Single Clean List - No Room Tags) */}
+                {productSuggestions.length === 0 ? (
+                  <div style={{ padding: '16px', textAlign: 'center', color: '#8C827A', fontSize: '11.5px' }}>
+                    No products matching "{query}"
+                  </div>
+                ) : (
+                  productSuggestions.map((prod) => {
+                    const rate = Number(
+                      furnitureTier === 'Essential Collection' || furnitureTier === 'Modern'
+                        ? (prod.essentialRate || prod.modern)
+                        : furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury'
+                          ? (prod.eliteRate || prod.luxury)
+                          : (prod.signatureRate || prod.luxuryModern)
+                    ) || 0;
+                    const unit = prod.defaultUnit || 'Sq.Ft.';
+                    return (
+                      <div
+                        key={prod.id || prod.name}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleProductSelect(prod.name);
+                          setShowProductSuggestions(false);
+                        }}
+                        style={{
+                          padding: '7.5px 12px',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #F5F1EC',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#F9F6F0'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: '700', fontSize: '12px', color: '#2B2520' }}>
+                            {toTitleCase(prod.name)}
                           </div>
-                        )}
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              color: '#4A2C17',
+                              background: '#F5EBE1',
+                              padding: '2.5px 6px',
+                              borderRadius: '4px'
+                            }}
+                          >
+                            {rate > 0 ? `₹${rate.toLocaleString('en-IN')}` : ''} {unit}
+                          </span>
+                        </div>
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <span
-                          style={{
-                            fontSize: '10.5px',
-                            fontWeight: '700',
-                            color: '#4A2C17',
-                            background: '#F5EBE1',
-                            padding: '2px 5px',
-                            borderRadius: '3px'
-                          }}
-                        >
-                          {rate > 0 ? `₹${rate.toLocaleString('en-IN')}` : ''} {unit}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             )}
           </div>
@@ -533,7 +608,7 @@ const EstimateItemRow = ({
               <i className="fa-solid fa-list"></i>
             </button>
 
-            {/* Custom Searchable Catalog Dropdown */}
+            {/* Custom Searchable Catalog Dropdown (Opens cleanly to the right, never clipped) */}
             {showCatalogDropdown && (
               <div
                 style={{
@@ -541,7 +616,7 @@ const EstimateItemRow = ({
                   ...(openUpward
                     ? { bottom: '100%', marginBottom: '4px' }
                     : { top: '100%', marginTop: '4px' }),
-                  right: 0,
+                  left: 0,
                   width: '320px',
                   maxHeight: '320px',
                   background: '#FFFFFF',
@@ -564,7 +639,7 @@ const EstimateItemRow = ({
                     />
                     <input
                       type="text"
-                      placeholder="Type 1st or 2nd letter to search..."
+                      placeholder="Search product (e.g. TV, Bed, Table)..."
                       value={catalogSearch}
                       onChange={(e) => setCatalogSearch(e.target.value)}
                       onKeyDown={(e) => {
@@ -608,19 +683,69 @@ const EstimateItemRow = ({
                     )}
                   </div>
                   <div style={{ fontSize: '10px', color: '#8C827A', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Recommended products</span>
+                    <span>All Products</span>
                     <span>{filteredCatalogProducts.length} items</span>
                   </div>
                 </div>
 
-                {/* Products List */}
+                {/* 1. TOP ITEM: + Create New Product Option */}
+                <div
+                  onClick={() => {
+                    setShowCatalogDropdown(false);
+                    if (onOpenCreateProduct) {
+                      onOpenCreateProduct({
+                        itemIndex: index,
+                        defaultRoomName: roomName,
+                        initialName: catalogSearch || ''
+                      });
+                    }
+                  }}
+                  style={{
+                    padding: '8.5px 12px',
+                    cursor: 'pointer',
+                    background: '#FAF5EE',
+                    borderBottom: '1.5px solid #EAE2D8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    color: '#4A2C17',
+                    fontWeight: '700',
+                    fontSize: '12px',
+                    transition: 'background 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F2E8DC'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#FAF5EE'; }}
+                >
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    background: '#4A2C17',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    flexShrink: 0
+                  }}>
+                    <i className="fa-solid fa-plus"></i>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {catalogSearch ? (
+                      <span>Create <strong style={{ color: '#2B2520' }}>"{catalogSearch}"</strong> as New Product...</span>
+                    ) : (
+                      <span>+ Create New Product</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Products List (Unified Single List - No Room Tags) */}
                 <div style={{ overflowY: 'auto', flex: 1, maxHeight: '250px' }}>
                   {filteredCatalogProducts.length === 0 ? (
                     <div style={{ padding: '20px', textAlign: 'center', color: '#8C827A', fontSize: '12px' }}>
                       No products matching "{catalogSearch}"
                     </div>
-                  ) : catalogSearch.trim() ? (
-                    // Flat filtered list when user is actively searching
+                  ) : (
                     filteredCatalogProducts.map((prod) => {
                       const rate = Number(
                         furnitureTier === 'Essential Collection' || furnitureTier === 'Modern'
@@ -630,20 +755,17 @@ const EstimateItemRow = ({
                             : (prod.signatureRate || prod.luxuryModern)
                       ) || 0;
                       const unit = prod.defaultUnit || 'Sq.Ft.';
-                      const catLabel = (prod.category_names && prod.category_names.length > 0)
-                        ? prod.category_names.join(', ')
-                        : (prod.category || 'General');
 
                       return (
                         <div
-                          key={prod.name}
+                          key={prod.id || prod.name}
                           onClick={() => {
                             handleProductSelect(prod.name);
                             setShowCatalogDropdown(false);
                             setCatalogSearch('');
                           }}
                           style={{
-                            padding: '7px 10px',
+                            padding: '7.5px 12px',
                             cursor: 'pointer',
                             borderBottom: '1px solid #F5F1EC',
                             display: 'flex',
@@ -656,108 +778,24 @@ const EstimateItemRow = ({
                           onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: '700', fontSize: '11.5px', color: '#2B2520' }}>
-                              {prod.name}
-                            </div>
-                            <div style={{ fontSize: '10px', color: '#8C827A', marginTop: '1px' }}>
-                              📂 {catLabel}
-                            </div>
+                            <div style={{ fontWeight: '700', fontSize: '12px', color: '#2B2520' }}>
+                            {toTitleCase(prod.name)}
+                          </div>
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
                             <span
                               style={{
-                                fontSize: '10.5px',
+                                fontSize: '11px',
                                 fontWeight: '700',
                                 color: '#4A2C17',
                                 background: '#F5EBE1',
-                                padding: '2px 5px',
-                                borderRadius: '3px'
+                                padding: '2.5px 6px',
+                                borderRadius: '4px'
                               }}
                             >
                               {rate > 0 ? `₹${rate.toLocaleString('en-IN')}` : ''} {unit}
                             </span>
                           </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    // Grouped by Category when opening without search query
-                    categories.map((cat) => {
-                      const prodsInCat = catalogProducts.filter((p) => {
-                        const cats = (Array.isArray(p.category_names) && p.category_names.length > 0)
-                          ? p.category_names
-                          : [p.category || 'General'];
-                        return cats.includes(cat);
-                      });
-                      if (prodsInCat.length === 0) return null;
-
-                      return (
-                        <div key={cat}>
-                          <div
-                            style={{
-                              background: '#F5EFE9',
-                              padding: '4px 10px',
-                              fontWeight: '800',
-                              fontSize: '10.5px',
-                              color: '#5C3D24',
-                              letterSpacing: '0.3px',
-                              borderBottom: '1px solid #EAE4DD',
-                              position: 'sticky',
-                              top: 0,
-                              zIndex: 1
-                            }}
-                          >
-                            📂 {cat} ({prodsInCat.length})
-                          </div>
-                          {prodsInCat.map((prod) => {
-                            const rate = Number(
-                              furnitureTier === 'Essential Collection' || furnitureTier === 'Modern'
-                                ? (prod.essentialRate || prod.modern)
-                                : furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury'
-                                  ? (prod.eliteRate || prod.luxury)
-                                  : (prod.signatureRate || prod.luxuryModern)
-                            ) || 0;
-                            const unit = prod.defaultUnit || 'Sq.Ft.';
-
-                            return (
-                              <div
-                                key={prod.name}
-                                onClick={() => {
-                                  handleProductSelect(prod.name);
-                                  setShowCatalogDropdown(false);
-                                  setCatalogSearch('');
-                                }}
-                                style={{
-                                  padding: '6px 12px',
-                                  cursor: 'pointer',
-                                  borderBottom: '1px solid #F5F1EC',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  gap: '8px',
-                                  transition: 'background 0.15s ease'
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = '#F9F6F0'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
-                              >
-                                <span style={{ fontWeight: '700', fontSize: '11px', color: '#2B2520' }}>
-                                  {prod.name}
-                                </span>
-                                <span
-                                  style={{
-                                    fontSize: '10px',
-                                    fontWeight: '700',
-                                    color: '#4A2C17',
-                                    background: '#F5EBE1',
-                                    padding: '1px 5px',
-                                    borderRadius: '3px'
-                                  }}
-                                >
-                                  {rate > 0 ? `₹${rate.toLocaleString('en-IN')}` : ''} {unit}
-                                </span>
-                              </div>
-                            );
-                          })}
                         </div>
                       );
                     })
@@ -841,12 +879,19 @@ const EstimateItemRow = ({
                 rows={2}
                 data-nav-item="true"
                 data-col="1"
+                data-custom-casing="true"
                 value={item.description || ''}
                 placeholder="Specification / description..."
-                autoCapitalize="words"
                 onChange={(e) => {
-                  const formatted = capitalizeWords(e.target.value);
-                  onChange({ ...item, description: formatted });
+                  onChange({ ...item, description: e.target.value });
+                }}
+                onBlur={() => {
+                  if (item.description) {
+                    const formatted = toSmartTitleCase(item.description);
+                    if (formatted !== item.description) {
+                      onChange({ ...item, description: formatted });
+                    }
+                  }
                 }}
                 style={{
                   fontSize: '10.5px',
@@ -860,7 +905,6 @@ const EstimateItemRow = ({
                   whiteSpace: 'normal',
                   wordBreak: 'break-word',
                   textAlign: 'center',
-                  textTransform: 'capitalize',
                   width: '100%',
                   border: '1px solid #D1C2AF',
                   borderRadius: '4px',

@@ -1,20 +1,55 @@
 /**
- * Automatically format text strings to Title Case:
+ * Automatically format text strings to Smart Title Case:
  * - First letter of each word is capitalized.
- * - If user types in ALL CAPS (e.g. "MAHENDRA SHARMA"), converts to Title Case ("Mahendra Sharma").
- * - If user types all lowercase (e.g. "ekjfejfb kbajskasjk"), converts to Title Case ("Ekjfejfb Kbajskasjk").
+ * - Preserves user-entered uppercase acronyms (e.g. MM, SS, BWR, PVC, LED, TV).
+ * - Keeps minor helping words (of, the, and, in, a, with, etc.) in clean lowercase.
  */
+
+// Minor helping words to keep lowercase in title case (unless at sentence start)
+const MINOR_WORDS = new Set([
+  'a', 'an', 'the',
+  'and', 'or', 'nor', 'but',
+  'of', 'in', 'on', 'at', 'to', 'for', 'by', 'with', 'from', 'into', 'onto', 'as', 'per', 'etc'
+]);
+
+// Interior industry acronyms to keep or format as uppercase
+const KNOWN_ACRONYMS = new Set([
+  'SS', 'BWR', 'PVC', 'LED', 'PU', 'MS', 'CNC', 'HDHMR', 'MDF', 'GI', 'CP', 'WPC', 'ACP', 'MM', 'RFT', 'SQFT', 'NOS', 'TV', '2D', '3D'
+]);
+
 export function toTitleCase(val) {
   if (!val || typeof val !== 'string') return val;
-  // Match each word starting after beginning of string, space, slash, dash, comma, dot, parenthesis, etc.
-  return val.replace(/(^|[\s\/\-\,\.\(\)\[\]])([a-zA-Z])([a-zA-Z]*)/g, (match, prefix, first, rest) => {
-    return prefix + first.toUpperCase() + rest.toLowerCase();
+
+  return val.replace(/\b([A-Za-z0-9'-]+)\b/g, (match, word, offset) => {
+    const upperWord = word.toUpperCase();
+
+    // 1. Known interior acronyms (turn lowercase ss -> SS, bwr -> BWR, tv -> TV)
+    if (KNOWN_ACRONYMS.has(upperWord)) {
+      return upperWord;
+    }
+
+    const lower = word.toLowerCase();
+    // 2. Helping / minor words: keep lowercase UNLESS it is the very first word or starts a sentence
+    const isStartOfSentence = offset === 0 || /[\n\r.!?]\s*$/.test(val.slice(0, offset));
+    if (!isStartOfSentence && MINOR_WORDS.has(lower)) {
+      return lower;
+    }
+
+    // 3. If word contains 2 or more uppercase letters that user explicitly typed (e.g. AutoCAD, iPhone, G-Profile), preserve exact casing
+    const upperCount = word.replace(/[^A-Z]/g, '').length;
+    if (upperCount >= 2 && word !== upperWord) {
+      return word;
+    }
+
+    // 4. Standard Title Case: capitalize first letter, rest lowercase
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
   });
 }
 
 /**
  * Check whether an input or textarea element should be auto-capitalized.
  * Excludes:
+ * - Elements with data-custom-casing="true" or data-col="1"
  * - Passwords (type="password" or name/id contains "password" or "pin")
  * - Usernames (name/id/autocomplete contains "username")
  * - Emails (type="email" or name/id/placeholder contains "email")
@@ -26,6 +61,11 @@ export function shouldAutoCapitalize(target) {
   const tagName = target.tagName ? target.tagName.toUpperCase() : '';
   if (tagName !== 'INPUT' && tagName !== 'TEXTAREA') return false;
   if (target.readOnly || target.disabled) return false;
+
+  // Respect components with their own custom casing logic (like Estimate description)
+  if (target.getAttribute('data-custom-casing') === 'true' || target.getAttribute('data-col') === '1' || target.getAttribute('data-no-auto-capitalize') === 'true') {
+    return false;
+  }
 
   const type = (target.getAttribute('type') || target.type || 'text').toLowerCase();
   const excludedTypes = [

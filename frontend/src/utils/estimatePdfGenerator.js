@@ -3,8 +3,9 @@ import html2canvas from 'html2canvas';
 
 /**
  * Builds a jsPDF instance from a printable DOM element.
- * Splits content into logical chunks (header, rooms, summary, terms, etc.)
- * and places each chunk on pages so that no row/section is cut mid-content.
+ * Uses an isolated, resolution-independent Virtual A4 Stage (794px international standard)
+ * so that whether the PDF is generated or opened on a Mobile Phone, Laptop, Tablet, or TV,
+ * the layout, aspect ratio, sharpness, and margins are 100% consistent and perfect.
  *
  * @param {HTMLElement} element - The DOM element containing the estimate sheet
  * @returns {Promise<jsPDF|null>} - The configured jsPDF instance
@@ -15,109 +16,120 @@ export async function buildEstimatePdf(element) {
     return null;
   }
 
-  try {
-    // A4 dimensions in mm
-    const PAGE_W = 210;
-    const PAGE_H = 297;
-    const MARGIN_X = 12; // mm left & right margin
-    const MARGIN_Y = 12; // mm top & bottom margin
-    const CONTENT_W = PAGE_W - MARGIN_X * 2;
-    const CONTENT_H = PAGE_H - MARGIN_Y * 2;
+  // Virtual A4 Stage dimensions (Standard international A4: 210mm x 297mm at 96 DPI = 794px x 1123px)
+  const STAGE_WIDTH_PX = 794;
+  const PAGE_W_MM = 210;
+  const PAGE_H_MM = 297;
+  const MARGIN_X_MM = 8; // Clean professional 8mm margins
+  const MARGIN_Y_MM = 8;
+  const CONTENT_W_MM = PAGE_W_MM - (MARGIN_X_MM * 2); // 194mm
+  const CONTENT_H_MM = PAGE_H_MM - (MARGIN_Y_MM * 2); // 281mm
 
+  let stageWrapper = null;
+
+  try {
+    // 1. Create an isolated off-screen stage with fixed A4 width
+    // This completely decouples PDF generation from the user's device screen resolution (phone, laptop, TV)
+    stageWrapper = document.createElement('div');
+    stageWrapper.style.position = 'fixed';
+    stageWrapper.style.top = '-99999px';
+    stageWrapper.style.left = '-99999px';
+    stageWrapper.style.width = `${STAGE_WIDTH_PX}px`;
+    stageWrapper.style.minWidth = `${STAGE_WIDTH_PX}px`;
+    stageWrapper.style.maxWidth = `${STAGE_WIDTH_PX}px`;
+    stageWrapper.style.background = '#FFFFFF';
+    stageWrapper.style.zIndex = '-99999';
+    stageWrapper.style.boxSizing = 'border-box';
+    stageWrapper.style.overflow = 'visible';
+
+    // 2. Clone the printable sheet into this stage
+    const clone = element.cloneNode(true);
+    clone.style.width = `${STAGE_WIDTH_PX}px`;
+    clone.style.minWidth = `${STAGE_WIDTH_PX}px`;
+    clone.style.maxWidth = `${STAGE_WIDTH_PX}px`;
+    clone.style.boxSizing = 'border-box';
+    clone.style.padding = '12px 14px'; // Proportional document padding
+    clone.style.background = '#FFFFFF';
+    clone.style.margin = '0';
+    clone.style.boxShadow = 'none';
+    clone.style.borderRadius = '0';
+    clone.style.transform = 'none';
+
+    // Ensure all tables and full-width containers expand to 100% of the A4 stage
+    const tables = clone.querySelectorAll('table');
+    tables.forEach((t) => {
+      t.style.width = '100%';
+      t.style.maxWidth = '100%';
+      t.style.boxSizing = 'border-box';
+    });
+
+    stageWrapper.appendChild(clone);
+    document.body.appendChild(stageWrapper);
+
+    // 3. Capture with html2canvas at 2x Retina resolution for razor-sharp text and graphics
+    const canvas = await html2canvas(clone, {
+      scale: 2, // 2x high-DPI (1588px wide canvas)
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      width: STAGE_WIDTH_PX,
+      windowWidth: STAGE_WIDTH_PX
+    });
+
+    // 4. Build jsPDF A4 document
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    // Gather all direct child sections of the printable sheet.
-    const children = Array.from(element.children);
+    // Calculate total height in mm based on standard A4 width
+    const totalHeightMm = (canvas.height / canvas.width) * CONTENT_W_MM;
 
-    const sections = [];
-    for (const child of children) {
-      const canvas = await html2canvas(child, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        width: element.offsetWidth,
-        windowWidth: element.offsetWidth
-      });
-      sections.push({ canvas, child });
-    }
+    // If it fits on 1 page (like standard 1-room or 2-room estimates), fit cleanly on 1 full A4 page
+    if (totalHeightMm <= CONTENT_H_MM) {
+      pdf.addImage(
+        canvas.toDataURL('image/png'),
+        'PNG',
+        MARGIN_X_MM,
+        MARGIN_Y_MM,
+        CONTENT_W_MM,
+        totalHeightMm
+      );
+    } else {
+      // Clean multi-page slicing for multi-room estimates
+      let remainingHeightMm = totalHeightMm;
+      let srcYPx = 0;
+      let isFirstPage = true;
 
-    // The full element width in pixels is used to compute mm scale factor
-    const elementWidthPx = element.offsetWidth * 2; // scale factor is 2
-    const pxPerMm = elementWidthPx / CONTENT_W;
-
-    let currentY = MARGIN_Y;
-    let isFirstPage = true;
-
-    for (let sIdx = 0; sIdx < sections.length; sIdx++) {
-      const { canvas } = sections[sIdx];
-      const sectionHeightMm = (canvas.height / pxPerMm);
-
-      if (currentY + sectionHeightMm <= PAGE_H - MARGIN_Y) {
-        pdf.addImage(
-          canvas.toDataURL('image/png'),
-          'PNG',
-          MARGIN_X,
-          currentY,
-          CONTENT_W,
-          sectionHeightMm
-        );
-        currentY += sectionHeightMm;
-      } else if (sectionHeightMm <= CONTENT_H) {
-        if (!isFirstPage || currentY > MARGIN_Y) {
+      while (remainingHeightMm > 0) {
+        if (!isFirstPage) {
           pdf.addPage();
         }
-        currentY = MARGIN_Y;
-        pdf.addImage(
-          canvas.toDataURL('image/png'),
-          'PNG',
-          MARGIN_X,
-          currentY,
-          CONTENT_W,
-          sectionHeightMm
+
+        const pageSliceHeightMm = Math.min(CONTENT_H_MM, remainingHeightMm);
+        const sliceHeightPx = Math.round((pageSliceHeightMm / totalHeightMm) * canvas.height);
+
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeightPx;
+        const ctx = pageCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+        ctx.drawImage(
+          canvas,
+          0, Math.round(srcYPx), canvas.width, sliceHeightPx,
+          0, 0, canvas.width, sliceHeightPx
         );
-        currentY += sectionHeightMm;
-        isFirstPage = false;
-      } else {
-        const totalImgH = sectionHeightMm;
-        let remainingH = totalImgH;
-        let srcYOffset = 0;
 
-        while (remainingH > 0) {
-          const spaceOnPage = (PAGE_H - MARGIN_Y) - currentY;
-          const sliceH = Math.min(spaceOnPage, remainingH);
+        pdf.addImage(
+          pageCanvas.toDataURL('image/png'),
+          'PNG',
+          MARGIN_X_MM,
+          MARGIN_Y_MM,
+          CONTENT_W_MM,
+          pageSliceHeightMm
+        );
 
-          const sliceHeightPx = (sliceH / totalImgH) * canvas.height;
-          const srcYPx = (srcYOffset / totalImgH) * canvas.height;
-
-          const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = canvas.width;
-          sliceCanvas.height = Math.ceil(sliceHeightPx);
-          const ctx = sliceCanvas.getContext('2d');
-          ctx.drawImage(
-            canvas,
-            0, Math.floor(srcYPx), canvas.width, Math.ceil(sliceHeightPx),
-            0, 0, canvas.width, Math.ceil(sliceHeightPx)
-          );
-
-          pdf.addImage(
-            sliceCanvas.toDataURL('image/png'),
-            'PNG',
-            MARGIN_X,
-            currentY,
-            CONTENT_W,
-            sliceH
-          );
-
-          remainingH -= sliceH;
-          srcYOffset += sliceH;
-          currentY += sliceH;
-
-          if (remainingH > 0) {
-            pdf.addPage();
-            currentY = MARGIN_Y;
-          }
-        }
+        srcYPx += sliceHeightPx;
+        remainingHeightMm -= pageSliceHeightMm;
         isFirstPage = false;
       }
     }
@@ -126,6 +138,10 @@ export async function buildEstimatePdf(element) {
   } catch (err) {
     console.error('PDF building error:', err);
     return null;
+  } finally {
+    if (stageWrapper && stageWrapper.parentNode) {
+      stageWrapper.parentNode.removeChild(stageWrapper);
+    }
   }
 }
 

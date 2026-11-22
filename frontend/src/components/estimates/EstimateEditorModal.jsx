@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import EstimateRoomSection from './EstimateRoomSection';
 import EstimateSummaryFooter from './EstimateSummaryFooter';
 import AddRoomModal from './AddRoomModal';
+import AddEditProductModal from '../catalog/AddEditProductModal';
+import { toTitleCase } from '../../utils/autoCapitalize';
+import { API_BASE } from '../../config/api';
 import { getMaterialSpecsForCollection } from '../../data/collectionSpecs';
 
 const EstimateEditorModal = ({
@@ -10,6 +13,7 @@ const EstimateEditorModal = ({
   onSave,
   onClose,
   onPreview,
+  onCatalogUpdate,
   saving = false,
   inline = false
 }) => {
@@ -119,6 +123,94 @@ const EstimateEditorModal = ({
   });
   const [roomToDelete, setRoomToDelete] = useState(null);
   const [showAddRoomModal, setShowAddRoomModal] = useState(false);
+  const [createProductTarget, setCreateProductTarget] = useState(null);
+  const [savingNewProduct, setSavingNewProduct] = useState(false);
+
+  const handleSaveNewProductFromEstimate = async (productData) => {
+    try {
+      setSavingNewProduct(true);
+      const res = await fetch(`${API_BASE}/catalog/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.message || 'Failed to create product');
+        return;
+      }
+
+      const newProd = data.product;
+
+      if (onCatalogUpdate) {
+        onCatalogUpdate(newProd);
+      }
+
+      if (createProductTarget) {
+        const { roomIndex, itemIndex } = createProductTarget;
+        const room = rooms[roomIndex];
+        if (room && room.items && room.items[itemIndex]) {
+          const isEssential = furnitureLevel === 'Essential Collection' || furnitureLevel === 'Modern';
+          const isElite = furnitureLevel === 'Elite Collection' || furnitureLevel === 'Luxury';
+
+          let rate = Number(newProd.signature_rate || newProd.luxury_modern_rate) || 1600;
+          let description = newProd.signature_description || newProd.default_description || '';
+
+          if (isEssential) {
+            rate = Number(newProd.essential_rate || newProd.modern_rate) || 1200;
+            description = newProd.essential_description || newProd.default_description || '';
+          } else if (isElite) {
+            rate = Number(newProd.elite_rate || newProd.luxury_rate) || 2200;
+            description = newProd.elite_description || newProd.default_description || '';
+          }
+
+          const unit = newProd.unit || 'Sq.Ft.';
+          const w = newProd.default_width ? Number(newProd.default_width) : '';
+          const h = newProd.default_height ? Number(newProd.default_height) : '';
+          let totalArea = 1;
+          if (unit === 'Sq.Ft.' && w && h && Number(w) > 0 && Number(h) > 0) {
+            const rawSqFt = (Number(w) * Number(h)) / 92903;
+            totalArea = Math.ceil(rawSqFt * 2) / 2;
+          }
+
+          const amount = Math.round(totalArea * rate);
+
+          const updatedItems = [...room.items];
+          updatedItems[itemIndex] = {
+            ...updatedItems[itemIndex],
+            productName: toTitleCase(newProd.name),
+            description,
+            essentialDesc: newProd.essential_description || '',
+            signatureDesc: newProd.signature_description || '',
+            eliteDesc: newProd.elite_description || '',
+            essentialRate: Number(newProd.essential_rate || newProd.modern_rate) || 1200,
+            signatureRate: Number(newProd.signature_rate || newProd.luxury_modern_rate) || 1600,
+            eliteRate: Number(newProd.elite_rate || newProd.luxury_rate) || 2200,
+            widthMm: w,
+            heightMm: h,
+            totalArea,
+            unit,
+            rate,
+            amount
+          };
+
+          const newRoomTotal = updatedItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+          handleRoomChange(roomIndex, {
+            ...room,
+            items: updatedItems,
+            roomTotal: newRoomTotal
+          });
+        }
+      }
+
+      setCreateProductTarget(null);
+    } catch (err) {
+      console.error('Error creating product from estimate:', err);
+      alert('Error creating product');
+    } finally {
+      setSavingNewProduct(false);
+    }
+  };
 
   // Handle tier rate & description switch across existing items with per-collection memory
   const handleTierChange = (newTier) => {
@@ -778,6 +870,7 @@ const EstimateEditorModal = ({
               onMoveDown={() => handleMoveRoom(roomIdx, 'down')}
               onRoomChange={(updated) => handleRoomChange(roomIdx, updated)}
               onRoomDelete={() => handleRoomDelete(roomIdx)}
+              onOpenCreateProduct={setCreateProductTarget}
             />
           ))}
 
@@ -959,6 +1052,21 @@ const EstimateEditorModal = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Inline Create Product Modal */}
+      {createProductTarget && (
+        <AddEditProductModal
+          product={null}
+          categories={catalog?.categories || []}
+          existingProducts={catalog?.products || []}
+          defaultCategory={createProductTarget.defaultRoomName || ''}
+          initialName={createProductTarget.initialName || ''}
+          saving={savingNewProduct}
+          zIndex={1300}
+          onClose={() => setCreateProductTarget(null)}
+          onSave={handleSaveNewProductFromEstimate}
+        />
       )}
 
       {/* Add Room Modal (Presets & Custom) */}

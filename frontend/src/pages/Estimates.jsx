@@ -65,14 +65,22 @@ const Estimates = ({ onNavigate }) => {
             catalogObj.products = prodsData.products.map(p => {
               const mappedCats = (Array.isArray(p.category_names) && p.category_names.length > 0)
                 ? p.category_names
-                : [p.category_name || 'General'];
+                : [(p.category_name || p.category || 'General')].filter(Boolean);
+
+              const resolvedCatIds = (Array.isArray(p.category_ids) && p.category_ids.length > 0)
+                ? p.category_ids
+                : (Array.isArray(p.room_categories) && p.room_categories.length > 0)
+                  ? p.room_categories.map(rc => rc.id)
+                  : (p.category_id ? [p.category_id] : []);
 
               return {
                 id: p.id,
                 name: p.name,
+                category_id: p.category_id || (resolvedCatIds[0] || null),
+                category_name: p.category_name || mappedCats[0] || '',
                 category: mappedCats[0] || p.category_name || 'General',
                 category_names: mappedCats,
-                category_ids: p.category_ids || [],
+                category_ids: resolvedCatIds,
                 defaultUnit: p.unit || 'Sq.Ft.',
                 modern: Number(p.essential_rate || p.modern_rate) || 0,
                 luxuryModern: Number(p.signature_rate || p.luxury_modern_rate) || 0,
@@ -367,22 +375,28 @@ const Estimates = ({ onNavigate }) => {
 
       // Find all products in catalog assigned to this room
       const matchingCatalogProds = (catalog?.products || []).filter(p => {
-        // 1. If category has explicit product_ids linked in DB, use that strict list
-        if (catObj && Array.isArray(catObj.product_ids) && catObj.product_ids.length > 0) {
-          return catObj.product_ids.includes(p.id);
-        }
+        // 1. Direct match by junction table product_ids on category
+        const inCatProductIds = catObj && Array.isArray(catObj.product_ids) && catObj.product_ids.includes(p.id);
 
-        // 2. Otherwise match by product's assigned category names
+        // 2. Direct match by category_id or category_ids on product
+        const inProdCategoryIds = catObj && (
+          (Array.isArray(p.category_ids) && p.category_ids.some(cid => Number(cid) === Number(catObj.id))) ||
+          (p.category_id && Number(p.category_id) === Number(catObj.id))
+        );
+
+        // 3. Match by product's assigned category names
         const catNames = (Array.isArray(p.category_names) && p.category_names.length > 0)
           ? p.category_names.map(c => (c || '').toUpperCase())
-          : [(p.category || '').toUpperCase()].filter(Boolean);
+          : [(p.category || p.category_name || '').toUpperCase()].filter(Boolean);
 
-        return catNames.includes(cleanRoomUpper) ||
+        const nameMatch = catNames.includes(cleanRoomUpper) ||
           catNames.some(c => 
             (cleanRoomUpper.includes('BEDROOM') && c.includes('BEDROOM')) ||
             (cleanRoomUpper.includes('MASTER') && c.includes('BEDROOM')) ||
             (cleanRoomUpper.includes('KID') && c.includes('BEDROOM'))
           );
+
+        return inCatProductIds || inProdCategoryIds || nameMatch;
       });
 
       // Also check fallback presets if no dynamic products found
@@ -421,7 +435,7 @@ const Estimates = ({ onNavigate }) => {
 
           return {
             id: `item_${rIdx}_${iIdx}_${Date.now()}`,
-            productName: p.name,
+            productName: toTitleCase(p.name),
             description,
             essentialDesc,
             signatureDesc,
@@ -468,7 +482,7 @@ const Estimates = ({ onNavigate }) => {
 
           return {
             id: `item_${rIdx}_${iIdx}_${Date.now()}`,
-            productName: pi.productName,
+            productName: toTitleCase(pi.productName),
             description,
             essentialDesc,
             signatureDesc,
@@ -509,7 +523,7 @@ const Estimates = ({ onNavigate }) => {
 
         items.push({
           id: `item_${rIdx}_0_${Date.now()}`,
-          productName: defaultProd.name || 'FURNITURE / UNIT',
+          productName: toTitleCase(defaultProd.name || 'Furniture / Unit'),
           description,
           essentialDesc,
           signatureDesc,
@@ -674,6 +688,35 @@ const Estimates = ({ onNavigate }) => {
     }
   };
 
+  const handleCatalogProductAdded = (newProd) => {
+    setCatalog(prev => {
+      if (!prev) return prev;
+      const existing = prev.products || [];
+      const updated = [...existing.filter(p => p.id !== newProd.id), {
+        id: newProd.id,
+        name: newProd.name,
+        category: newProd.category_name || 'General',
+        category_name: newProd.category_name || '',
+        category_names: newProd.category_names || [newProd.category_name || 'General'],
+        category_ids: newProd.category_ids || (newProd.category_id ? [newProd.category_id] : []),
+        defaultUnit: newProd.unit || 'Sq.Ft.',
+        modern: Number(newProd.essential_rate || newProd.modern_rate) || 0,
+        luxuryModern: Number(newProd.signature_rate || newProd.luxury_modern_rate) || 0,
+        luxury: Number(newProd.elite_rate || newProd.luxury_rate) || 0,
+        essentialRate: Number(newProd.essential_rate || newProd.modern_rate) || 0,
+        signatureRate: Number(newProd.signature_rate || newProd.luxury_modern_rate) || 0,
+        eliteRate: Number(newProd.elite_rate || newProd.luxury_rate) || 0,
+        essentialDesc: newProd.essential_description || newProd.default_description || '',
+        signatureDesc: newProd.signature_description || newProd.default_description || '',
+        eliteDesc: newProd.elite_description || newProd.default_description || '',
+        defaultW: newProd.default_width ? Number(newProd.default_width) : null,
+        defaultH: newProd.default_height ? Number(newProd.default_height) : null,
+        defaultDesc: newProd.signature_description || newProd.essential_description || newProd.default_description || ''
+      }];
+      return { ...prev, products: updated };
+    });
+  };
+
   const handleStatusUpdated = (estimateId, newStatus) => {
     setEstimates(prev =>
       prev.map(e => e.id === estimateId ? { ...e, status: newStatus } : e)
@@ -691,6 +734,7 @@ const Estimates = ({ onNavigate }) => {
           onSave={handleSaveEstimate}
           onClose={() => setEditingEstimate(null)}
           onPreview={(draft) => setPreviewEstimate(draft)}
+          onCatalogUpdate={handleCatalogProductAdded}
           saving={saving}
           inline={true}
         />

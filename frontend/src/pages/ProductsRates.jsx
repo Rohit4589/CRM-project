@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { API_BASE } from '../config/api';
 import '../styles/ProductsRates.css';
+import { toTitleCase } from '../utils/autoCapitalize';
 
 // Modals
 import AddEditRoomModal from '../components/catalog/AddEditRoomModal';
@@ -498,7 +499,7 @@ const ProductsRates = ({ onNavigate }) => {
                     <tr key={prod.id}>
                       {/* Name & Specification (Left Aligned) */}
                       <td style={{ textAlign: 'left' }}>
-                        <strong style={{ color: '#2B2520', fontSize: '13.5px' }}>{prod.name}</strong>
+                        <strong style={{ color: '#2B2520', fontSize: '13.5px', fontWeight: '700' }}>{toTitleCase(prod.name)}</strong>
                         {mainDesc && (
                           <div style={{
                             fontSize: '11px',
@@ -536,22 +537,22 @@ const ProductsRates = ({ onNavigate }) => {
                                     whiteSpace: 'nowrap'
                                   }}
                                 >
-                                  {rc.name}
+                                  {toTitleCase(rc.name)}
                                 </span>
                               );
                             })
                           ) : (
                             <span style={{
                               fontSize: '11px',
-                              color: '#4A2C17',
+                              color: prod.category_name ? '#4A2C17' : '#8C827A',
                               fontWeight: '600',
-                              background: '#F6EFE9',
-                              border: '1px solid #EFE8E1',
+                              background: prod.category_name ? '#F6EFE9' : '#FAF8F5',
+                              border: prod.category_name ? '1px solid #EFE8E1' : '1px dashed #DCD4CA',
                               padding: '2.5px 7px',
                               borderRadius: '5px',
                               display: 'inline-block'
                             }}>
-                              {prod.category_name || 'GENERAL'}
+                              {prod.category_name ? toTitleCase(prod.category_name) : 'Unlinked (List Only)'}
                             </span>
                           )}
                         </div>
