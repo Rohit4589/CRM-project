@@ -83,6 +83,19 @@ exports.getCatalog = async (req, res) => {
     let dbCategories = [];
 
     try {
+      // Self-healing sync: ensure any products with category_id are in junction table
+      try {
+        await pool.query(`
+          INSERT INTO estimate_category_products (category_id, product_id)
+          SELECT category_id, id 
+          FROM estimate_products 
+          WHERE category_id IS NOT NULL
+          ON CONFLICT DO NOTHING
+        `);
+      } catch (syncErr) {
+        // non-blocking
+      }
+
       const catRes = await pool.query(`
         SELECT c.*,
           COALESCE(

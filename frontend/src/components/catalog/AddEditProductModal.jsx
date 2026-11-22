@@ -1,45 +1,46 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { toTitleCase } from '../../utils/autoCapitalize';
 
 const STANDARD_PRODUCT_NAMES = [
-  'BED',
-  'WARDROBE',
-  'T V UNIT',
-  'SHOES RACK',
-  'TEMPLE',
-  'SAFETY DOOR',
-  'SWING',
-  'LOFT ABOVE WARDROBE',
-  'MATTRESS',
-  'STUDY TABLE WITH BOOKS STORAGE',
-  'BED WALL PANNELING',
-  'SIDE TABLE',
-  'SIDE TABLE WITH DRESSING',
-  'TANDEM DRAWERS',
-  'OTTA SHUTTER',
-  'OVERHEAD UNIT',
-  'LOFT ABOVE OVERHEAD UNIT',
-  'TALL UNIT',
-  'ACCESSORIES',
-  'CROCKARY UNIT',
-  'DECORATIVE PARTITION',
-  'FRAME COVERING',
-  'RECEPTION DESK',
-  'BACKDROP LOGO WALL',
-  'CONFERENCE TABLE',
-  'EXECUTIVE CABIN TABLE',
-  'CABIN BACK CREDENZA',
-  'WORKSTATION PARTITION',
-  'GLASS PARTITION WITH FILM',
-  'FLOOR COVERING',
-  'DEBRIS',
-  'PASSAGE JAALI',
-  'BASIN SHUTTER',
-  'TEMPLE JAALI',
-  'CURTAIN FITTING',
-  'MISCELLANEOUS EXP.',
-  'GYPSUM FALSE CEILING',
-  'ELECTRIC WORK',
-  'PAINTING WORK'
+  'Bed',
+  'Wardrobe',
+  'TV Unit',
+  'Shoes Rack',
+  'Temple',
+  'Safety Door',
+  'Swing',
+  'Loft Above Wardrobe',
+  'Mattress',
+  'Study Table with Books Storage',
+  'Bed Wall Paneling',
+  'Side Table',
+  'Side Table with Dressing',
+  'Tandem Drawers',
+  'Otta Shutter',
+  'Overhead Unit',
+  'Loft Above Overhead Unit',
+  'Tall Unit',
+  'Accessories',
+  'Crockery Unit',
+  'Decorative Partition',
+  'Frame Covering',
+  'Reception Desk',
+  'Backdrop Logo Wall',
+  'Conference Table',
+  'Executive Cabin Table',
+  'Cabin Back Credenza',
+  'Workstation Partition',
+  'Glass Partition with Film',
+  'Floor Covering',
+  'Debris',
+  'Passage Jaali',
+  'Basin Shutter',
+  'Temple Jaali',
+  'Curtain Fitting',
+  'Miscellaneous Exp.',
+  'Gypsum False Ceiling',
+  'Electric Work',
+  'Painting Work'
 ];
 
 const COLLECTION_PRESETS = {
@@ -86,12 +87,15 @@ const AddEditProductModal = ({
   categories = [],
   existingProducts = [],
   defaultCategory = '',
+  initialName = '',
+  zIndex = 1150,
   onClose,
   onSave,
   onAddCategory,
   saving = false
 }) => {
   const [name, setName] = useState('');
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [isCustomProductName, setIsCustomProductName] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [unit, setUnit] = useState('Sq.Ft.');
@@ -129,11 +133,20 @@ const AddEditProductModal = ({
 
   useEffect(() => {
     if (product) {
-      const pName = (product.name || '').trim().toUpperCase();
-      setName(pName);
-      setIsCustomProductName(!allProductOptions.includes(pName));
+      setName(toTitleCase((product.name || '').trim()));
+      setIsCustomProductName(true);
 
-      setCategoryId(product.category_id || (categories.find(c => c.name.toUpperCase() === (product.category_name || '').toUpperCase())?.id || ''));
+      let linkedCatIds = [];
+      if (Array.isArray(product.room_categories) && product.room_categories.length > 0) {
+        linkedCatIds = product.room_categories.map(c => c.id);
+      } else if (Array.isArray(product.category_ids) && product.category_ids.length > 0) {
+        linkedCatIds = product.category_ids;
+      } else if (product.category_id) {
+        linkedCatIds = [product.category_id];
+      }
+      setSelectedCategoryIds(linkedCatIds);
+      setCategoryId(linkedCatIds[0] || '');
+
       const pUnit = product.unit || 'Sq.Ft.';
       setUnit(pUnit);
       setIsCustomUnit(!['Sq.Ft.', 'SET', 'Nos', 'Pcs', 'RFT.', 'APPROX', 'Meter', 'Pair', 'Sheet'].includes(pUnit));
@@ -169,14 +182,17 @@ const AddEditProductModal = ({
         COLLECTION_PRESETS.elite[0].text
       );
     } else {
-      const defaultProd = allProductOptions[0] || 'BED';
-      setName(defaultProd);
-      setIsCustomProductName(false);
+      // New product starts with initialName if provided
+      setName(initialName ? toTitleCase(initialName.trim()) : '');
+      setIsCustomProductName(true);
 
       const initialCat = defaultCategory
         ? categories.find(c => c.name.toUpperCase() === defaultCategory.toUpperCase())
-        : categories[0];
-      setCategoryId(initialCat?.id || '');
+        : null;
+      const initialCatIds = initialCat ? [initialCat.id] : [];
+      setSelectedCategoryIds(initialCatIds);
+      setCategoryId(initialCatIds[0] || '');
+
       setUnit('Sq.Ft.');
       setIsCustomUnit(false);
       setDefaultWidth('');
@@ -189,7 +205,7 @@ const AddEditProductModal = ({
       setEliteDesc(COLLECTION_PRESETS.elite[0].text);
     }
     setError('');
-  }, [product, defaultCategory, categories, allProductOptions]);
+  }, [product, defaultCategory, categories, initialName]);
 
   // Keyboard navigation & Escape key support
   useEffect(() => {
@@ -307,9 +323,12 @@ const AddEditProductModal = ({
 
     onSave({
       ...(product ? { id: product.id } : {}),
-      name: name.trim().toUpperCase(),
-      category_id: product?.category_id || null,
-      category_name: product?.category_name || '',
+      name: toTitleCase(name.trim()),
+      category_ids: selectedCategoryIds,
+      category_id: selectedCategoryIds[0] || null,
+      category_name: selectedCategoryIds.length > 0
+        ? (categories.find(c => c.id === selectedCategoryIds[0])?.name || '')
+        : '',
       unit: unit || 'Sq.Ft.',
       default_width: Number(defaultWidth) > 0 ? Number(defaultWidth) : null,
       default_height: Number(defaultHeight) > 0 ? Number(defaultHeight) : null,
@@ -342,7 +361,7 @@ const AddEditProductModal = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1150,
+        zIndex: zIndex || 1150,
         padding: '16px',
         overflowY: 'auto'
       }}
@@ -410,88 +429,125 @@ const AddEditProductModal = ({
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Row 1: Product Name */}
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <label style={{ fontSize: '12px', fontWeight: '600', color: '#4A3E36' }}>
-                Product Name *
+          {/* Row 1: Product Name (Clean & Blank Input) */}
+          <div style={{ marginBottom: '14px' }}>
+            <label style={{ fontSize: '12px', fontWeight: '700', color: '#4A3E36', display: 'block', marginBottom: '6px' }}>
+              Product Name *
+            </label>
+            <input
+              type="text"
+              required
+              autoFocus
+              placeholder="Enter product name (e.g. Center Table, Crockery Unit, File Storage)..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={() => {
+                if (name && name.trim()) {
+                  setName(toTitleCase(name.trim()));
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                border: '1.5px solid #DCD4CA',
+                borderRadius: '8px',
+                fontSize: '13.5px',
+                fontWeight: '700',
+                color: '#2B2520',
+                outline: 'none',
+                background: '#FFFFFF',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.2s'
+              }}
+            />
+          </div>
+
+          {/* Row 2: Link to Room Categories (Multi-select 1, 2, 3 rooms or none) */}
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', color: '#4A3E36' }}>
+                Link to Room Categories (Optional)
               </label>
-              {isCustomProductName && (
+              {selectedCategoryIds.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsCustomProductName(false);
-                    setName(allProductOptions[0] || 'BED');
-                  }}
+                  onClick={() => setSelectedCategoryIds([])}
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#4A2C17',
+                    color: '#B91C1C',
                     fontSize: '11px',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
                     fontWeight: '600',
+                    cursor: 'pointer',
                     padding: 0
                   }}
                 >
-                  ← List
+                  Clear all ({selectedCategoryIds.length})
                 </button>
               )}
             </div>
 
-            {isCustomProductName ? (
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  placeholder="TYPE PRODUCT NAME..."
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1.5px solid #4A2C17',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    color: '#2B2520',
-                    textTransform: 'uppercase',
-                    outline: 'none',
-                    background: '#FFFDF9',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-            ) : (
-              <select
-                value={name}
-                onChange={(e) => handleProductSelectChange(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid #DCD4CA',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  color: '#2B2520',
-                  background: '#FFFFFF',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <optgroup label="Standard Products">
-                  {allProductOptions.map((pName) => (
-                    <option key={pName} value={pName}>
-                      {pName}
-                    </option>
-                  ))}
-                </optgroup>
-                <option value="__CUSTOM_NEW__" style={{ fontWeight: '700', color: '#4A2C17' }}>
-                  + Add Custom Name...
-                </option>
-              </select>
-            )}
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '6px',
+              maxHeight: '130px',
+              overflowY: 'auto',
+              padding: '8px',
+              background: '#FAF8F5',
+              border: '1px solid #EAE4DD',
+              borderRadius: '8px',
+              boxSizing: 'border-box'
+            }}>
+              {categories.map((cat) => {
+                const isSelected = selectedCategoryIds.includes(cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== cat.id));
+                      } else {
+                        setSelectedCategoryIds([...selectedCategoryIds, cat.id]);
+                      }
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '5px 11px',
+                      borderRadius: '16px',
+                      fontSize: '11.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      border: isSelected ? '1.5px solid #4A2C17' : '1px solid #DCD4CA',
+                      background: isSelected ? '#4A2C17' : '#FFFFFF',
+                      color: isSelected ? '#FFFFFF' : '#4A2C17',
+                      boxShadow: isSelected ? '0 2px 6px rgba(74, 44, 23, 0.18)' : 'none'
+                    }}
+                  >
+                    <i className={isSelected ? 'fa-solid fa-check' : 'fa-regular fa-plus'} style={{ fontSize: '10px' }}></i>
+                    <span>{toTitleCase(cat.name)}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ fontSize: '11px', color: '#7A6F66', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {selectedCategoryIds.length === 0 ? (
+                <span style={{ color: '#8C827A' }}>
+                  <i className="fa-regular fa-circle" style={{ fontSize: '9px', marginRight: '4px' }}></i>
+                  Not linked to any room (Will only stay in Master Product List)
+                </span>
+              ) : (
+                <span style={{ color: '#2E7D32', fontWeight: '600' }}>
+                  <i className="fa-solid fa-circle-check" style={{ fontSize: '11px', marginRight: '4px' }}></i>
+                  Connected to {selectedCategoryIds.length} room{selectedCategoryIds.length > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Row 2: Unit Type & Default Dimensions */}

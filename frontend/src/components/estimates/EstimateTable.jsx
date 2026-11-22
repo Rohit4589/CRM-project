@@ -204,15 +204,9 @@ const EstimateTable = ({
                         <i className="fa-solid fa-eye"></i>
                       </button>
 
-                      {/* 2. Three-Dots Menu */}
+                      {/* 2. Three-Dots Menu (Click to Toggle) */}
                       <div
                         style={{ position: 'relative', display: 'inline-block' }}
-                        onMouseEnter={() => {
-                          setOpenMenuId(est.id);
-                        }}
-                        onMouseLeave={() => {
-                          setOpenMenuId(null);
-                        }}
                       >
                         <button
                           type="button"

@@ -424,17 +424,9 @@ const SitesTable = ({
                       <i className="fa-solid fa-folder-open"></i>
                     </button>
 
-                    {/* 3. Three-Dots Menu with Rock-Solid Click & Hover Lock */}
+                    {/* 3. Three-Dots Menu (Click to Toggle) */}
                     <div
                       style={{ position: 'relative', display: 'inline-block' }}
-                      onMouseEnter={() => {
-                        // Smoothly open on hover
-                        setOpenMenuId(site.id);
-                      }}
-                      onMouseLeave={(e) => {
-                        // Only close on mouse leave if moving far away, with slight tolerance
-                        setOpenMenuId(null);
-                      }}
                     >
                       <button
                         type="button"

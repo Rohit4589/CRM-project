@@ -106,127 +106,133 @@ const AddRoomModal = ({
     // Generate room objects with items and tier rates
     const timestamp = Date.now();
     const newRooms = roomsToAdd.map((roomName, rIdx) => {
-      const foundPreset = availablePresets.find(p => p.roomName.toUpperCase() === roomName.toUpperCase());
+      const cleanUpper = roomName.trim().toUpperCase();
+      const foundPreset = availablePresets.find(p => p.roomName.toUpperCase() === cleanUpper);
       const presetItems = (foundPreset && loadPresets) ? (foundPreset.items || []) : [];
 
-      let items = presetItems.map((pi, iIdx) => {
-        const catalogProd = (catalog?.products || []).find(
-          p => p.name.toUpperCase() === pi.productName.toUpperCase()
+      // Check dynamic catalog products first
+      const catObj = (catalog?.categories || []).find(
+        c => (c.name || '').trim().toUpperCase() === cleanUpper
+      );
+      const matchingCatalog = (catalog?.products || []).filter(p => {
+        const inCatProductIds = catObj && Array.isArray(catObj.product_ids) && catObj.product_ids.includes(p.id);
+        const inProdCategoryIds = catObj && (
+          (Array.isArray(p.category_ids) && p.category_ids.some(cid => Number(cid) === Number(catObj.id))) ||
+          (p.category_id && Number(p.category_id) === Number(catObj.id))
         );
+        const catNames = (Array.isArray(p.category_names) && p.category_names.length > 0)
+          ? p.category_names.map(c => (c || '').toUpperCase())
+          : [(p.category || p.category_name || '').toUpperCase()].filter(Boolean);
+        const nameMatch = catNames.includes(cleanUpper) ||
+          catNames.some(c => 
+            (cleanUpper.includes('BEDROOM') && c.includes('BEDROOM')) ||
+            (cleanUpper.includes('MASTER') && c.includes('BEDROOM')) ||
+            (cleanUpper.includes('KID') && c.includes('BEDROOM'))
+          );
 
-        const isEssential = furnitureTier === 'Essential Collection' || furnitureTier === 'Modern';
-        const isElite = furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury';
-
-        const essentialDesc = catalogProd?.essentialDesc || catalogProd?.defaultDesc || catalog?.readymadeDescriptions?.[0] || '';
-        const signatureDesc = catalogProd?.signatureDesc || catalogProd?.defaultDesc || catalog?.readymadeDescriptions?.[1] || '';
-        const eliteDesc = catalogProd?.eliteDesc || catalogProd?.defaultDesc || catalog?.readymadeDescriptions?.[2] || '';
-
-        let rate = catalogProd ? (catalogProd.signatureRate || catalogProd.luxuryModern || 1600) : 1500;
-        let description = signatureDesc;
-
-        if (isEssential) {
-          rate = catalogProd ? (catalogProd.essentialRate || catalogProd.modern || 1200) : 1200;
-          description = essentialDesc;
-        } else if (isElite) {
-          rate = catalogProd ? (catalogProd.eliteRate || catalogProd.luxury || 2200) : 2200;
-          description = eliteDesc;
-        }
-
-        const unit = pi.unit || catalogProd?.defaultUnit || 'Sq.Ft.';
-        const w = (pi.widthMm !== null && pi.widthMm !== undefined && pi.widthMm !== '') ? Number(pi.widthMm) : '';
-        const h = (pi.heightMm !== null && pi.heightMm !== undefined && pi.heightMm !== '') ? Number(pi.heightMm) : '';
-        let totalArea = pi.totalArea || 1;
-        if (unit === 'Sq.Ft.' && w && h && Number(w) > 0 && Number(h) > 0) {
-          const rawSqFt = (Number(w) * Number(h)) / 92903;
-          totalArea = Math.ceil(rawSqFt * 2) / 2;
-        }
-
-        const amount = Math.round(totalArea * rate);
-
-        return {
-          id: `item_${timestamp}_${rIdx}_${iIdx}`,
-          productName: pi.productName,
-          description,
-          essentialDesc,
-          signatureDesc,
-          eliteDesc,
-          widthMm: w,
-          heightMm: h,
-          totalArea,
-          unit,
-          rate,
-          amount,
-          essentialRate: catalogProd?.essentialRate || catalogProd?.modern || 1200,
-          signatureRate: catalogProd?.signatureRate || catalogProd?.luxuryModern || 1600,
-          eliteRate: catalogProd?.eliteRate || catalogProd?.luxury || 2200
-        };
+        return inCatProductIds || inProdCategoryIds || nameMatch;
       });
 
-      // If preset didn't have items, check dynamic catalog products assigned to this room category
-      if (items.length === 0 && loadPresets) {
-        const catObj = (catalog?.categories || []).find(
-          c => (c.name || '').trim().toUpperCase() === roomName.toUpperCase()
-        );
-        const matchingCatalog = (catalog?.products || []).filter(p => {
-          if (catObj && Array.isArray(catObj.product_ids) && catObj.product_ids.length > 0) {
-            return catObj.product_ids.includes(p.id);
+      let items = [];
+      const isEssential = furnitureTier === 'Essential Collection' || furnitureTier === 'Modern';
+      const isElite = furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury';
+
+      if (matchingCatalog.length > 0 && loadPresets) {
+        items = matchingCatalog.map((p, iIdx) => {
+          const essentialDesc = p.essentialDesc || p.defaultDesc || '';
+          const signatureDesc = p.signatureDesc || p.defaultDesc || '';
+          const eliteDesc = p.eliteDesc || p.defaultDesc || '';
+
+          let rate = p.signatureRate || p.luxuryModern || 1600;
+          let description = signatureDesc;
+
+          if (isEssential) {
+            rate = p.essentialRate || p.modern || 1200;
+            description = essentialDesc;
+          } else if (isElite) {
+            rate = p.eliteRate || p.luxury || 2200;
+            description = eliteDesc;
           }
-          const catNames = (Array.isArray(p.category_names) && p.category_names.length > 0)
-            ? p.category_names.map(c => (c || '').toUpperCase())
-            : [(p.category || '').toUpperCase()].filter(Boolean);
-          return catNames.includes(roomName.toUpperCase());
+
+          const unit = p.defaultUnit || 'Sq.Ft.';
+          const w = (p.defaultW !== null && p.defaultW !== undefined && p.defaultW !== '') ? Number(p.defaultW) : '';
+          const h = (p.defaultH !== null && p.defaultH !== undefined && p.defaultH !== '') ? Number(p.defaultH) : '';
+          let totalArea = 1;
+          if (unit === 'Sq.Ft.' && w && h && Number(w) > 0 && Number(h) > 0) {
+            const rawSqFt = (Number(w) * Number(h)) / 92903;
+            totalArea = Math.ceil(rawSqFt * 2) / 2;
+          }
+
+          const amount = Math.round(totalArea * rate);
+
+          return {
+            id: `item_${timestamp}_${rIdx}_${iIdx}`,
+            productName: toTitleCase(p.name),
+            description,
+            essentialDesc,
+            signatureDesc,
+            eliteDesc,
+            widthMm: w,
+            heightMm: h,
+            totalArea,
+            unit,
+            rate,
+            amount,
+            essentialRate: p.essentialRate || p.modern || 1200,
+            signatureRate: p.signatureRate || p.luxuryModern || 1600,
+            eliteRate: p.eliteRate || p.luxury || 2200
+          };
         });
+      } else if (presetItems.length > 0 && loadPresets) {
+        items = presetItems.map((pi, iIdx) => {
+          const catalogProd = (catalog?.products || []).find(
+            p => p.name.toUpperCase() === pi.productName.toUpperCase()
+          );
 
-        if (matchingCatalog.length > 0) {
-          const isEssential = furnitureTier === 'Essential Collection' || furnitureTier === 'Modern';
-          const isElite = furnitureTier === 'Elite Collection' || furnitureTier === 'Luxury';
+          const essentialDesc = catalogProd?.essentialDesc || catalogProd?.defaultDesc || catalog?.readymadeDescriptions?.[0] || '';
+          const signatureDesc = catalogProd?.signatureDesc || catalogProd?.defaultDesc || catalog?.readymadeDescriptions?.[1] || '';
+          const eliteDesc = catalogProd?.eliteDesc || catalogProd?.defaultDesc || catalog?.readymadeDescriptions?.[2] || '';
 
-          items = matchingCatalog.map((p, iIdx) => {
-            const essentialDesc = p.essentialDesc || p.defaultDesc || '';
-            const signatureDesc = p.signatureDesc || p.defaultDesc || '';
-            const eliteDesc = p.eliteDesc || p.defaultDesc || '';
+          let rate = catalogProd ? (catalogProd.signatureRate || catalogProd.luxuryModern || 1600) : 1500;
+          let description = signatureDesc;
 
-            let rate = p.signatureRate || p.luxuryModern || 1600;
-            let description = signatureDesc;
+          if (isEssential) {
+            rate = catalogProd ? (catalogProd.essentialRate || catalogProd.modern || 1200) : 1200;
+            description = essentialDesc;
+          } else if (isElite) {
+            rate = catalogProd ? (catalogProd.eliteRate || catalogProd.luxury || 2200) : 2200;
+            description = eliteDesc;
+          }
 
-            if (isEssential) {
-              rate = p.essentialRate || p.modern || 1200;
-              description = essentialDesc;
-            } else if (isElite) {
-              rate = p.eliteRate || p.luxury || 2200;
-              description = eliteDesc;
-            }
+          const unit = pi.unit || catalogProd?.defaultUnit || 'Sq.Ft.';
+          const w = (pi.widthMm !== null && pi.widthMm !== undefined && pi.widthMm !== '') ? Number(pi.widthMm) : '';
+          const h = (pi.heightMm !== null && pi.heightMm !== undefined && pi.heightMm !== '') ? Number(pi.heightMm) : '';
+          let totalArea = pi.totalArea || 1;
+          if (unit === 'Sq.Ft.' && w && h && Number(w) > 0 && Number(h) > 0) {
+            const rawSqFt = (Number(w) * Number(h)) / 92903;
+            totalArea = Math.ceil(rawSqFt * 2) / 2;
+          }
 
-            const unit = p.defaultUnit || 'Sq.Ft.';
-            const w = (p.defaultW !== null && p.defaultW !== undefined && p.defaultW !== '') ? Number(p.defaultW) : '';
-            const h = (p.defaultH !== null && p.defaultH !== undefined && p.defaultH !== '') ? Number(p.defaultH) : '';
-            let totalArea = 1;
-            if (unit === 'Sq.Ft.' && w && h && Number(w) > 0 && Number(h) > 0) {
-              const rawSqFt = (Number(w) * Number(h)) / 92903;
-              totalArea = Math.ceil(rawSqFt * 2) / 2;
-            }
+          const amount = Math.round(totalArea * rate);
 
-            const amount = Math.round(totalArea * rate);
-
-            return {
-              id: `item_${timestamp}_${rIdx}_${iIdx}`,
-              productName: p.name,
-              description,
-              essentialDesc,
-              signatureDesc,
-              eliteDesc,
-              widthMm: w,
-              heightMm: h,
-              totalArea,
-              unit,
-              rate,
-              amount,
-              essentialRate: p.essentialRate || p.modern || 1200,
-              signatureRate: p.signatureRate || p.luxuryModern || 1600,
-              eliteRate: p.eliteRate || p.luxury || 2200
-            };
-          });
-        }
+          return {
+            id: `item_${timestamp}_${rIdx}_${iIdx}`,
+            productName: toTitleCase(pi.productName),
+            description,
+            essentialDesc,
+            signatureDesc,
+            eliteDesc,
+            widthMm: w,
+            heightMm: h,
+            totalArea,
+            unit,
+            rate,
+            amount,
+            essentialRate: catalogProd?.essentialRate || catalogProd?.modern || 1200,
+            signatureRate: catalogProd?.signatureRate || catalogProd?.luxuryModern || 1600,
+            eliteRate: catalogProd?.eliteRate || catalogProd?.luxury || 2200
+          };
+        });
       }
 
       // If still no items generated (e.g. custom room or user chose blank), provide a starter item
@@ -260,7 +266,7 @@ const AddRoomModal = ({
 
         items.push({
           id: `item_${timestamp}_${rIdx}_0`,
-          productName: defaultProd.name || 'FURNITURE / UNIT',
+          productName: toTitleCase(defaultProd.name || 'Furniture / Unit'),
           description,
           essentialDesc,
           signatureDesc,

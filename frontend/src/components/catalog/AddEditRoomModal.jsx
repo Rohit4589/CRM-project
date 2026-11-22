@@ -316,11 +316,11 @@ const AddEditRoomModal = ({ room, allProducts = [], onClose, onSave, saving = fa
                         letterSpacing: '0.3px'
                       }}
                     >
-                      {prod.name}
+                      {toTitleCase(prod.name)}
                       <button
                         type="button"
                         onClick={() => handleRemoveProduct(prod.id)}
-                        title={`Remove ${prod.name}`}
+                        title={`Remove ${toTitleCase(prod.name)}`}
                         style={{
                           background: 'rgba(255, 255, 255, 0.25)',
                           border: 'none',

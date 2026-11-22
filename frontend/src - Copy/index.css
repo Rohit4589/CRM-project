@@ -1,0 +1,1035 @@
+/* ============================================
+   Modern Interior — Design System
+   Premium Interior Design Management Platform
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* 3-Color Luxury Combination */
+  --content-white: #FFFFFF;        /* Color 1: Crisp White for content area */
+  --cashmere-greige: #E6DFD5;      /* Color 2 (7th): Warm Cashmere Greige (Sidebar) */
+  --sandstone-alabaster: #F3EDE6;  /* Color 3 (8th): Alabaster Sandstone (Header) */
+
+  /* Primary Palette */
+  --navy: #1F242D;
+  --navy-light: #2A303C;
+  --navy-muted: #4B5563;
+
+  /* Accent - Rich Dark Espresso / Bold Fresh Coffee */
+  --gold: #4A2C17;
+  --gold-light: #61391E;
+  --gold-dark: #361E0E;
+  --gold-bg: rgba(74, 44, 23, 0.08);
+  --gold-border: rgba(74, 44, 23, 0.22);
+
+  /* Neutrals */
+  --bg-page: #FAF8F5;              /* Soft warm luxury canvas */
+  --bg-card: #FFFFFF;              /* Crisp White for content cards */
+  --bg-hover: #F3EDE6;
+  --bg-subtle: #F9F6F1;
+
+  /* Borders — Luxury Coffee Border System */
+  --border: #D1C2AF;
+  --border-light: #E4D9CC;
+  --coffee-border: #D1C2AF;
+  --coffee-border-dark: #9A7B56;
+  --coffee-dark: #5C3D24;
+  --coffee-medium: #8C5521;
+
+  /* Text */
+  --text-primary: #1F1A17;
+  --text-secondary: #5C4E43;
+  --text-muted: #8C7B6D;
+  --text-inverse: #FFFFFF;
+
+  /* Status (No Blue) */
+  --success: #059669;
+  --success-bg: #ECFDF5;
+  --success-border: #A7F3D0;
+  --warning: #D97706;
+  --warning-bg: #FFFBEB;
+  --warning-border: #FDE68A;
+  --danger: #DC2626;
+  --danger-bg: #FEF2F2;
+  --danger-border: #FECACA;
+  --info: #8C5521;
+  --info-bg: #F5EFEB;
+
+  /* Shadows — Warm Coffee Luxury Elevation */
+  --shadow-xs: 0 1px 2px rgba(100, 70, 40, 0.04);
+  --shadow-sm: 0 2px 5px rgba(100, 70, 40, 0.05), 0 1px 2px rgba(100, 70, 40, 0.03);
+  --shadow-md: 0 4px 14px -1px rgba(100, 70, 40, 0.07), 0 2px 4px -1px rgba(100, 70, 40, 0.04);
+  --shadow-lg: 0 10px 24px -3px rgba(100, 70, 40, 0.09), 0 4px 6px -2px rgba(100, 70, 40, 0.03);
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --header-height: 64px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /* Transitions */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Noto Sans Devanagari', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+/* ============================================
+   Layout
+   ============================================ */
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.main-wrapper {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
+  max-width: calc(100% - var(--sidebar-width));
+  width: calc(100% - var(--sidebar-width));
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF8F5;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1C2AF;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9A7B56;
+}
+
+/* ============================================
+   Button System
+   ============================================ */
+
+.btn-primary {
+  background: var(--gold);
+  color: var(--text-inverse);
+  border: none;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.01em;
+}
+
+.btn-primary:hover {
+  background: var(--gold-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 44, 23, 0.28);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-success {
+  background: var(--success);
+  color: var(--text-inverse);
+  border: none;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s var(--ease);
+}
+
+.btn-success:hover {
+  background: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+}
+
+.btn-success:active {
+  transform: translateY(0);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: var(--text-inverse);
+  border: none;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s var(--ease);
+}
+
+.btn-danger:hover {
+  background: #B91C1C;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+}
+
+.btn-danger:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   Table System
+   ============================================ */
+
+table tbody tr {
+  transition: background-color 0.15s var(--ease);
+}
+
+table tbody tr:hover {
+  background-color: var(--bg-subtle) !important;
+}
+
+/* ============================================
+   Scrollbar
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ============================================
+   Responsive Utilities & Breakpoints
+   ============================================ */
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   Desktop Scaling for Standard & 1366x768 Screens
+   ============================================ */
+@media (max-width: 1440px) and (min-width: 1025px) {
+  :root {
+    --sidebar-width: 220px;
+    --header-height: 56px;
+  }
+
+  html {
+    font-size: 13px;
+  }
+
+  .dashboard-content {
+    padding: 16px 20px !important;
+  }
+
+  .header {
+    padding: 0 20px !important;
+  }
+
+  .sidebar-menu {
+    padding: 10px 0 16px !important;
+  }
+
+  .menu-title {
+    padding: 10px 18px 4px !important;
+    font-size: 9.5px !important;
+  }
+
+  .menu-item {
+    padding: 8px 18px !important;
+    font-size: 12.5px !important;
+    gap: 10px !important;
+  }
+
+  .menu-item i {
+    font-size: 13px !important;
+  }
+
+  .sidebar-brand {
+    min-height: 80px !important;
+    padding: 12px 16px !important;
+  }
+
+  .sidebar-logo-img {
+    max-height: 40px !important;
+  }
+}
+
+@media (max-width: 1366px) and (min-width: 1025px) {
+  :root {
+    --sidebar-width: 205px;
+    --header-height: 52px;
+  }
+
+  html {
+    font-size: 12.5px;
+  }
+
+  .dashboard-content {
+    padding: 14px 16px !important;
+  }
+
+  .header {
+    padding: 0 16px !important;
+  }
+
+  .menu-title {
+    padding: 8px 14px 4px !important;
+    font-size: 9px !important;
+  }
+
+  .menu-item {
+    padding: 7px 14px !important;
+    font-size: 12px !important;
+    gap: 8px !important;
+  }
+
+  .menu-item i {
+    font-size: 12px !important;
+  }
+
+  .sidebar-brand {
+    min-height: 74px !important;
+    padding: 10px 14px !important;
+  }
+
+  .sidebar-logo-img {
+    max-height: 36px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .main-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .dashboard-content {
+    padding: 20px 18px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  .dashboard-content {
+    padding: 14px 12px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+
+  .page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+    padding-bottom: 8px !important;
+  }
+
+  .page-title {
+    font-size: 19px !important;
+    margin-bottom: 2px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Automatically hide decorative subtitles on mobile to save vertical space & eliminate scrolling */
+  .page-header p,
+  .page-subtitle,
+  .dash-hero-desc,
+  .kpi-sub-text {
+    display: none !important;
+  }
+
+  .header-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  .search-box {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Keep buttons compact & touch-friendly on mobile */
+  .btn-primary, .btn-secondary, .btn-success, .btn-danger {
+    min-height: 34px;
+    padding: 6px 12px;
+    font-size: 12px;
+    touch-action: manipulation;
+    white-space: nowrap;
+  }
+
+  .btn-full-mobile {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .panel {
+    padding: 14px 12px !important;
+    border-radius: 10px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-width: 100% !important;
+  }
+
+  /* Table safety on mobile: must scroll cleanly horizontally without stretching the page */
+  .table-responsive {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+  }
+
+  /* Modal responsiveness on mobile */
+  .modal-dialog, 
+  div[style*="maxWidth: 620px"], 
+  div[style*="maxWidth: 600px"], 
+  div[style*="maxWidth: 580px"], 
+  div[style*="maxWidth: 500px"],
+  div[style*="maxWidth: 700px"] {
+    width: 95% !important;
+    max-width: 95vw !important;
+    margin: 10px auto !important;
+    padding: 16px 12px !important;
+    box-sizing: border-box !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-content {
+    padding: 12px 8px !important;
+  }
+
+  .page-title {
+    font-size: 18px !important;
+  }
+
+  .header-actions {
+    gap: 6px !important;
+  }
+}
+
+/* ============================================
+   Hindi & Marathi High-Visibility Typography System
+   Makes all Hindi text bold, dark, high contrast, and larger
+   ============================================ */
+
+.lang-hi, [data-lang="hi"],
+.lang-mr, [data-lang="mr"] {
+  font-family: 'Noto Sans Devanagari', 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  --text-primary: #120D0A;
+  --text-secondary: #2C2017;
+  --text-muted: #423226;
+}
+
+/* Base Body when Hindi is selected */
+.lang-hi body, [data-lang="hi"] body,
+body[data-lang="hi"], body[data-lang="mr"] {
+  font-family: 'Noto Sans Devanagari', 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #120D0A;
+}
+
+/* Hero / Welcome Banner */
+.lang-hi .dash-hero-left h1,
+[data-lang="hi"] .dash-hero-left h1,
+body[data-lang="hi"] .dash-hero-left h1 {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  color: #120D0A !important;
+  letter-spacing: 0 !important;
+}
+
+.lang-hi .dash-hero-left p,
+[data-lang="hi"] .dash-hero-left p,
+body[data-lang="hi"] .dash-hero-left p {
+  font-size: 14.5px !important;
+  color: #2D1E14 !important;
+  font-weight: 600 !important;
+  margin-top: 4px !important;
+  line-height: 1.5 !important;
+}
+
+.lang-hi .dash-date,
+[data-lang="hi"] .dash-date,
+body[data-lang="hi"] .dash-date {
+  font-size: 13.5px !important;
+  color: #4A2C17 !important;
+  font-weight: 700 !important;
+}
+
+/* KPI Cards in Hindi: Bold, Dark & Prominent */
+.lang-hi .dash-kpi-label,
+[data-lang="hi"] .dash-kpi-label,
+body[data-lang="hi"] .dash-kpi-label {
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  color: #381E0C !important;
+  letter-spacing: 0.2px !important;
+}
+
+.lang-hi .dash-kpi-value,
+[data-lang="hi"] .dash-kpi-value,
+body[data-lang="hi"] .dash-kpi-value {
+  font-size: 27px !important;
+  font-weight: 800 !important;
+  color: #120D0A !important;
+}
+
+.lang-hi .dash-kpi-meta,
+[data-lang="hi"] .dash-kpi-meta,
+body[data-lang="hi"] .dash-kpi-meta {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #3B2A1E !important;
+  line-height: 1.4 !important;
+}
+
+.lang-hi .dash-kpi-meta.success,
+[data-lang="hi"] .dash-kpi-meta.success,
+body[data-lang="hi"] .dash-kpi-meta.success {
+  color: #047857 !important;
+  font-weight: 800 !important;
+}
+
+/* Quick Action Buttons in Hindi */
+.lang-hi .dash-quick-btn,
+[data-lang="hi"] .dash-quick-btn,
+body[data-lang="hi"] .dash-quick-btn {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #1F1209 !important;
+  border: 1.5px solid #C4B09A !important;
+  padding: 10px 18px !important;
+  background: #FFFFFF !important;
+}
+
+.lang-hi .dash-quick-btn:hover,
+[data-lang="hi"] .dash-quick-btn:hover,
+body[data-lang="hi"] .dash-quick-btn:hover {
+  background: #F3EDE6 !important;
+  color: #000000 !important;
+  border-color: #8C5521 !important;
+}
+
+/* Cards & Panel Headers */
+.lang-hi .dash-card-title,
+[data-lang="hi"] .dash-card-title,
+body[data-lang="hi"] .dash-card-title {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #1F150E !important;
+}
+
+.lang-hi .dash-card-action,
+[data-lang="hi"] .dash-card-action,
+body[data-lang="hi"] .dash-card-action {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #381E0C !important;
+  border: 1.5px solid #C4B09A !important;
+  background: #FFFFFF !important;
+}
+
+/* Attendance Snapshot Card in Hindi */
+.lang-hi .dash-attendance-stat-label,
+[data-lang="hi"] .dash-attendance-stat-label,
+body[data-lang="hi"] .dash-attendance-stat-label {
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #261B13 !important;
+  letter-spacing: 0.2px !important;
+}
+
+.lang-hi .dash-attendance-stat-value,
+[data-lang="hi"] .dash-attendance-stat-value,
+body[data-lang="hi"] .dash-attendance-stat-value {
+  font-size: 22px !important;
+  font-weight: 800 !important;
+}
+
+.lang-hi .dash-attendance-name,
+[data-lang="hi"] .dash-attendance-name,
+body[data-lang="hi"] .dash-attendance-name {
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  color: #120D0A !important;
+}
+
+.lang-hi .dash-attendance-site,
+[data-lang="hi"] .dash-attendance-site,
+body[data-lang="hi"] .dash-attendance-site {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #423226 !important;
+}
+
+.lang-hi .dash-attendance-loc,
+[data-lang="hi"] .dash-attendance-loc,
+body[data-lang="hi"] .dash-attendance-loc {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #3D2D21 !important;
+}
+
+.lang-hi .dash-view-all,
+[data-lang="hi"] .dash-view-all,
+body[data-lang="hi"] .dash-view-all {
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  color: #4A2C17 !important;
+}
+
+/* Tables across the entire CRM in Hindi */
+.lang-hi table thead th,
+[data-lang="hi"] table thead th,
+body[data-lang="hi"] table thead th,
+.lang-hi .dash-project-table thead th,
+[data-lang="hi"] .dash-project-table thead th {
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #1F150E !important;
+  letter-spacing: 0.2px !important;
+}
+
+.lang-hi table tbody td,
+[data-lang="hi"] table tbody td,
+body[data-lang="hi"] table tbody td {
+  font-size: 13.5px !important;
+  color: #1F1711 !important;
+  font-weight: 500;
+}
+
+/* Sidebar Menu in Hindi */
+.lang-hi .menu-title,
+[data-lang="hi"] .menu-title,
+body[data-lang="hi"] .menu-title {
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  color: #4A3A2F !important;
+  letter-spacing: 1.2px !important;
+}
+
+.lang-hi .menu-item,
+[data-lang="hi"] .menu-item,
+body[data-lang="hi"] .menu-item {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #1F1711 !important;
+}
+
+.lang-hi .menu-item.active,
+[data-lang="hi"] .menu-item.active,
+body[data-lang="hi"] .menu-item.active {
+  font-weight: 800 !important;
+  color: #361E0E !important;
+}
+
+/* Primary Action Buttons */
+.lang-hi .btn-primary,
+[data-lang="hi"] .btn-primary,
+body[data-lang="hi"] .btn-primary {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  padding: 10px 20px !important;
+  letter-spacing: 0.2px !important;
+}
+
+/* Form Labels & Inputs */
+.lang-hi label,
+[data-lang="hi"] label,
+body[data-lang="hi"] label {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #261B13 !important;
+}
+
+.lang-hi input,
+.lang-hi select,
+.lang-hi textarea,
+[data-lang="hi"] input,
+[data-lang="hi"] select,
+[data-lang="hi"] textarea,
+body[data-lang="hi"] input,
+body[data-lang="hi"] select,
+body[data-lang="hi"] textarea {
+  font-size: 13.5px !important;
+  color: #120D0A !important;
+  font-weight: 500;
+}
+
+/* Salary Shifts Table Screen Default */
+.salary-shifts-table {
+  min-width: 850px;
+}
+
+/* ============================================
+   Global Print Styles
+   ============================================ */
+@page {
+  size: A4 portrait;
+  margin: 14mm 10mm 12mm 10mm;
+  margin-top: 14mm;
+  margin-bottom: 12mm;
+  margin-left: 10mm;
+  margin-right: 10mm;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 10mm 12mm 10mm;
+    margin-top: 14mm;
+    margin-bottom: 12mm;
+    margin-left: 10mm;
+    margin-right: 10mm;
+  }
+  /* Hide CRM shell elements when printing */
+  .sidebar,
+  .app-sidebar,
+  aside,
+  header,
+  .header,
+  .topbar,
+  .app-header,
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  /* Reset body and layout */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .layout {
+    display: block !important;
+  }
+
+  .main-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .dashboard-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Dedicated sheet container giving safe margin */
+  .salary-sheet-page {
+    padding: 4mm 6mm !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+  }
+
+  /* Ensure print-only elements display cleanly */
+  .salary-print-header,
+  .salary-print-footer,
+  .print-only {
+    display: block !important;
+  }
+
+  .salary-print-footer {
+    page-break-inside: avoid !important;
+  }
+
+  /* Hide Timings & Work Hours on PDF/Print */
+  .salary-hide-on-print {
+    display: none !important;
+  }
+
+  /* 4-column print summary rows */
+  .salary-print-summary-group {
+    display: table-row-group !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .salary-print-total-row {
+    display: table-row !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .salary-print-total-row td {
+    padding: 7px 10px !important;
+    vertical-align: middle !important;
+  }
+  .salary-print-total-row td:first-child {
+    width: 68% !important;
+    text-align: left !important;
+  }
+  .salary-print-total-row td:nth-child(2) {
+    width: 16% !important;
+    text-align: center !important;
+  }
+  .salary-print-total-row td:nth-child(3) {
+    width: 16% !important;
+    text-align: right !important;
+  }
+
+  /* Remove table overflow wrappers and shadows in print */
+  .table-responsive {
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: 1px solid #CBD5E1 !important;
+    border-radius: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Salary Table Specific Print Optimizations: 4 Clean Columns */
+  table.salary-shifts-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  /* Grouped date blocks: individual rows avoid breaks, allowing natural page fill */
+  tbody.salary-date-group {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+  tbody.salary-date-group tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Pixel-perfect 4-column alignment */
+  table.salary-shifts-table th.col-date,
+  table.salary-shifts-table td.col-date {
+    width: 16% !important;
+    text-align: left !important;
+    vertical-align: middle !important;
+  }
+
+  table.salary-shifts-table th.col-site,
+  table.salary-shifts-table td.col-site {
+    width: 52% !important;
+    text-align: left !important;
+    vertical-align: middle !important;
+  }
+
+  table.salary-shifts-table th.col-dayval,
+  table.salary-shifts-table td.col-dayval {
+    width: 16% !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+  }
+
+  table.salary-shifts-table th.col-salary,
+  table.salary-shifts-table td.col-salary {
+    width: 16% !important;
+    text-align: right !important;
+    vertical-align: middle !important;
+  }
+
+  table.salary-shifts-table th,
+  table.salary-shifts-table td {
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    box-sizing: border-box !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+
+  table.salary-shifts-table th {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    padding: 9px 10px !important;
+    background: #E2E8F0 !important;
+    color: #0F172A !important;
+    border-bottom: 2px solid #94A3B8 !important;
+  }
+
+  .salary-shifts-table .shift-badge-tag {
+    padding: 2px 7px !important;
+    font-size: 10.5px !important;
+    border-radius: 6px !important;
+  }
+
+  .salary-shifts-table .shift-salary-tag {
+    padding: 2px 7px !important;
+    font-size: 11.5px !important;
+    border-radius: 4px !important;
+  }
+
+  table {
+    width: 100% !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Salary table header only prints on Page 1 (does not repeat on Page 2) */
+  table.salary-shifts-table thead {
+    display: table-row-group !important;
+  }
+
+
+  tfoot {
+    display: table-row-group !important;
+  }
+
+  /* Site-Wise Breakdown Print Table */
+  .salary-site-breakdown-card {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-top: 14px !important;
+    border: 1px solid #CBD5E1 !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+  }
+
+  table.salary-site-breakdown-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  table.salary-site-breakdown-table th,
+  table.salary-site-breakdown-table td {
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    box-sizing: border-box !important;
+    vertical-align: middle !important;
+  }
+  table.salary-site-breakdown-table th:first-child,
+  table.salary-site-breakdown-table td:first-child {
+    width: 68% !important;
+    text-align: left !important;
+  }
+  table.salary-site-breakdown-table th:nth-child(2),
+  table.salary-site-breakdown-table td:nth-child(2) {
+    width: 16% !important;
+    text-align: center !important;
+  }
+  table.salary-site-breakdown-table th:nth-child(3),
+  table.salary-site-breakdown-table td:nth-child(3) {
+    width: 16% !important;
+    text-align: right !important;
+  }
+
+  table.salary-site-breakdown-table th {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    background: #E2E8F0 !important;
+    color: #0F172A !important;
+    border-bottom: 1.5px solid #94A3B8 !important;
+  }
+}
+
+
+/* Global Compact Design System */
+.page-title {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+.page-header {
+  margin-bottom: 12px !important;
+}
+
+.page-header p,
+.page-subtitle {
+  display: none !important;
+}

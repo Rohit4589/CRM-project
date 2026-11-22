@@ -13,7 +13,8 @@ const EstimateRoomSection = ({
   onMoveUp,
   onMoveDown,
   onRoomChange,
-  onRoomDelete
+  onRoomDelete,
+  onOpenCreateProduct
 }) => {
   const handleItemChange = (itemIndex, updatedItem) => {
     const updatedItems = [...room.items];
@@ -237,6 +238,7 @@ const EstimateRoomSection = ({
                 onMoveDown={() => handleMoveItemDown(idx)}
                 onChange={(updated) => handleItemChange(idx, updated)}
                 onRemove={() => handleRemoveItem(idx)}
+                onOpenCreateProduct={onOpenCreateProduct ? (target) => onOpenCreateProduct({ ...target, roomIndex }) : undefined}
               />
             ))}
 

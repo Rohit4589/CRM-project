@@ -1,5 +1,35 @@
 const pool = require('../config/db');
 
+const KNOWN_ACRONYMS = new Set([
+  'SS', 'BWR', 'PVC', 'LED', 'PU', 'MS', 'CNC', 'HDHMR', 'MDF', 'GI', 'CP', 'WPC', 'ACP', 'MM', 'RFT', 'SQFT', 'NOS', 'TV', '2D', '3D'
+]);
+
+const MINOR_WORDS = new Set([
+  'a', 'an', 'the',
+  'and', 'or', 'nor', 'but',
+  'of', 'in', 'on', 'at', 'to', 'for', 'by', 'with', 'from', 'into', 'onto', 'as', 'per', 'etc'
+]);
+
+const toTitleCase = (val) => {
+  if (!val || typeof val !== 'string') return val;
+  return val.replace(/\b([A-Za-z0-9'-]+)\b/g, (match, word, offset) => {
+    const upperWord = word.toUpperCase();
+    if (KNOWN_ACRONYMS.has(upperWord)) {
+      return upperWord;
+    }
+    const lower = word.toLowerCase();
+    const isStartOfSentence = offset === 0 || /[\n\r.!?]\s*$/.test(val.slice(0, offset));
+    if (!isStartOfSentence && MINOR_WORDS.has(lower)) {
+      return lower;
+    }
+    const upperCount = word.replace(/[^A-Z]/g, '').length;
+    if (upperCount >= 2 && word !== upperWord) {
+      return word;
+    }
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  });
+};
+
 // ==========================================
 // CATEGORY CONTROLLERS (ROOMS / CATEGORIES)
 // ==========================================
@@ -11,6 +41,20 @@ const pool = require('../config/db');
 exports.getCategories = async (req, res) => {
   try {
     const { project_type } = req.query;
+
+    // Self-healing sync: ensure any products with category_id are linked in junction table
+    try {
+      await pool.query(`
+        INSERT INTO estimate_category_products (category_id, product_id)
+        SELECT category_id, id 
+        FROM estimate_products 
+        WHERE category_id IS NOT NULL
+        ON CONFLICT DO NOTHING
+      `);
+    } catch (syncErr) {
+      // non-blocking
+    }
+
     let query = `
       SELECT c.*,
         COALESCE(
@@ -52,7 +96,7 @@ exports.createCategory = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Room/Category name is required' });
     }
 
-    const cleanName = name.trim().toUpperCase();
+    const cleanName = name ? toTitleCase(name.trim()) : '';
 
     // Check if exists
     const check = await pool.query('SELECT id FROM estimate_categories WHERE UPPER(name) = $1', [cleanName]);
@@ -217,7 +261,15 @@ exports.getProducts = async (req, res) => {
             WHERE ecp.product_id = p.id
           ),
           ARRAY[]::text[]
-        ) AS category_names
+        ) AS category_names,
+        COALESCE(
+          (
+            SELECT array_agg(ecp.category_id)
+            FROM estimate_category_products ecp
+            WHERE ecp.product_id = p.id
+          ),
+          ARRAY[]::int[]
+        ) AS category_ids
       FROM estimate_products p
       WHERE 1=1
     `;
@@ -278,6 +330,7 @@ exports.createProduct = async (req, res) => {
       name,
       category_id,
       category_name,
+      category_ids,
       unit = 'Sq.Ft.',
       essential_rate,
       signature_rate,
@@ -300,8 +353,18 @@ exports.createProduct = async (req, res) => {
     let finalCatId = category_id || null;
     let finalCatName = category_name || '';
 
-    // If category_id provided, fetch category_name
-    if (finalCatId) {
+    if (Array.isArray(category_ids)) {
+      if (category_ids.length > 0) {
+        finalCatId = category_ids[0];
+        const catRes = await pool.query('SELECT name FROM estimate_categories WHERE id = $1', [finalCatId]);
+        if (catRes.rows.length > 0) {
+          finalCatName = catRes.rows[0].name;
+        }
+      } else {
+        finalCatId = null;
+        finalCatName = null;
+      }
+    } else if (finalCatId) {
       const catRes = await pool.query('SELECT name FROM estimate_categories WHERE id = $1', [finalCatId]);
       if (catRes.rows.length > 0) {
         finalCatName = catRes.rows[0].name;
@@ -345,7 +408,7 @@ exports.createProduct = async (req, res) => {
       RETURNING *
     `, [
       finalCatId,
-      finalCatName || 'LIVING ROOM',
+      finalCatName || null,
       cleanName,
       unit,
       finalEssentialRate,
@@ -365,7 +428,16 @@ exports.createProduct = async (req, res) => {
     const createdProduct = result.rows[0];
 
     // Link created product to category in junction table
-    if (finalCatId) {
+    if (Array.isArray(category_ids)) {
+      for (const cid of category_ids) {
+        if (cid) {
+          await pool.query(
+            'INSERT INTO estimate_category_products (category_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [cid, createdProduct.id]
+          );
+        }
+      }
+    } else if (finalCatId) {
       await pool.query(
         'INSERT INTO estimate_category_products (category_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
         [finalCatId, createdProduct.id]
@@ -394,6 +466,7 @@ exports.updateProduct = async (req, res) => {
       name,
       category_id,
       category_name,
+      category_ids,
       unit,
       essential_rate,
       signature_rate,
@@ -409,10 +482,22 @@ exports.updateProduct = async (req, res) => {
       default_description
     } = req.body;
 
+    const isCategoryProvided = Array.isArray(category_ids) || category_id !== undefined;
     let finalCatId = category_id !== undefined ? category_id : null;
-    let finalCatName = category_name;
+    let finalCatName = category_name !== undefined ? category_name : null;
 
-    if (finalCatId) {
+    if (Array.isArray(category_ids)) {
+      if (category_ids.length > 0) {
+        finalCatId = category_ids[0];
+        const catRes = await pool.query('SELECT name FROM estimate_categories WHERE id = $1', [finalCatId]);
+        if (catRes.rows.length > 0) {
+          finalCatName = catRes.rows[0].name;
+        }
+      } else {
+        finalCatId = null;
+        finalCatName = null;
+      }
+    } else if (finalCatId) {
       const catRes = await pool.query('SELECT name FROM estimate_categories WHERE id = $1', [finalCatId]);
       if (catRes.rows.length > 0) {
         finalCatName = catRes.rows[0].name;
@@ -427,8 +512,8 @@ exports.updateProduct = async (req, res) => {
       UPDATE estimate_products
       SET 
         name = COALESCE($1, name),
-        category_id = COALESCE($2, category_id),
-        category_name = COALESCE($3, category_name),
+        category_id = (CASE WHEN $15::boolean THEN $2 ELSE category_id END),
+        category_name = (CASE WHEN $15::boolean THEN $3 ELSE category_name END),
         unit = COALESCE($4, unit),
         essential_rate = COALESCE($5, essential_rate),
         signature_rate = COALESCE($6, signature_rate),
@@ -446,7 +531,7 @@ exports.updateProduct = async (req, res) => {
       WHERE id = $14
       RETURNING *
     `, [
-      name ? name.trim().toUpperCase() : null,
+      name ? toTitleCase(name.trim()) : null,
       finalCatId,
       finalCatName,
       unit,
@@ -459,11 +544,33 @@ exports.updateProduct = async (req, res) => {
       default_width !== undefined ? (default_width ? Number(default_width) : null) : null,
       default_height !== undefined ? (default_height ? Number(default_height) : null) : null,
       default_description !== undefined ? default_description : null,
-      id
+      id,
+      isCategoryProvided
     ]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    // Update junction table
+    if (Array.isArray(category_ids)) {
+      await pool.query('DELETE FROM estimate_category_products WHERE product_id = $1', [id]);
+      for (const cid of category_ids) {
+        if (cid) {
+          await pool.query(
+            'INSERT INTO estimate_category_products (category_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [cid, id]
+          );
+        }
+      }
+    } else if (finalCatId) {
+      await pool.query('DELETE FROM estimate_category_products WHERE product_id = $1', [id]);
+      await pool.query(
+        'INSERT INTO estimate_category_products (category_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [finalCatId, id]
+      );
+    } else if (isCategoryProvided && finalCatId === null) {
+      await pool.query('DELETE FROM estimate_category_products WHERE product_id = $1', [id]);
     }
 
     res.json({
