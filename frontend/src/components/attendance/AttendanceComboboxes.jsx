@@ -1,4 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+
+// Global event to ensure only ONE combobox dropdown is open at a time
+const notifyComboboxOpened = (id) => {
+  if (typeof window !== 'undefined' && id) {
+    window.dispatchEvent(new CustomEvent('combobox-opened', { detail: { id } }));
+  }
+};
 
 // Helper to highlight matching substrings
 const HighlightedText = ({ text = '', query = '' }) => {
@@ -48,12 +56,52 @@ export const EmployeeCombobox = ({
   onEnterNext,
   id
 }) => {
-  const selectedEmp = employees.find(e => 
-    (value && (String(e.dbId) === String(value) || String(e.id) === String(value) || String(e.empCode) === String(value))) ||
-    (fallbackText && (e.name || e.fullName || '').trim().toLowerCase() === String(fallbackText).trim().toLowerCase())
-  );
+  const selectedEmp = employees.find(e => {
+    if (!value && !fallbackText) return false;
+    if (value !== undefined && value !== null && value !== '') {
+      const valStr = String(value).trim();
+      if (e.dbId !== undefined && e.dbId !== null && String(e.dbId) === valStr) return true;
+      if (e.id !== undefined && e.id !== null && String(e.id) === valStr) return true;
+      if (e.empCode && String(e.empCode).toLowerCase() === valStr.toLowerCase()) return true;
+      if (e.code && String(e.code).toLowerCase() === valStr.toLowerCase()) return true;
+      const valNum = parseInt(valStr, 10);
+      if (!isNaN(valNum)) {
+        if (e.dbId && Number(e.dbId) === valNum) return true;
+        const eNum = parseInt(String(e.id || e.empCode || '').replace(/\D/g, ''), 10);
+        if (!isNaN(eNum) && eNum === valNum) return true;
+      }
+    }
+    if (fallbackText) {
+      const fb = String(fallbackText).trim().toLowerCase();
+      const eName = (e.name || e.fullName || '').trim().toLowerCase();
+      if (eName === fb) return true;
+    }
+    return false;
+  });
 
   const [isOpen, setIsOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState(null);
+
+  const openDropdown = () => {
+    setIsOpen(true);
+    notifyComboboxOpened(id);
+  };
+
+  const closeDropdown = () => {
+    setIsOpen(false);
+    setMenuStyle(null);
+  };
+
+  // Close this dropdown immediately if another combobox opens anywhere
+  useEffect(() => {
+    const handleOtherOpen = (e) => {
+      if (e.detail?.id && e.detail.id !== id) {
+        closeDropdown();
+      }
+    };
+    window.addEventListener('combobox-opened', handleOtherOpen);
+    return () => window.removeEventListener('combobox-opened', handleOtherOpen);
+  }, [id]);
   const [query, setQuery] = useState(() => {
     return selectedEmp ? (selectedEmp.name || selectedEmp.fullName || '') : (fallbackText || '');
   });
@@ -61,9 +109,49 @@ export const EmployeeCombobox = ({
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+  const isInteractingWithDropdownRef = useRef(false);
+  const isSelectingRef = useRef(false);
+  const blurTimeoutRef = useRef(null);
+
+  // Position floating dropdown in a portal so it is never clipped by table overflow
+  useEffect(() => {
+    if (!isOpen) {
+      setMenuStyle(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const dropdownHeight = 220;
+      const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+
+      setMenuStyle({
+        position: 'fixed',
+        left: `${Math.round(rect.left)}px`,
+        width: `${Math.round(rect.width)}px`,
+        zIndex: 100000,
+        ...(openUp
+          ? { bottom: `${Math.round(window.innerHeight - rect.top + 4)}px` }
+          : { top: `${Math.round(rect.bottom + 4)}px` }
+        )
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen]);
 
   // Sync query when external value, selectedEmp, or fallbackText changes
   useEffect(() => {
+    if (isSelectingRef.current) return;
     if (selectedEmp) {
       setQuery(selectedEmp.name || selectedEmp.fullName || '');
     } else if (fallbackText) {
@@ -73,12 +161,15 @@ export const EmployeeCombobox = ({
     }
   }, [value, selectedEmp, fallbackText]);
 
-  // Click outside listener
+  // Click outside listener (checks both input container and portalized dropdown)
   useEffect(() => {
+    if (!isOpen) return;
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
-        // If closed without selecting, revert to currently selected employee's name or fallback
+      if (isInteractingWithDropdownRef.current) return;
+      const inContainer = containerRef.current && containerRef.current.contains(e.target);
+      const inList = listRef.current && listRef.current.contains(e.target);
+      if (!inContainer && !inList) {
+        closeDropdown();
         if (selectedEmp) {
           setQuery(selectedEmp.name || selectedEmp.fullName || '');
         } else if (fallbackText) {
@@ -90,22 +181,34 @@ export const EmployeeCombobox = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedEmp, fallbackText, value]);
+  }, [isOpen, selectedEmp, fallbackText, value]);
 
-  // Filter employees
+  const selectedEmpName = selectedEmp ? (selectedEmp.name || selectedEmp.fullName || '') : '';
+  const isDisplayingSelected = Boolean(selectedEmp && query.trim().toLowerCase() === selectedEmpName.trim().toLowerCase());
+
+  // Filter employees (when query matches selected employee's full name, keep full roster open with selection highlighted)
   const filteredEmployees = employees.filter(emp => {
-    if (!query.trim()) return true;
+    if (!query.trim() || isDisplayingSelected) return true;
     const q = query.trim().toLowerCase();
     const name = (emp.name || emp.fullName || '').toLowerCase();
     const role = (emp.role || '').toLowerCase();
     const phone = (emp.phone || '').toLowerCase();
-    return name.includes(q) || role.includes(q) || phone.includes(q);
+    const code = (emp.empCode || emp.code || '').toLowerCase();
+    const empId = String(emp.dbId || emp.id || '');
+    return name.includes(q) || role.includes(q) || phone.includes(q) || code.includes(q) || empId === q;
   });
 
-  // Keep highlighted index in bounds
+  // Keep highlighted index in bounds (highlight currently selected employee when browsing)
   useEffect(() => {
+    if (isDisplayingSelected && selectedEmp) {
+      const idx = filteredEmployees.findIndex(e => String(e.dbId || e.id) === String(selectedEmp.dbId || selectedEmp.id));
+      if (idx !== -1) {
+        setHighlightedIndex(idx);
+        return;
+      }
+    }
     setHighlightedIndex(0);
-  }, [query]);
+  }, [query, isDisplayingSelected, selectedEmp, filteredEmployees.length]);
 
   // Scroll active item into view
   useEffect(() => {
@@ -117,21 +220,70 @@ export const EmployeeCombobox = ({
     }
   }, [highlightedIndex, isOpen]);
 
-  const handleSelect = (emp) => {
+  const handleSelect = (emp, shouldAdvance = false) => {
+    isSelectingRef.current = true;
     const empId = emp.dbId || emp.id;
     const rate = Number(emp.dailySalary || 0);
     setQuery(emp.name || emp.fullName || '');
-    setIsOpen(false);
+    closeDropdown();
     onChange(empId, rate);
-    inputRef.current?.focus();
+
+    if (shouldAdvance && onEnterNext) {
+      setTimeout(() => {
+        onEnterNext(rowIndex, colIndex);
+        isSelectingRef.current = false;
+      }, 50);
+    } else {
+      setTimeout(() => {
+        isSelectingRef.current = false;
+      }, 200);
+    }
   };
 
   const handleClear = (e) => {
     e.stopPropagation();
+    isSelectingRef.current = false;
     setQuery('');
-    setIsOpen(true);
     onChange('', 0);
+    openDropdown();
     inputRef.current?.focus();
+  };
+
+  const handleBlur = (e) => {
+    if (isSelectingRef.current || isInteractingWithDropdownRef.current) {
+      return;
+    }
+    if (listRef.current && (listRef.current === e.relatedTarget || listRef.current.contains(e.relatedTarget))) {
+      return;
+    }
+
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    blurTimeoutRef.current = setTimeout(() => {
+      if (isSelectingRef.current || isInteractingWithDropdownRef.current) return;
+      closeDropdown();
+
+      const trimmed = (query || '').trim().toLowerCase();
+      if (trimmed && !selectedEmp) {
+        const exactMatch = employees.find(emp => {
+          const name = (emp.name || emp.fullName || '').trim().toLowerCase();
+          const code = (emp.empCode || emp.code || '').trim().toLowerCase();
+          return name === trimmed || code === trimmed || name.startsWith(trimmed);
+        });
+
+        if (exactMatch) {
+          handleSelect(exactMatch, false);
+          return;
+        }
+      }
+
+      if (selectedEmp) {
+        setQuery(selectedEmp.name || selectedEmp.fullName || '');
+      } else if (fallbackText) {
+        setQuery(fallbackText);
+      } else if (!value) {
+        setQuery('');
+      }
+    }, 150);
   };
 
   const handleKeyDown = (e) => {
@@ -197,13 +349,14 @@ export const EmployeeCombobox = ({
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (filteredEmployees.length > 0 && highlightedIndex >= 0 && highlightedIndex < filteredEmployees.length) {
-        handleSelect(filteredEmployees[highlightedIndex]);
+        handleSelect(filteredEmployees[highlightedIndex], true);
       } else {
         setIsOpen(false);
+        if (onEnterNext) onEnterNext(rowIndex, colIndex);
       }
     } else if (e.key === 'Tab') {
       if (filteredEmployees.length > 0 && highlightedIndex >= 0 && highlightedIndex < filteredEmployees.length) {
-        handleSelect(filteredEmployees[highlightedIndex]);
+        handleSelect(filteredEmployees[highlightedIndex], false);
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -245,15 +398,17 @@ export const EmployeeCombobox = ({
           placeholder={placeholder}
           onFocus={(e) => {
             e.target.select();
+            openDropdown();
           }}
+          onBlur={handleBlur}
           onClick={() => {
-            setIsOpen(true);
+            openDropdown();
           }}
           onKeyDown={handleKeyDown}
           onChange={(e) => {
             const val = e.target.value;
             setQuery(val);
-            setIsOpen(true);
+            openDropdown();
             // If emptied out, clear selected employee
             if (!val.trim() && value) {
               onChange('', 0);
@@ -314,20 +469,26 @@ export const EmployeeCombobox = ({
         )}
       </div>
 
-      {/* Floating Dropdown Filter Results */}
-      {isOpen && (
+      {/* Floating Dropdown Filter Results (Rendered via Portal so never clipped) */}
+      {isOpen && menuStyle && createPortal(
         <div
           ref={listRef}
+          tabIndex={-1}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            isInteractingWithDropdownRef.current = true;
+          }}
+          onMouseUp={() => {
+            setTimeout(() => {
+              isInteractingWithDropdownRef.current = false;
+            }, 200);
+          }}
           style={{
-            position: 'absolute',
-            ...(openUpward ? { bottom: '100%', marginBottom: '4px' } : { top: '100%', marginTop: '4px' }),
-            left: 0,
-            right: 0,
+            ...menuStyle,
             background: '#ffffff',
             borderRadius: '8px',
             border: '1.5px solid #4A2C17',
-            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.22)',
-            zIndex: 9999,
+            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)',
             maxHeight: '220px',
             overflowY: 'auto',
             textAlign: 'left'
@@ -339,14 +500,28 @@ export const EmployeeCombobox = ({
             </div>
           ) : (
             filteredEmployees.map((emp, i) => {
-              const isSelected = String(emp.dbId || emp.id) === String(value);
+              const isSelected = selectedEmp && (
+                String(emp.dbId || emp.id) === String(selectedEmp.dbId || selectedEmp.id) ||
+                String(emp.dbId || emp.id) === String(value)
+              );
               const isHighlighted = i === highlightedIndex;
               const empName = emp.name || emp.fullName || '';
 
               return (
                 <div
-                  key={emp.id || emp.dbId}
-                  onClick={() => handleSelect(emp)}
+                  key={emp.id || emp.dbId || i}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isSelectingRef.current = true;
+                    handleSelect(emp, false);
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isSelectingRef.current = true;
+                    handleSelect(emp, false);
+                  }}
                   onMouseEnter={() => setHighlightedIndex(i)}
                   style={{
                     padding: '8px 10px',
@@ -397,7 +572,8 @@ export const EmployeeCombobox = ({
               );
             })
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -423,19 +599,61 @@ export const SiteCombobox = ({
   onEnterNext,
   id
 }) => {
-  const selectedSite = sites.find(s => 
-    (value && (String(s.dbId) === String(value) || String(s.id) === String(value) || String(s.siteRef) === String(value) || String(s.siteCode) === String(value))) ||
-    (fallbackText && (s.customerName || s.name || '').trim().toLowerCase() === String(fallbackText).trim().toLowerCase())
-  );
+  const selectedSite = sites.find(s => {
+    if (!value && !fallbackText) return false;
+    if (value !== undefined && value !== null && value !== '') {
+      const valStr = String(value).trim();
+      const valNum = parseInt(valStr, 10);
+      if (s.dbId !== undefined && s.dbId !== null && String(s.dbId) === valStr) return true;
+      if (s.id !== undefined && s.id !== null && String(s.id) === valStr) return true;
+      if (s.siteRef && String(s.siteRef).toLowerCase() === valStr.toLowerCase()) return true;
+      if (s.siteCode && String(s.siteCode).toLowerCase() === valStr.toLowerCase()) return true;
+      if (!isNaN(valNum)) {
+        if (s.dbId && Number(s.dbId) === valNum) return true;
+        const refNum = parseInt(String(s.siteRef || s.id || '').replace(/\D/g, ''), 10);
+        if (!isNaN(refNum) && refNum === valNum) return true;
+      }
+    }
+    if (fallbackText) {
+      const fb = String(fallbackText).trim().toLowerCase();
+      const sName = (s.customerName || s.name || '').trim().toLowerCase();
+      if (sName === fb) return true;
+    }
+    return false;
+  });
 
   const formatSiteDisplay = (site) => {
     if (!site) return '';
-    const refPrefix = site.siteRef ? `[${site.siteRef}] ` : '';
+    const ref = site.siteRef || site.siteCode || site.id || '';
+    const refPrefix = ref ? `[${ref}] ` : '';
     const locSuffix = site.location ? ` (${site.location})` : '';
     return `${refPrefix}${site.customerName || site.name || ''}${locSuffix}`.trim();
   };
 
   const [isOpen, setIsOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState(null);
+
+  const openDropdown = () => {
+    setIsOpen(true);
+    notifyComboboxOpened(id);
+  };
+
+  const closeDropdown = () => {
+    setIsOpen(false);
+    setMenuStyle(null);
+  };
+
+  // Close this dropdown immediately if another combobox opens anywhere
+  useEffect(() => {
+    const handleOtherOpen = (e) => {
+      if (e.detail?.id && e.detail.id !== id) {
+        closeDropdown();
+      }
+    };
+    window.addEventListener('combobox-opened', handleOtherOpen);
+    return () => window.removeEventListener('combobox-opened', handleOtherOpen);
+  }, [id]);
+
   const [query, setQuery] = useState(() => {
     return selectedSite ? formatSiteDisplay(selectedSite) : (fallbackText || '');
   });
@@ -443,9 +661,49 @@ export const SiteCombobox = ({
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+  const isInteractingWithDropdownRef = useRef(false);
+  const isSelectingRef = useRef(false);
+  const blurTimeoutRef = useRef(null);
+
+  // Position floating dropdown in a portal so it is never clipped by table overflow
+  useEffect(() => {
+    if (!isOpen) {
+      setMenuStyle(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const dropdownHeight = 220;
+      const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+
+      setMenuStyle({
+        position: 'fixed',
+        left: `${Math.round(rect.left)}px`,
+        width: `${Math.max(Math.round(rect.width), 260)}px`,
+        zIndex: 100000,
+        ...(openUp
+          ? { bottom: `${Math.round(window.innerHeight - rect.top + 4)}px` }
+          : { top: `${Math.round(rect.bottom + 4)}px` }
+        )
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen]);
 
   // Sync display text when external value, selectedSite, or fallbackText changes
   useEffect(() => {
+    if (isSelectingRef.current) return;
     if (selectedSite) {
       setQuery(formatSiteDisplay(selectedSite));
     } else if (fallbackText) {
@@ -455,12 +713,15 @@ export const SiteCombobox = ({
     }
   }, [value, selectedSite, fallbackText]);
 
-  // Click outside listener
+  // Click outside listener (checks both input container and portalized dropdown)
   useEffect(() => {
+    if (!isOpen) return;
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
-        // Reset query back to selected name if closed without selecting
+      if (isInteractingWithDropdownRef.current) return;
+      const inContainer = containerRef.current && containerRef.current.contains(e.target);
+      const inList = listRef.current && listRef.current.contains(e.target);
+      if (!inContainer && !inList) {
+        closeDropdown();
         if (selectedSite) {
           setQuery(formatSiteDisplay(selectedSite));
         } else if (fallbackText) {
@@ -472,23 +733,46 @@ export const SiteCombobox = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedSite, fallbackText, value]);
+  }, [isOpen, selectedSite, fallbackText, value]);
 
-  // Filter sites by siteRef (e.g. '204'), name/customerName, or location
+  const selectedSiteDisplay = selectedSite ? formatSiteDisplay(selectedSite) : '';
+  const isDisplayingSelected = Boolean(selectedSite && query.trim().toLowerCase() === selectedSiteDisplay.trim().toLowerCase());
+
+  // Filter sites (when query matches selected site's full display, keep all sites open with current site highlighted)
   const filteredSites = sites.filter(site => {
-    if (!query.trim()) return true;
+    if (!query.trim() || isDisplayingSelected) return true;
     const q = query.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '');
     const siteRef = String(site.siteRef || site.siteCode || site.id || '').toLowerCase();
+    const siteRefDigits = siteRef.replace(/\D/g, '');
     const name = (site.customerName || site.name || '').toLowerCase();
     const loc = (site.location || '').toLowerCase();
     const combined = `${siteRef} ${name} ${loc}`.toLowerCase();
-    return combined.includes(q);
+
+    if (combined.includes(q)) return true;
+    if (qDigits && siteRefDigits) {
+      if (parseInt(qDigits, 10) === parseInt(siteRefDigits, 10)) return true;
+      if (siteRefDigits.includes(qDigits)) return true;
+    }
+    return false;
   });
 
-  // Keep highlighted index in bounds
+  // Keep highlighted index in bounds (highlight currently selected site when browsing)
   useEffect(() => {
+    if (isDisplayingSelected && selectedSite) {
+      const idx = filteredSites.findIndex(s => {
+        return (
+          (selectedSite.dbId && s.dbId && String(s.dbId) === String(selectedSite.dbId)) ||
+          (selectedSite.id && s.id && String(s.id) === String(selectedSite.id))
+        );
+      });
+      if (idx !== -1) {
+        setHighlightedIndex(idx);
+        return;
+      }
+    }
     setHighlightedIndex(0);
-  }, [query]);
+  }, [query, isDisplayingSelected, selectedSite, filteredSites.length]);
 
   // Scroll active item into view
   useEffect(() => {
@@ -500,20 +784,75 @@ export const SiteCombobox = ({
     }
   }, [highlightedIndex, isOpen]);
 
-  const handleSelect = (site) => {
+  const handleSelect = (site, shouldAdvance = false) => {
+    isSelectingRef.current = true;
     const siteId = site.dbId || site.id;
-    setQuery(formatSiteDisplay(site));
-    setIsOpen(false);
+    const formatted = formatSiteDisplay(site);
+    setQuery(formatted);
+    closeDropdown();
     onChange(siteId);
-    inputRef.current?.focus();
+
+    if (shouldAdvance && onEnterNext) {
+      setTimeout(() => {
+        onEnterNext(rowIndex, colIndex);
+        isSelectingRef.current = false;
+      }, 50);
+    } else {
+      setTimeout(() => {
+        isSelectingRef.current = false;
+      }, 200);
+    }
   };
 
   const handleClear = (e) => {
     e.stopPropagation();
+    isSelectingRef.current = false;
     setQuery('');
-    setIsOpen(true);
     onChange('');
+    openDropdown();
     inputRef.current?.focus();
+  };
+
+  const handleBlur = (e) => {
+    if (isSelectingRef.current || isInteractingWithDropdownRef.current) {
+      return;
+    }
+    if (listRef.current && (listRef.current === e.relatedTarget || listRef.current.contains(e.relatedTarget))) {
+      return;
+    }
+
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    blurTimeoutRef.current = setTimeout(() => {
+      if (isSelectingRef.current || isInteractingWithDropdownRef.current) return;
+      closeDropdown();
+
+      const trimmed = (query || '').trim().toLowerCase();
+      if (trimmed && !selectedSite) {
+        const exactMatch = sites.find(s => {
+          const ref = String(s.siteRef || s.siteCode || s.id || '').toLowerCase();
+          const refDigits = ref.replace(/\D/g, '');
+          const qDigits = trimmed.replace(/\D/g, '');
+          if (ref === trimmed) return true;
+          if (qDigits && refDigits && parseInt(qDigits, 10) === parseInt(refDigits, 10)) return true;
+          const sName = (s.customerName || s.name || '').trim().toLowerCase();
+          if (sName === trimmed) return true;
+          return false;
+        });
+
+        if (exactMatch) {
+          handleSelect(exactMatch, false);
+          return;
+        }
+      }
+
+      if (selectedSite) {
+        setQuery(formatSiteDisplay(selectedSite));
+      } else if (fallbackText) {
+        setQuery(fallbackText);
+      } else if (!value) {
+        setQuery('');
+      }
+    }, 150);
   };
 
   const handleKeyDown = (e) => {
@@ -521,22 +860,22 @@ export const SiteCombobox = ({
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         if (e.altKey) {
-          setIsOpen(true);
+          openDropdown();
         } else if (onNavigate) {
           onNavigate(rowIndex, colIndex, 'down');
         } else {
-          setIsOpen(true);
+          openDropdown();
         }
         return;
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
         if (e.altKey) {
-          setIsOpen(true);
+          openDropdown();
         } else if (onNavigate) {
           onNavigate(rowIndex, colIndex, 'up');
         } else {
-          setIsOpen(true);
+          openDropdown();
         }
         return;
       }
@@ -579,17 +918,18 @@ export const SiteCombobox = ({
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (filteredSites.length > 0 && highlightedIndex >= 0 && highlightedIndex < filteredSites.length) {
-        handleSelect(filteredSites[highlightedIndex]);
+        handleSelect(filteredSites[highlightedIndex], true);
       } else {
-        setIsOpen(false);
+        closeDropdown();
+        if (onEnterNext) onEnterNext(rowIndex, colIndex);
       }
     } else if (e.key === 'Tab') {
       if (filteredSites.length > 0 && highlightedIndex >= 0 && highlightedIndex < filteredSites.length) {
-        handleSelect(filteredSites[highlightedIndex]);
+        handleSelect(filteredSites[highlightedIndex], false);
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      setIsOpen(false);
+      closeDropdown();
       if (selectedSite) {
         setQuery(formatSiteDisplay(selectedSite));
       } else {
@@ -627,15 +967,17 @@ export const SiteCombobox = ({
           placeholder={placeholder}
           onFocus={(e) => {
             e.target.select();
+            openDropdown();
           }}
+          onBlur={handleBlur}
           onClick={() => {
-            setIsOpen(true);
+            openDropdown();
           }}
           onKeyDown={handleKeyDown}
           onChange={(e) => {
             const val = e.target.value;
             setQuery(val);
-            setIsOpen(true);
+            openDropdown();
             // If emptied out, clear selected site
             if (!val.trim() && value) {
               onChange('');
@@ -696,20 +1038,26 @@ export const SiteCombobox = ({
         )}
       </div>
 
-      {/* Floating Dropdown Filter Results */}
-      {isOpen && (
+      {/* Floating Dropdown Filter Results (Rendered via Portal so never clipped) */}
+      {isOpen && menuStyle && createPortal(
         <div
           ref={listRef}
+          tabIndex={-1}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            isInteractingWithDropdownRef.current = true;
+          }}
+          onMouseUp={() => {
+            setTimeout(() => {
+              isInteractingWithDropdownRef.current = false;
+            }, 200);
+          }}
           style={{
-            position: 'absolute',
-            ...(openUpward ? { bottom: '100%', marginBottom: '4px' } : { top: '100%', marginTop: '4px' }),
-            left: 0,
-            right: 0,
+            ...menuStyle,
             background: '#ffffff',
             borderRadius: '8px',
             border: '1.5px solid #4A2C17',
-            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.22)',
-            zIndex: 9999,
+            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)',
             maxHeight: '220px',
             overflowY: 'auto',
             textAlign: 'left'
@@ -721,14 +1069,29 @@ export const SiteCombobox = ({
             </div>
           ) : (
             filteredSites.map((site, i) => {
-              const isSelected = String(site.dbId || site.id) === String(value);
+              const isSelected = selectedSite && (
+                (selectedSite.dbId && site.dbId && String(site.dbId) === String(selectedSite.dbId)) ||
+                (selectedSite.id && site.id && String(site.id) === String(selectedSite.id)) ||
+                (String(site.dbId || site.id) === String(value))
+              );
               const isHighlighted = i === highlightedIndex;
               const siteName = site.customerName || site.name || '';
 
               return (
                 <div
-                  key={site.id || site.dbId}
-                  onClick={() => handleSelect(site)}
+                  key={site.id || site.dbId || i}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isSelectingRef.current = true;
+                    handleSelect(site, false);
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isSelectingRef.current = true;
+                    handleSelect(site, false);
+                  }}
                   onMouseEnter={() => setHighlightedIndex(i)}
                   style={{
                     padding: '8px 10px',
@@ -779,7 +1142,8 @@ export const SiteCombobox = ({
               );
             })
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -803,9 +1167,69 @@ export const DayValueCombobox = ({
   id
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState(null);
   const [inputValue, setInputValue] = useState(String(value ?? '1.0'));
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  const listRef = useRef(null);
+  const isInteractingWithDropdownRef = useRef(false);
+
+  const openDropdown = () => {
+    setIsOpen(true);
+    notifyComboboxOpened(id);
+  };
+
+  const closeDropdown = () => {
+    setIsOpen(false);
+    setMenuStyle(null);
+  };
+
+  // Close this dropdown immediately if another combobox opens anywhere
+  useEffect(() => {
+    const handleOtherOpen = (e) => {
+      if (e.detail?.id && e.detail.id !== id) {
+        closeDropdown();
+      }
+    };
+    window.addEventListener('combobox-opened', handleOtherOpen);
+    return () => window.removeEventListener('combobox-opened', handleOtherOpen);
+  }, [id]);
+
+  // Position floating dropdown in a portal so it is never clipped by table overflow
+  useEffect(() => {
+    if (!isOpen) {
+      setMenuStyle(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const dropdownHeight = 220;
+      const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+
+      setMenuStyle({
+        position: 'fixed',
+        left: `${Math.round(rect.left)}px`,
+        width: `${Math.max(Math.round(rect.width), 160)}px`,
+        zIndex: 100000,
+        ...(openUp
+          ? { bottom: `${Math.round(window.innerHeight - rect.top + 4)}px` }
+          : { top: `${Math.round(rect.bottom + 4)}px` }
+        )
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen]);
 
   // Sync internal input value with external value
   useEffect(() => {
@@ -814,14 +1238,18 @@ export const DayValueCombobox = ({
 
   // Click outside to close
   useEffect(() => {
+    if (!isOpen) return;
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
+      if (isInteractingWithDropdownRef.current) return;
+      const inContainer = containerRef.current && containerRef.current.contains(e.target);
+      const inList = listRef.current && listRef.current.contains(e.target);
+      if (!inContainer && !inList) {
+        closeDropdown();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
   const numVal = parseFloat(inputValue);
   const isNormal = !isNaN(numVal) && numVal === 1.0;
@@ -860,9 +1288,13 @@ export const DayValueCombobox = ({
 
   const handleSelectPreset = (presetVal) => {
     setInputValue(presetVal);
-    setIsOpen(false);
+    closeDropdown();
     onChange(presetVal);
-    inputRef.current?.focus();
+    if (onEnterNext) {
+      onEnterNext(rowIndex, colIndex);
+    } else {
+      inputRef.current?.focus();
+    }
   };
 
   const handleInputChange = (e) => {
@@ -877,6 +1309,7 @@ export const DayValueCombobox = ({
   };
 
   const handleBlur = () => {
+    if (isInteractingWithDropdownRef.current) return;
     if (!inputValue || inputValue === '.' || isNaN(parseFloat(inputValue))) {
       setInputValue('1.0');
       onChange('1.0');
@@ -892,7 +1325,7 @@ export const DayValueCombobox = ({
     if (isOpen) {
       if (e.key === 'Escape') {
         e.preventDefault();
-        setIsOpen(false);
+        closeDropdown();
         return;
       }
     }
@@ -924,7 +1357,7 @@ export const DayValueCombobox = ({
     } else if (e.key === 'Enter') {
       e.preventDefault();
       handleBlur();
-      setIsOpen(false);
+      closeDropdown();
       if (onEnterNext) {
         onEnterNext(rowIndex, colIndex);
       }
@@ -954,7 +1387,10 @@ export const DayValueCombobox = ({
           onChange={handleInputChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          onFocus={(e) => e.target.select()}
+          onFocus={(e) => {
+            e.target.select();
+            openDropdown();
+          }}
           placeholder="1.0"
           title="Type any custom day value (e.g. 0.65, 1.35) or pick from presets"
           style={{
@@ -972,7 +1408,11 @@ export const DayValueCombobox = ({
 
         <span
           onClick={() => {
-            setIsOpen(prev => !prev);
+            if (isOpen) {
+              closeDropdown();
+            } else {
+              openDropdown();
+            }
             inputRef.current?.focus();
           }}
           style={{
@@ -991,7 +1431,11 @@ export const DayValueCombobox = ({
         <button
           type="button"
           onClick={() => {
-            setIsOpen(prev => !prev);
+            if (isOpen) {
+              closeDropdown();
+            } else {
+              openDropdown();
+            }
             inputRef.current?.focus();
           }}
           style={{
@@ -1012,19 +1456,27 @@ export const DayValueCombobox = ({
         </button>
       </div>
 
-      {/* Preset Dropdown Menu */}
-      {isOpen && (
+      {/* Preset Dropdown Menu (Rendered via Portal so never clipped) */}
+      {isOpen && menuStyle && createPortal(
         <div
+          ref={listRef}
+          tabIndex={-1}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            isInteractingWithDropdownRef.current = true;
+          }}
+          onMouseUp={() => {
+            setTimeout(() => {
+              isInteractingWithDropdownRef.current = false;
+            }, 200);
+          }}
           style={{
-            position: 'absolute',
-            ...(openUpward ? { bottom: '100%', marginBottom: '4px' } : { top: '100%', marginTop: '4px' }),
-            left: 0,
-            right: 0,
+            ...menuStyle,
             background: '#ffffff',
             borderRadius: '8px',
             border: '1.5px solid #4A2C17',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
-            zIndex: 9999,
+            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)',
+            zIndex: 100000,
             maxHeight: '220px',
             overflowY: 'auto',
             textAlign: 'left'
@@ -1038,7 +1490,16 @@ export const DayValueCombobox = ({
             return (
               <div
                 key={p.val}
-                onClick={() => handleSelectPreset(p.val)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSelectPreset(p.val);
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSelectPreset(p.val);
+                }}
                 style={{
                   padding: '7px 10px',
                   fontSize: '12px',
@@ -1061,7 +1522,8 @@ export const DayValueCombobox = ({
               </div>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

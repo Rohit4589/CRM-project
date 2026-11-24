@@ -23,6 +23,25 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
     return d.toISOString().split('T')[0];
   };
 
+  const getNextDayStr = (dateStr) => {
+    if (!dateStr) return getTodayStr();
+    try {
+      const parts = String(dateStr).split('-');
+      if (parts.length === 3) {
+        const yr = parseInt(parts[0], 10);
+        const mon = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const d = new Date(yr, mon, day);
+        d.setDate(d.getDate() + 1);
+        const nYr = d.getFullYear();
+        const nMon = String(d.getMonth() + 1).padStart(2, '0');
+        const nDay = String(d.getDate()).padStart(2, '0');
+        return `${nYr}-${nMon}-${nDay}`;
+      }
+    } catch { }
+    return dateStr;
+  };
+
   const isYesterday = (dStr) => {
     if (!dStr) return false;
     return getYesterdayStr() === dStr;
@@ -217,21 +236,20 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
       }
 
       // If user opened attendance with no specific date (defaulted to today),
-      // and today has 0 attendance records, but there is a latestDate in DB (e.g. yesterday):
-      // automatically show that last day's attendance so the screen is never blank!
+      // and today has 0 attendance records, but there is a latestDate in DB (e.g. 1 Nov):
+      // automatically go to the NEXT day to be filled (e.g. 2 Nov), with the 'Last (1 Nov)' button ready if needed!
       if (!initialDate && !hasAutoSwitched && !overrideDate && overrideAll === undefined && !showAllDates) {
         const logs = attRes.attendance || [];
-        if (logs.length === 0 && attRes.latestDate && attRes.latestDate !== targetDate) {
+        if (logs.length === 0 && attRes.latestDate) {
           setHasAutoSwitched(true);
-          setDateFilter(attRes.latestDate);
+          const nextDateToFill = getNextDayStr(attRes.latestDate);
+          setDateFilter(nextDateToFill);
+          setBulkDate(nextDateToFill);
           setBulkEditDate(attRes.latestDate);
           setBulkEditNewDate(attRes.latestDate);
-          const latestRes = await fetch(`${API_BASE}/attendance?date=${attRes.latestDate}`).then(r => r.json()).catch(() => ({ success: false }));
-          if (latestRes.success && Array.isArray(latestRes.attendance)) {
-            setAttendanceLogs(latestRes.attendance);
-            setLoading(false);
-            return;
-          }
+          setFormData(prev => ({ ...prev, date: nextDateToFill }));
+          fetchData(nextDateToFill, false);
+          return;
         }
       }
 
@@ -320,14 +338,18 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
   };
 
   // Open Add Modal & Reset Form (supports 'single' or 'bulk' mode)
-  const handleOpenAddModal = (initialMode = 'single') => {
+  const handleOpenAddModal = (initialMode = attendanceMode || 'bulk') => {
     const defaultEmp = employees.length > 0 ? employees[0].dbId : '';
     const defaultSite = sites.length > 0 ? (sites[0].dbId || sites[0].id) : '';
 
     setAttendanceMode(initialMode);
+
+    // Active attendance date: use current dateFilter or next day after latestDate
+    const activeDate = dateFilter || (latestDate ? getNextDayStr(latestDate) : getTodayStr());
+
     setFormData({
       userId: defaultEmp,
-      date: dateFilter || getTodayStr(),
+      date: activeDate,
       dayValue: '1.0',
       status: 'Verified',
       notes: '',
@@ -336,7 +358,6 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
       ]
     });
 
-    const activeDate = dateFilter || getTodayStr();
     setBulkDate(activeDate);
     setBulkDefaultSite('');
     setBulkRows([
@@ -354,6 +375,11 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
 
     setApiError('');
     setShowAddModal(true);
+
+    // Smooth autofocus on row 1 employee input
+    setTimeout(() => {
+      focusBulkCell(0, 0);
+    }, 120);
   };
 
   // Add another site slot (+)
@@ -533,21 +559,25 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
     }
   };
 
-  // Add new empty worker row to bulk grid
+  // Add new empty worker row to bulk grid (inherits site from last row for speed)
   const handleAddBulkRow = () => {
-    setBulkRows(prev => [
-      ...prev,
-      {
-        id: String(Date.now() + Math.random()),
-        userId: '',
-        siteId: '',
-        dayValue: '1.0',
-        inTime: '09:00',
-        outTime: '18:00',
-        dailyRate: 0,
-        notes: ''
-      }
-    ]);
+    setBulkRows(prev => {
+      const lastRow = prev.length > 0 ? prev[prev.length - 1] : null;
+      const inheritedSiteId = lastRow?.siteId || bulkDefaultSite || '';
+      return [
+        ...prev,
+        {
+          id: String(Date.now() + Math.random()),
+          userId: '',
+          siteId: inheritedSiteId,
+          dayValue: '1.0',
+          inTime: '09:00',
+          outTime: '18:00',
+          dailyRate: 0,
+          notes: ''
+        }
+      ];
+    });
   };
 
   // Remove a worker row from bulk grid
@@ -798,12 +828,17 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
         return;
       }
 
+      const savedDate = bulkDate;
+      const nextDate = getNextDayStr(savedDate);
+
       setShowAddModal(false);
-      setDateFilter(bulkDate);
+      setDateFilter(nextDate);
+      setBulkDate(nextDate);
+      setFormData(prev => ({ ...prev, date: nextDate }));
       setShowAllDates(false);
-      setSuccessMessage(`Successfully saved attendance for ${data.count || records.length} worker(s) on ${bulkDate}!`);
-      setTimeout(() => setSuccessMessage(''), 6000);
-      fetchData(bulkDate, false);
+      setSuccessMessage(`Saved attendance for ${data.count || records.length} worker(s) on ${formatToDMY(savedDate)}! Advanced to next date: ${formatToDMY(nextDate)}.`);
+      setTimeout(() => setSuccessMessage(''), 7000);
+      fetchData(nextDate, false);
     } catch (err) {
       console.error('Error in handleSaveBulkAttendance:', err);
       setApiError('Server error while saving bulk attendance.');
@@ -2887,8 +2922,34 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                     />
                   </div>
 
-                  {/* Action Button */}
-                  <div>
+                  {/* Action Buttons */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={handleLoadAllWorkers}
+                      title="Pre-fill all active employees into this attendance sheet"
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '7px',
+                        border: '1.5px solid #D1C2AF',
+                        background: '#FFFFFF',
+                        color: '#4A2C17',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#F9FAFB'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                    >
+                      <i className="fa-solid fa-users" style={{ color: 'var(--gold, #A56A30)' }}></i>
+                      <span>Load All Workers ({employees.length})</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={handleAddBulkRow}
@@ -2917,8 +2978,8 @@ const Attendance = ({ lang = 'en', initialDate = null }) => {
                 <div style={{
                   border: '1px solid #E5E7EB',
                   borderRadius: '8px',
-                  minHeight: 'auto',
-                  maxHeight: '38vh',
+                  minHeight: '280px',
+                  maxHeight: '48vh',
                   overflowY: 'auto',
                   overflowX: 'auto',
                   WebkitOverflowScrolling: 'touch',
