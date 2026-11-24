@@ -51,6 +51,18 @@ const getWedThuFri = (thuDateStr) => {
   }
 };
 
+// Excluded Factory / Workshop Sites (001: Maheswara Furniture Pvt. Ltd., 002: Mahiga Formation Pvt. Ltd.)
+const isFactorySite = (shift) => {
+  if (!shift) return false;
+  const ref = String(shift.siteRef || shift.siteCode || '').replace(/^SITE-/i, '').trim();
+  const cust = String(shift.customerName || shift.siteName || '').toLowerCase().trim();
+  const sId = String(shift.siteId || '').trim();
+  if (ref === '001' || ref === '002' || ref === '1' || ref === '2' || ref.startsWith('001') || ref.startsWith('002')) return true;
+  if (sId === '1' || sId === '2' || sId === '001' || sId === '002') return true;
+  if (cust.includes('maheswara') || cust.includes('mahiga') || cust.includes('maheshwara')) return true;
+  return false;
+};
+
 // Check if worker worked on a given date (approved & dayValue > 0 & not admin bonus)
 const hasWorkedOnDate = (dateStr, approvedLogs) => {
   if (!dateStr || !approvedLogs) return false;
@@ -93,6 +105,9 @@ const Salary = ({ onOpenFestivals }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [siteTableTab, setSiteTableTab] = useState('workers'); // 'workers' | 'attendance'
   const [includeSiteBreakdownInPrint, setIncludeSiteBreakdownInPrint] = useState(true);
+  const [includeBenefitsInPrint, setIncludeBenefitsInPrint] = useState(true);
+  const [includeRefreshmentInPrint, setIncludeRefreshmentInPrint] = useState(true);
+  const [showRefreshmentAudit, setShowRefreshmentAudit] = useState(false);
 
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -395,10 +410,65 @@ const Salary = ({ onOpenFestivals }) => {
         ? Number(userOverride.festivalDays) 
         : autoFestivalDays;
 
+      // 3. Refreshment Allowance (Tea & Breakfast on External Sites)
+      // Excludes Factory Sites 001 and 002.
+      // Evaluated per calendar date across all external shifts worked on that date:
+      // - Total external site days on date >= 1.5 Days: ₹20 Tea + ₹50 Breakfast = ₹70
+      // - Total external site days on date >= 1.0 Day (< 1.5): ₹20 Tea = ₹20
+      // - < 1.0 Day: ₹0
+      const dateShiftsMap = new Map();
+      approvedAtt.forEach(att => {
+        if (att.isBonus || att.inTime === 'GIFT' || att.inTime === 'EXTRA' || att.outTime === 'BONUS' || att.outTime === 'ADDED') return;
+        const dt = att.attendanceDate ? String(att.attendanceDate).slice(0, 10) : null;
+        if (!dt) return;
+        if (!dateShiftsMap.has(dt)) dateShiftsMap.set(dt, []);
+        dateShiftsMap.get(dt).push(att);
+      });
+
+      let teaDays = 0;
+      let breakfastDays = 0;
+      const refreshmentAuditList = [];
+
+      for (const [dt, dayShifts] of dateShiftsMap.entries()) {
+        const extShifts = dayShifts.filter(s => !isFactorySite(s));
+        const extDays = extShifts.reduce((sum, s) => sum + (parseFloat(s.dayValue) || 0), 0);
+
+        if (extDays >= 1.5) {
+          teaDays++;
+          breakfastDays++;
+          refreshmentAuditList.push({
+            date: dt,
+            externalDays: extDays,
+            teaAmount: 20,
+            breakfastAmount: 50,
+            totalAmount: 70,
+            tier: 'Tea (₹20) + Breakfast (₹50)',
+            sites: extShifts.map(s => `${s.siteRef || 'Site'}: ${s.customerName || 'Client'} (${s.dayValue || 1} Day)`).join(', ')
+          });
+        } else if (extDays >= 1.0) {
+          teaDays++;
+          refreshmentAuditList.push({
+            date: dt,
+            externalDays: extDays,
+            teaAmount: 20,
+            breakfastAmount: 0,
+            totalAmount: 20,
+            tier: 'Tea only (₹20)',
+            sites: extShifts.map(s => `${s.siteRef || 'Site'}: ${s.customerName || 'Client'} (${s.dayValue || 1} Day)`).join(', ')
+          });
+        }
+      }
+
+      refreshmentAuditList.sort((a, b) => a.date.localeCompare(b.date));
+
+      const teaAmount = teaDays * 20;
+      const breakfastAmount = breakfastDays * 50;
+      const refreshmentAmount = teaAmount + breakfastAmount;
+
       const thursdayAmount = Math.round(finalThursdayDays * dailyRate);
       const festivalAmount = Math.round(finalFestivalDays * dailyRate);
       const baseAmount = Math.round(totalDays * dailyRate);
-      const grossAmount = baseAmount + thursdayAmount + festivalAmount;
+      const grossAmount = baseAmount + thursdayAmount + festivalAmount + refreshmentAmount;
       const deductions = 0; // Configurable advance / deduction
       const netPayable = grossAmount - deductions;
       const totalCombinedDays = totalDays + finalThursdayDays + finalFestivalDays;
@@ -424,6 +494,13 @@ const Salary = ({ onOpenFestivals }) => {
         autoFestivalDays,
         finalFestivalDays,
         festivalAmount,
+        // Refreshment allowance details
+        teaDays,
+        teaAmount,
+        breakfastDays,
+        breakfastAmount,
+        refreshmentAmount,
+        refreshmentAuditList,
         totalCombinedDays,
         userOverride,
         grossAmount,
@@ -594,6 +671,27 @@ const Salary = ({ onOpenFestivals }) => {
   // Active employee or active site for detailed drill-down views
   const activeEmployee = activeEmployeeId ? salaryRows.find(r => r.id === activeEmployeeId) : null;
   const activeSite = activeSiteId ? siteSalaryRows.find(s => s.id === activeSiteId || s.siteRef === activeSiteId || s.dbId === activeSiteId) : null;
+
+  // Dynamic print calculations for active employee (allows excluding Thursday & Festival extra days from printed statement)
+  const printBenefitsIncluded = Boolean(
+    activeEmployee &&
+    activeEmployee.isPermanent &&
+    includeBenefitsInPrint
+  );
+  const printThursdayIncluded = printBenefitsIncluded && Number(activeEmployee.finalThursdayDays) > 0;
+  const printFestivalIncluded = printBenefitsIncluded && Number(activeEmployee.finalFestivalDays) > 0;
+  const printRefreshmentIncluded = Boolean(
+    activeEmployee &&
+    includeRefreshmentInPrint &&
+    Number(activeEmployee.refreshmentAmount) > 0
+  );
+
+  const printTotalCombinedDays = activeEmployee
+    ? (activeEmployee.totalDays + (printThursdayIncluded ? activeEmployee.finalThursdayDays : 0) + (printFestivalIncluded ? activeEmployee.finalFestivalDays : 0))
+    : 0;
+  const printGrossAmount = activeEmployee
+    ? (activeEmployee.baseAmount + (printThursdayIncluded ? activeEmployee.thursdayAmount : 0) + (printFestivalIncluded ? activeEmployee.festivalAmount : 0) + (printRefreshmentIncluded ? activeEmployee.refreshmentAmount : 0))
+    : 0;
 
   // Group activeEmployee.attendanceLogs by date for neat multi-site display with sequential timings
   const employeeGroupedShifts = useMemo(() => {
@@ -899,7 +997,7 @@ const Salary = ({ onOpenFestivals }) => {
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '10px', color: 'var(--gold, #8C5521)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Salary Payable</div>
                   <div style={{ fontSize: '16px', fontWeight: '900', color: '#4A2C17', marginTop: '1px' }}>
-                    ₹{activeEmployee.grossAmount.toLocaleString('en-IN')}
+                    ₹{printGrossAmount.toLocaleString('en-IN')}
                   </div>
                 </div>
               </div>
@@ -1003,29 +1101,56 @@ const Salary = ({ onOpenFestivals }) => {
                 >
                   <i className="fa-solid fa-plus" style={{ color: 'var(--gold, #A56A30)' }}></i> Add Days
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setIncludeSiteBreakdownInPrint(prev => !prev)}
-                  title={includeSiteBreakdownInPrint ? "Site Breakdown is included in Print / PDF. Click to exclude." : "Site Breakdown is excluded from Print / PDF. Click to include."}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '7px',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    background: includeSiteBreakdownInPrint ? '#ECFDF5' : '#FFFDF5',
-                    color: includeSiteBreakdownInPrint ? '#065F46' : '#6B7280',
-                    border: includeSiteBreakdownInPrint ? '1.5px solid #A7F3D0' : '1.5px solid #D1D5DB',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  <i className="fa-solid fa-building-user" style={{ color: includeSiteBreakdownInPrint ? '#059669' : '#9CA3AF' }}></i>
-                  <span>Print Sites: <strong>{includeSiteBreakdownInPrint ? 'ON' : 'OFF'}</strong></span>
-                </button>
+                {activeEmployee.isPermanent && (activeEmployee.finalThursdayDays > 0 || activeEmployee.finalFestivalDays > 0) && (
+                  <button
+                    type="button"
+                    onClick={() => setIncludeBenefitsInPrint(prev => !prev)}
+                    title={includeBenefitsInPrint ? "Thursday & Festival extra days are included in Print / PDF. Click to exclude." : "Thursday & Festival extra days are excluded from Print / PDF. Click to include."}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '7px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      background: includeBenefitsInPrint ? '#FFFBEB' : '#FFFDF5',
+                      color: includeBenefitsInPrint ? '#B45309' : '#6B7280',
+                      border: includeBenefitsInPrint ? '1.5px solid #FDE68A' : '1.5px solid #D1D5DB',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <i className="fa-solid fa-gift" style={{ color: includeBenefitsInPrint ? '#D97706' : '#9CA3AF' }}></i>
+                    <span>Print Extra Days (Thursday & Festival): <strong>{includeBenefitsInPrint ? 'ON' : 'OFF'}</strong></span>
+                  </button>
+                )}
+                {activeEmployee.refreshmentAmount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIncludeRefreshmentInPrint(prev => !prev)}
+                    title={includeRefreshmentInPrint ? "Refreshment Allowance is included in Print / PDF. Click to exclude." : "Refreshment Allowance is excluded from Print / PDF. Click to include."}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '7px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      background: includeRefreshmentInPrint ? '#FEF3C7' : '#FFFDF5',
+                      color: includeRefreshmentInPrint ? '#92400E' : '#6B7280',
+                      border: includeRefreshmentInPrint ? '1.5px solid #FDE68A' : '1.5px solid #D1D5DB',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <i className="fa-solid fa-mug-hot" style={{ color: includeRefreshmentInPrint ? '#D97706' : '#9CA3AF' }}></i>
+                    <span>Print Refreshment: <strong>{includeRefreshmentInPrint ? 'ON' : 'OFF'}</strong></span>
+                  </button>
+                )}
                 <button
                   onClick={() => window.print()}
                   className="btn-primary"
@@ -1073,6 +1198,15 @@ const Salary = ({ onOpenFestivals }) => {
                 ₹{activeEmployee.dailyRate.toLocaleString('en-IN')}
               </div>
             </div>
+
+            {activeEmployee.refreshmentAmount > 0 && (
+              <div style={{ background: '#FFFDF5', padding: '10px 14px', borderRadius: '8px', border: '1.5px solid #FDE68A', boxShadow: '0 1px 3px rgba(180, 83, 9, 0.05)' }}>
+                <div style={{ fontSize: '10px', color: '#B45309', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Refreshment</div>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#92400E', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  ₹{activeEmployee.refreshmentAmount.toLocaleString('en-IN')}
+                </div>
+              </div>
+            )}
 
             <div style={{ background: '#FAF8F5', padding: '10px 14px', borderRadius: '8px', border: '1.5px solid #EAE3DA', boxShadow: '0 1px 3px rgba(74, 44, 23, 0.04)' }}>
               <div style={{ fontSize: '10px', color: 'var(--gold, #8C5521)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total Salary Earned</div>
@@ -1194,33 +1328,11 @@ const Salary = ({ onOpenFestivals }) => {
                               </div>
                             ) : (
                               <div>
-                                {/* Shift Sequence Pill for multi-site dates */}
-                                {isMultiSite && (
-                                  <div style={{ marginBottom: '5px' }}>
-                                    <span style={{
-                                      fontSize: '10.5px',
-                                      fontWeight: '800',
-                                      textTransform: 'uppercase',
-                                      letterSpacing: '0.4px',
-                                      padding: '2px 8px',
-                                      borderRadius: '4px',
-                                      background: sIdx === 0 ? '#FEF3C7' : (shift.shiftTag?.includes('Evening') ? '#EDE9FE' : '#E0E7FF'),
-                                      color: sIdx === 0 ? '#92400E' : (shift.shiftTag?.includes('Evening') ? '#6B21A8' : '#3730A3'),
-                                      border: sIdx === 0 ? '1px solid #FDE68A' : (shift.shiftTag?.includes('Evening') ? '1px solid #DDD6FE' : '1px solid #C7D2FE'),
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '5px'
-                                    }}>
-                                      <i className={`fa-solid ${shift.shiftTag?.includes('Evening') ? 'fa-moon' : (sIdx === 0 ? 'fa-sun' : 'fa-cloud-sun')}`} style={{ fontSize: '9px' }}></i>
-                                      {shift.shiftTag || (sIdx === 0 ? '1st Site (Day Shift)' : (sIdx === 1 ? '2nd Site (Evening OT)' : `${sIdx + 1}th Site`))}
-                                    </span>
-                                  </div>
-                                )}
                                 <div style={{ fontWeight: '600', color: '#111827', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', wordBreak: 'break-word' }}>
                                   <i className="fa-solid fa-location-dot" style={{ color: 'var(--gold, #A56A30)', fontSize: '12px', flexShrink: 0 }}></i>
                                   <span>{shift.siteRef}: {shift.customerName}</span>
                                 </div>
-                                <div style={{ fontSize: '11px', color: '#6B7280', paddingLeft: '18px', marginTop: '2px', wordBreak: 'break-word' }}>
+                                <div className="salary-hide-on-print" style={{ fontSize: '11px', color: '#6B7280', paddingLeft: '18px', marginTop: '2px', wordBreak: 'break-word' }}>
                                   {shift.siteLocation || 'Assigned Site'}
                                 </div>
                               </div>
@@ -1383,6 +1495,30 @@ const Salary = ({ onOpenFestivals }) => {
                             <i className="fa-solid fa-pen" style={{ fontSize: '9px', color: 'var(--gold, #A56A30)' }}></i>
                             Edit
                           </button>
+                          {activeEmployee.finalThursdayDays > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setIncludeBenefitsInPrint(prev => !prev)}
+                              title={includeBenefitsInPrint ? "Currently included in Print / PDF. Click to exclude." : "Currently excluded from Print / PDF. Click to include."}
+                              style={{
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                background: includeBenefitsInPrint ? '#ECFDF5' : '#F9FAFB',
+                                border: includeBenefitsInPrint ? '1px solid #A7F3D0' : '1px solid #D1D5DB',
+                                color: includeBenefitsInPrint ? '#065F46' : '#6B7280',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                              }}
+                            >
+                              <i className="fa-solid fa-print" style={{ fontSize: '9px', color: includeBenefitsInPrint ? '#059669' : '#9CA3AF' }}></i>
+                              <span>Print / PDF: <strong>{includeBenefitsInPrint ? 'Included' : 'Excluded'}</strong></span>
+                            </button>
+                          )}
                         </div>
                         <div style={{ fontSize: '11.5px', color: '#6B7280', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           <span>
@@ -1470,6 +1606,30 @@ const Salary = ({ onOpenFestivals }) => {
                             <i className="fa-solid fa-pen" style={{ fontSize: '9px', color: 'var(--gold, #A56A30)' }}></i>
                             Edit
                           </button>
+                          {activeEmployee.finalFestivalDays > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setIncludeBenefitsInPrint(prev => !prev)}
+                              title={includeBenefitsInPrint ? "Currently included in Print / PDF. Click to exclude." : "Currently excluded from Print / PDF. Click to include."}
+                              style={{
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                background: includeBenefitsInPrint ? '#ECFDF5' : '#F9FAFB',
+                                border: includeBenefitsInPrint ? '1px solid #A7F3D0' : '1px solid #D1D5DB',
+                                color: includeBenefitsInPrint ? '#065F46' : '#6B7280',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                              }}
+                            >
+                              <i className="fa-solid fa-print" style={{ fontSize: '9px', color: includeBenefitsInPrint ? '#059669' : '#9CA3AF' }}></i>
+                              <span>Print / PDF: <strong>{includeBenefitsInPrint ? 'Included' : 'Excluded'}</strong></span>
+                            </button>
+                          )}
                         </div>
                         <div style={{ fontSize: '11.5px', color: '#6B7280', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           <span>
@@ -1498,6 +1658,62 @@ const Salary = ({ onOpenFestivals }) => {
                     </tr>
                   )}
 
+                  {/* Refreshment Allowance Row (On-Screen) */}
+                  {activeEmployee.refreshmentAmount > 0 && (
+                    <tr className="no-print" style={{ background: '#FFFFFF', borderBottom: '1px solid #F0EAE4' }}>
+                      <td colSpan="4" style={{ padding: '13px 18px', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '800', color: '#111827', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <i className="fa-solid fa-mug-hot" style={{ color: 'var(--gold, #A56A30)' }}></i>
+                            Refreshment Allowance
+                          </span>
+                          <span style={{
+                            background: '#FEF3C7',
+                            color: '#92400E',
+                            border: '1px solid #FDE68A',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '700'
+                          }}>
+                            Tea & Breakfast (External Sites)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIncludeRefreshmentInPrint(prev => !prev)}
+                            title={includeRefreshmentInPrint ? "Currently included in Print / PDF. Click to exclude." : "Currently excluded from Print / PDF. Click to include."}
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: includeRefreshmentInPrint ? '#ECFDF5' : '#F9FAFB',
+                              border: includeRefreshmentInPrint ? '1px solid #A7F3D0' : '1px solid #D1D5DB',
+                              color: includeRefreshmentInPrint ? '#065F46' : '#6B7280',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                            }}
+                          >
+                            <i className="fa-solid fa-print" style={{ fontSize: '9px', color: includeRefreshmentInPrint ? '#059669' : '#9CA3AF' }}></i>
+                            <span>Print / PDF: <strong>{includeRefreshmentInPrint ? 'Included' : 'Excluded'}</strong></span>
+                          </button>
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: '#6B7280', marginTop: '5px' }}>
+                          Tea: {activeEmployee.teaDays} Days (₹{activeEmployee.teaAmount}) · Breakfast: {activeEmployee.breakfastDays} Days (₹{activeEmployee.breakfastAmount}) · Excludes Factory Sites 001 & 002
+                        </div>
+                      </td>
+                      <td style={{ padding: '13px 18px', textAlign: 'center', fontSize: '13.5px', fontWeight: '800', color: '#92400E' }}>
+                        {activeEmployee.teaDays + activeEmployee.breakfastDays} Items
+                      </td>
+                      <td style={{ padding: '13px 18px', textAlign: 'right', fontSize: '14.5px', fontWeight: '800', color: '#92400E' }}>
+                        +₹{activeEmployee.refreshmentAmount.toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  )}
+
                   {/* 4. Total Net Payable Row */}
                   <tr className="no-print" style={{
                     background: '#FAF4EE',
@@ -1510,7 +1726,7 @@ const Salary = ({ onOpenFestivals }) => {
                           Total Net Payable Salary
                         </span>
                         <span style={{ fontSize: '11.5px', color: '#8C5521', fontWeight: '600' }}>
-                          (Base Site Shifts {activeEmployee.isPermanent ? '+ Permanent Member Allowances' : ''})
+                          (Base Site Shifts {activeEmployee.isPermanent ? '+ Permanent Member Allowances' : ''} {activeEmployee.refreshmentAmount > 0 ? '+ Refreshment' : ''})
                         </span>
                       </div>
                     </td>
@@ -1543,7 +1759,7 @@ const Salary = ({ onOpenFestivals }) => {
                     </td>
                   </tr>
 
-                  {activeEmployee.isPermanent && (
+                  {activeEmployee.isPermanent && printThursdayIncluded && (
                     <tr className="salary-print-total-row" style={{ display: 'none', background: '#FFFFFF', borderTop: '1px solid #E5E7EB' }}>
                       <td colSpan="2" style={{ padding: '7px 14px', fontSize: '12px', color: '#047857', fontWeight: '700', textAlign: 'left' }}>
                         Thursday Off
@@ -1557,7 +1773,7 @@ const Salary = ({ onOpenFestivals }) => {
                     </tr>
                   )}
 
-                  {activeEmployee.isPermanent && (
+                  {activeEmployee.isPermanent && printFestivalIncluded && (
                     <tr className="salary-print-total-row" style={{ display: 'none', background: '#FFFFFF', borderTop: '1px solid #E5E7EB' }}>
                       <td colSpan="2" style={{ padding: '7px 14px', fontSize: '12px', color: '#B45309', fontWeight: '700', textAlign: 'left' }}>
                         {(() => {
@@ -1577,15 +1793,29 @@ const Salary = ({ onOpenFestivals }) => {
                     </tr>
                   )}
 
+                  {printRefreshmentIncluded && (
+                    <tr className="salary-print-total-row" style={{ display: 'none', background: '#FFFFFF', borderTop: '1px solid #E5E7EB' }}>
+                      <td colSpan="2" style={{ padding: '7px 14px', fontSize: '12px', color: '#92400E', fontWeight: '700', textAlign: 'left' }}>
+                        Refreshment Allowance (Tea: {activeEmployee.teaDays} Days, Breakfast: {activeEmployee.breakfastDays} Days)
+                      </td>
+                      <td style={{ padding: '7px 14px', fontSize: '12px', color: '#92400E', fontWeight: '800', textAlign: 'center' }}>
+                        External Sites
+                      </td>
+                      <td style={{ padding: '7px 14px', fontSize: '13px', fontWeight: '800', color: '#92400E', textAlign: 'right' }}>
+                        +₹{activeEmployee.refreshmentAmount.toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  )}
+
                   <tr className="salary-print-total-row" style={{ display: 'none', background: '#FAF4EE', borderTop: '2px solid #111827', borderBottom: '2px solid #111827' }}>
                     <td colSpan="2" style={{ padding: '10px 14px', fontSize: '13px', color: '#111827', fontWeight: '900', textAlign: 'left' }}>
                       TOTAL NET PAYABLE SALARY
                     </td>
                     <td style={{ padding: '10px 14px', fontSize: '14px', color: '#8C5521', fontWeight: '900', textAlign: 'center' }}>
-                      {formatDays(activeEmployee.totalCombinedDays)} Days
+                      {formatDays(printTotalCombinedDays)} Days
                     </td>
                     <td style={{ padding: '10px 14px', fontSize: '16px', fontWeight: '900', color: '#111827', textAlign: 'right' }}>
-                      ₹{activeEmployee.grossAmount.toLocaleString('en-IN')}
+                      ₹{printGrossAmount.toLocaleString('en-IN')}
                     </td>
                   </tr>
                 </tbody>
@@ -1593,10 +1823,247 @@ const Salary = ({ onOpenFestivals }) => {
             </table>
           </div>
 
+          {/* Refreshment Allowance Section (Tea & Breakfast) */}
+          {activeEmployee.refreshmentAmount > 0 && (
+            <div 
+              className="panel no-print"
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '10px',
+                border: '1.5px solid #EAE3DA',
+                boxShadow: '0 2px 8px rgba(74, 44, 23, 0.04)',
+                marginTop: '18px',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 18px',
+                background: '#FAF8F5',
+                borderBottom: '1.5px solid #EAE3DA',
+                flexWrap: 'wrap',
+                gap: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="fa-solid fa-mug-hot" style={{ color: 'var(--gold, #A56A30)', fontSize: '15px' }}></i>
+                  <span style={{ fontSize: '13px', fontWeight: '800', color: '#4A2C17', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Refreshment Allowance (Tea & Breakfast)
+                  </span>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: '#92400E',
+                    background: '#FEF3C7',
+                    border: '1px solid #FDE68A',
+                    padding: '2px 8px',
+                    borderRadius: '10px'
+                  }}>
+                    External Sites Only (Excludes Factory 001 & 002)
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIncludeRefreshmentInPrint(prev => !prev)}
+                    title={includeRefreshmentInPrint ? "Refreshment is included in Print / PDF. Click to exclude." : "Refreshment is excluded from Print / PDF. Click to include."}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      background: includeRefreshmentInPrint ? '#ECFDF5' : '#F9FAFB',
+                      border: includeRefreshmentInPrint ? '1.5px solid #A7F3D0' : '1.5px solid #D1D5DB',
+                      color: includeRefreshmentInPrint ? '#065F46' : '#6B7280',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '11.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                    }}
+                  >
+                    <i className="fa-solid fa-print"></i>
+                    <span>Print / PDF: <strong>{includeRefreshmentInPrint ? 'Included' : 'Excluded'}</strong></span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowRefreshmentAudit(prev => !prev)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      background: '#FFFFFF',
+                      border: '1.5px solid #D1C2AF',
+                      color: '#4A2C17',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '11.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <i className={`fa-solid ${showRefreshmentAudit ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                    <span>{showRefreshmentAudit ? 'Hide Daily Details' : `View Daily Details (${activeEmployee.refreshmentAuditList?.length || 0} Days)`}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3 Summary Badges */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '12px',
+                padding: '14px 18px',
+                background: '#FFFDFB'
+              }}>
+                <div style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #EAE3DA',
+                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    background: '#FEF3C7',
+                    color: '#B45309',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px'
+                  }}>
+                    🍵
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#78716C', fontWeight: '700', textTransform: 'uppercase' }}>Tea Allowance (≥ 1.0 Day)</div>
+                    <div style={{ fontSize: '15px', fontWeight: '800', color: '#111827', marginTop: '2px' }}>
+                      {activeEmployee.teaDays} Days × ₹20 = <span style={{ color: '#B45309' }}>₹{activeEmployee.teaAmount.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #EAE3DA',
+                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    background: '#ECFDF5',
+                    color: '#065F46',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px'
+                  }}>
+                    🥪
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#78716C', fontWeight: '700', textTransform: 'uppercase' }}>Breakfast Allowance (≥ 1.5 Days)</div>
+                    <div style={{ fontSize: '15px', fontWeight: '800', color: '#111827', marginTop: '2px' }}>
+                      {activeEmployee.breakfastDays} Days × ₹50 = <span style={{ color: '#047857' }}>₹{activeEmployee.breakfastAmount.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{
+                  background: '#FAF4EE',
+                  border: '1.5px solid #EAD8C7',
+                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    background: 'var(--gold, #A56A30)',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px'
+                  }}>
+                    💰
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#8C5521', fontWeight: '800', textTransform: 'uppercase' }}>Total Refreshment Payable</div>
+                    <div style={{ fontSize: '17px', fontWeight: '900', color: '#4A2C17', marginTop: '1px' }}>
+                      ₹{activeEmployee.refreshmentAmount.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Expandable Day-Wise Audit Table */}
+              {showRefreshmentAudit && (
+                <div style={{ borderTop: '1px solid #EAE3DA', padding: '0' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <thead>
+                      <tr style={{ background: '#FAF8F5', borderBottom: '1px solid #EAE3DA', color: '#5C4E42', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                        <th style={{ padding: '8px 14px', textAlign: 'left', width: '15%' }}>Date</th>
+                        <th style={{ padding: '8px 14px', textAlign: 'left', width: '45%' }}>External Site(s) Worked</th>
+                        <th style={{ padding: '8px 14px', textAlign: 'center', width: '15%' }}>Day Value Sum</th>
+                        <th style={{ padding: '8px 14px', textAlign: 'center', width: '13%' }}>Tier Earned</th>
+                        <th style={{ padding: '8px 14px', textAlign: 'right', width: '12%' }}>Daily Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeEmployee.refreshmentAuditList?.map((aud, idx) => (
+                        <tr key={aud.date || idx} style={{ borderBottom: '1px solid #F3EDE6', background: idx % 2 === 0 ? '#FFFFFF' : '#FAF8F5' }}>
+                          <td style={{ padding: '8px 14px', fontWeight: '700', color: '#111827', fontFamily: 'monospace' }}>
+                            {formatToDMY(aud.date)}
+                          </td>
+                          <td style={{ padding: '8px 14px', color: '#374151' }}>
+                            {aud.sites}
+                          </td>
+                          <td style={{ padding: '8px 14px', textAlign: 'center' }}>
+                            <span style={{
+                              background: aud.externalDays >= 1.5 ? '#ECFDF5' : '#FEF3C7',
+                              color: aud.externalDays >= 1.5 ? '#065F46' : '#92400E',
+                              border: aud.externalDays >= 1.5 ? '1px solid #A7F3D0' : '1px solid #FDE68A',
+                              padding: '2px 7px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: '700'
+                            }}>
+                              {formatDays(aud.externalDays)} Days
+                            </span>
+                          </td>
+                          <td style={{ padding: '8px 14px', textAlign: 'center', color: '#4B5563', fontSize: '11.5px', fontWeight: '600' }}>
+                            {aud.tier}
+                          </td>
+                          <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: '800', color: '#047857', fontSize: '12.5px' }}>
+                            +₹{aud.totalAmount}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Site-Wise Work Breakdown (Unit & Amount) */}
           {siteWiseBreakdown.length > 0 && (
             <div 
-              className={`panel salary-site-breakdown-card ${!includeSiteBreakdownInPrint ? 'no-print' : ''}`}
+              className="panel salary-site-breakdown-card no-print"
               style={{
                 background: '#fff',
                 borderRadius: '10px',
@@ -1635,41 +2102,7 @@ const Salary = ({ onOpenFestivals }) => {
                   </span>
                 </div>
 
-                {/* Print/PDF Inclusion Toggle Button (Screen Only) */}
-                <button
-                  type="button"
-                  onClick={() => setIncludeSiteBreakdownInPrint(prev => !prev)}
-                  className="no-print"
-                  title={includeSiteBreakdownInPrint ? "Currently included in Print / PDF. Click to exclude." : "Currently excluded from Print / PDF. Click to include."}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    background: includeSiteBreakdownInPrint ? '#ECFDF5' : '#F9FAFB',
-                    border: includeSiteBreakdownInPrint ? '1.5px solid #A7F3D0' : '1.5px solid #D1D5DB',
-                    color: includeSiteBreakdownInPrint ? '#065F46' : '#6B7280',
-                    borderRadius: '6px',
-                    padding: '4px 10px',
-                    fontSize: '11.5px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <i className="fa-solid fa-print"></i>
-                  {includeSiteBreakdownInPrint ? (
-                    <>
-                      <i className="fa-solid fa-check" style={{ fontSize: '10px' }}></i>
-                      <span>Print / PDF: <strong>Included</strong></span>
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-xmark" style={{ fontSize: '10px' }}></i>
-                      <span>Print / PDF: <strong>Excluded</strong></span>
-                    </>
-                  )}
-                </button>
+                
               </div>
 
               {/* Breakdown Table (Unit & Amount) */}
@@ -1705,7 +2138,7 @@ const Salary = ({ onOpenFestivals }) => {
                             <span>{item.siteRef}: {item.customerName}</span>
                           </div>
                           {item.location && (
-                            <div style={{ fontSize: '11px', color: '#6B7280', paddingLeft: '17px', marginTop: '2px' }}>
+                            <div className="salary-hide-on-print" style={{ fontSize: '11px', color: '#6B7280', paddingLeft: '17px', marginTop: '2px' }}>
                               {item.location}
                             </div>
                           )}
@@ -2767,6 +3200,11 @@ const Salary = ({ onOpenFestivals }) => {
                           {row.isPermanent && (row.finalThursdayDays > 0 || row.finalFestivalDays > 0) && (
                             <div style={{ fontSize: '10.5px', color: '#047857', fontWeight: '700', marginTop: '2px' }}>
                               +{formatDays(row.finalThursdayDays + row.finalFestivalDays)} Bonus
+                            </div>
+                          )}
+                          {row.refreshmentAmount > 0 && (
+                            <div style={{ fontSize: '10.5px', color: '#92400E', fontWeight: '700', marginTop: '2px' }}>
+                              +₹{row.refreshmentAmount.toLocaleString('en-IN')} Tea/B'fast
                             </div>
                           )}
                         </td>
