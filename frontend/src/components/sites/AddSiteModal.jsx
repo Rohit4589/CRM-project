@@ -206,17 +206,26 @@ const AddSiteModal = ({
                   </label>
                   <select
                     value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
+                    onChange={(e) => {
+                      const newStatus = e.target.value;
+                      const todayStr = new Date().toISOString().split('T')[0];
+                      setFormData(prev => ({
+                        ...prev,
+                        status: newStatus,
+                        targetDate: newStatus === 'Completed' ? (prev.targetDate || todayStr) : prev.targetDate
+                      }));
+                    }}
                     style={{
                       width: '100%', padding: '7px 9px', borderRadius: '6px',
-                      border: '1px solid #D1D5DB', boxSizing: 'border-box', outline: 'none',
-                      backgroundColor: '#fff', fontSize: '12.5px'
+                      border: '1.5px solid #D1C2AF', boxSizing: 'border-box', outline: 'none',
+                      backgroundColor: '#FAF8F5', fontSize: '12.5px', fontWeight: '700',
+                      color: formData.status === 'Completed' ? '#5F6368' : (formData.status === 'On Hold' ? '#B45309' : (formData.status === 'Cancelled' ? '#4B5563' : '#1E8E3E'))
                     }}
                   >
-                    <option value="Running">Running</option>
-                    <option value="On Hold">On Hold</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Cancelled">Cancelled</option>
+                    <option value="Running" style={{ color: '#1E8E3E', fontWeight: '700' }}>● Running</option>
+                    <option value="On Hold" style={{ color: '#B45309', fontWeight: '700' }}>⏸ On Hold</option>
+                    <option value="Completed" style={{ color: '#5F6368', fontWeight: '700' }}>✓ Completed</option>
+                    <option value="Cancelled" style={{ color: '#4B5563', fontWeight: '700' }}>✕ Cancelled</option>
                   </select>
                 </div>
               </div>
@@ -277,18 +286,7 @@ const AddSiteModal = ({
                 </div>
               </div>
 
-              {/* Subtle 1-line Folder Preview */}
-              <div style={{
-                fontSize: '11px',
-                color: '#6B7280',
-                marginBottom: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px'
-              }}>
-                <i className="fa-solid fa-folder-closed" style={{color: 'var(--gold, #A56A30)'}}></i>
-                <span>Folder: <strong style={{color: '#374151'}}>{folderPreview || '___'}</strong></span>
-              </div>
+
 
               {/* Row 3: Referral Source & Contact Person (Side-by-Side) */}
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: '12px', width: '100%', boxSizing: 'border-box'}}>

@@ -93,70 +93,8 @@ const SitesTable = ({
 
                 {/* Customer / Site Name */}
                 <td style={{padding: '13px 14px', verticalAlign: 'middle'}}>
-                  <div style={{display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0}}>
-                    <div style={{
-                      width: '30px',
-                      height: '30px',
-                      borderRadius: '50%',
-                      background: 'rgba(165, 106, 48, 0.12)',
-                      color: '#7A4518',
-                      border: '1px solid rgba(165, 106, 48, 0.28)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: '700',
-                      fontSize: '11px',
-                      flexShrink: 0
-                    }}>
-                      {site.customerName ? site.customerName.split(' ').map(n => n[0]).join('') : 'C'}
-                    </div>
-                    <div style={{minWidth: 0, overflow: 'hidden'}}>
-                      <div style={{fontWeight: '600', color: '#111827', fontSize: '13px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}>
-                        {site.customerName}
-                      </div>
-                      <div style={{fontSize: '11px', color: '#6B7280', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap'}}>
-                        <span>{site.location}</span>
-                        {site.refFrom === 'Existing Customer' && (
-                          <span style={{
-                            fontSize: '9.5px',
-                            background: '#DCFCE7',
-                            color: '#15803D',
-                            padding: '1px 6px',
-                            borderRadius: '3px',
-                            fontWeight: '700'
-                          }} title={`Repeat Customer${site.refName ? ` (${site.refName})` : ''}`}>
-                            <i className="fa-solid fa-user-check" style={{fontSize: '8.5px', marginRight: '3px'}}></i>
-                            Existing Customer
-                          </span>
-                        )}
-                        {site.refFrom === 'Referred by Existing Customer' && (
-                          <span style={{
-                            fontSize: '9.5px',
-                            background: '#FEF3C7',
-                            color: '#92400E',
-                            padding: '1px 6px',
-                            borderRadius: '3px',
-                            fontWeight: '700'
-                          }} title={`Referred by ${site.refName || 'Customer'}`}>
-                            <i className="fa-solid fa-bullhorn" style={{fontSize: '8px', marginRight: '3px'}}></i>
-                            {site.refName ? `Ref by: ${site.refName}` : 'Referred by Customer'}
-                          </span>
-                        )}
-                        {site.refFrom && site.refFrom !== 'Existing Customer' && site.refFrom !== 'Referred by Existing Customer' && (
-                          <span style={{
-                            fontSize: '9.5px',
-                            background: '#FEF3C7',
-                            color: '#92400E',
-                            padding: '1px 6px',
-                            borderRadius: '3px',
-                            fontWeight: '600'
-                          }} title={`Source: ${site.refFrom}${site.refName ? ` (${site.refName})` : ''}`}>
-                            <i className="fa-solid fa-bullhorn" style={{fontSize: '8px', marginRight: '3px'}}></i>
-                            {site.refFrom || site.refName}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                  <div style={{fontWeight: '600', color: '#111827', fontSize: '13px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}>
+                    {site.customerName}
                   </div>
                 </td>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { API_BASE } from '../config/api';
 import '../styles/Estimates.css';
 
@@ -11,7 +11,7 @@ import EstimateEditorModal from '../components/estimates/EstimateEditorModal';
 import EstimatePreviewModal from '../components/estimates/EstimatePreviewModal';
 import EstimateDeleteModal from '../components/estimates/EstimateDeleteModal';
 
-const Estimates = ({ onNavigate }) => {
+const Estimates = ({ onNavigate, initialSearch = "", tabParams = {} }) => {
   const [estimates, setEstimates] = useState([]);
   const [catalog, setCatalog] = useState(null);
   const [sites, setSites] = useState([]);
@@ -19,16 +19,24 @@ const Estimates = ({ onNavigate }) => {
   const [saving, setSaving] = useState(false);
 
   // Filters (Folder tabs match Sites tab: Running, Quotation, Completed, On Hold, All)
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearch || tabParams?.search || '');
   const [statusFilter, setStatusFilter] = useState('Running');
   const [typeFilter, setTypeFilter] = useState('All');
 
   // Modals state
-  const [showWizard, setShowWizard] = useState(false);
+  const [showWizard, setShowWizard] = useState(() => Boolean(tabParams?.openWizard || tabParams?.siteId));
   const [editingEstimate, setEditingEstimate] = useState(null);
   const [previewEstimate, setPreviewEstimate] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (tabParams?.openWizard || tabParams?.siteId) {
+      setShowWizard(true);
+    } else if (tabParams?.search !== undefined) {
+      setSearchTerm(tabParams.search);
+    }
+  }, [tabParams?.search, tabParams?.openWizard, tabParams?.siteId]);
 
   // Fetch estimates
   const fetchEstimates = async () => {
@@ -151,7 +159,8 @@ const Estimates = ({ onNavigate }) => {
   };
 
   // Compute folder counts (Running, Completed, On Hold, All)
-  const counts = {
+  // Compute folder counts (Running, Completed, On Hold, All)
+  const counts = useMemo(() => ({
     all: (estimates || []).length,
     running: (estimates || []).filter(e => {
       const s = getEstimateEffectiveStatus(e);
@@ -165,10 +174,10 @@ const Estimates = ({ onNavigate }) => {
       const s = getEstimateEffectiveStatus(e);
       return s === 'On Hold' || s === 'Cancelled' || s === 'Hold';
     }).length
-  };
+  }), [estimates, sites]);
 
   // Filter estimates by active folder, search keyword, and project type
-  const filteredEstimates = (estimates || []).map(est => {
+  const filteredEstimates = useMemo(() => (estimates || []).map(est => {
     const s = getEstimateEffectiveStatus(est);
     return {
       ...est,
@@ -206,9 +215,9 @@ const Estimates = ({ onNavigate }) => {
     const rawB = String(b.estimate_number || '').replace(/[^0-9]/g, '');
     const numA = parseInt(rawA, 10) || (a.id || 0);
     const numB = parseInt(rawB, 10) || (b.id || 0);
-    if (numB !== numA) return numB - numA; // Greater number on top (newest first)
+    if (numB !== numA) return numB - numA;
     return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-  });
+  }), [estimates, sites, searchTerm, statusFilter, typeFilter]);
 
   // Move individual estimate status (e.g. from Running to Completed / On Hold)
   const handleStatusChange = async (estimateId, newStatus) => {
@@ -744,7 +753,18 @@ const Estimates = ({ onNavigate }) => {
           sites={sites}
           catalog={catalog}
           estimates={estimates}
-          onClose={() => setShowWizard(false)}
+          initialSiteId={tabParams?.siteId || tabParams?.site?.id || tabParams?.site?.dbId || ''}
+          initialSite={tabParams?.site || null}
+          fromCustomer={Boolean(tabParams?.fromCustomer || tabParams?.siteId)}
+          onNavigate={onNavigate}
+          onClose={() => {
+            setShowWizard(false);
+            setSearchTerm('');
+            if (tabParams) {
+              tabParams.openWizard = false;
+              tabParams.siteId = null;
+            }
+          }}
           onProceed={handleWizardProceed}
           inline={true}
         />

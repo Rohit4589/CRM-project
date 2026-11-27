@@ -74,7 +74,15 @@ const hasWorkedOnDate = (dateStr, approvedLogs) => {
   });
 };
 
-const Salary = ({ onOpenFestivals }) => {
+const Salary = ({ 
+  lang = 'en', 
+  onOpenFestivals, 
+  initialViewMode = 'employee', 
+  initialSiteId = null, 
+  initialSearch = '', 
+  tabParams,
+  onNavigate 
+}) => {
   const [employees, setEmployees] = useState([]);
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [sites, setSites] = useState([]);
@@ -99,15 +107,25 @@ const Salary = ({ onOpenFestivals }) => {
   const [benefitNotesInput, setBenefitNotesInput] = useState('');
   
   // Navigation & View Mode
-  const [viewMode, setViewMode] = useState('employee'); // 'employee' | 'site'
+  const [viewMode, setViewMode] = useState(initialViewMode); // 'employee' | 'site'
   const [activeEmployeeId, setActiveEmployeeId] = useState(null);
-  const [activeSiteId, setActiveSiteId] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSiteId, setActiveSiteId] = useState(initialSiteId);
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [siteTableTab, setSiteTableTab] = useState('workers'); // 'workers' | 'attendance'
   const [includeSiteBreakdownInPrint, setIncludeSiteBreakdownInPrint] = useState(true);
   const [includeBenefitsInPrint, setIncludeBenefitsInPrint] = useState(true);
   const [includeRefreshmentInPrint, setIncludeRefreshmentInPrint] = useState(true);
   const [showRefreshmentAudit, setShowRefreshmentAudit] = useState(false);
+
+  useEffect(() => {
+    if (tabParams?.viewMode) setViewMode(tabParams.viewMode);
+    if (tabParams?.siteId) {
+      setActiveSiteId(tabParams.siteId);
+    } else if (tabParams?.site) {
+      setActiveSiteId(tabParams.site.id || tabParams.site.dbId || tabParams.site.siteRef);
+    }
+    if (tabParams?.search) setSearchQuery(tabParams.search);
+  }, [tabParams]);
 
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -538,12 +556,12 @@ const Salary = ({ onOpenFestivals }) => {
 
     // Add registered sites from database
     (sites || []).forEach(s => {
-      const sRef = s.siteRef || s.id || `SITE-${String(s.dbId).padStart(3, '0')}`;
-      const key = String(s.dbId || sRef);
+      const sRef = s.siteRef || s.id || `SITE-${String(s.dbId || s.id).padStart(3, '0')}`;
+      const key = String(s.dbId || s.id || sRef);
       siteMap.set(key, {
         id: sRef,
         siteRef: sRef,
-        dbId: s.dbId,
+        dbId: s.dbId || s.id,
         customerName: s.customerName || 'Customer Site',
         location: s.location || '',
         fullAddress: s.fullAddress || '',
@@ -578,9 +596,11 @@ const Salary = ({ onOpenFestivals }) => {
     const rows = Array.from(siteMap.values()).map(site => {
       // Find all attendance records for this site
       const siteLogs = attendanceLogs.filter(log => {
-        if (site.dbId && log.siteId && Number(site.dbId) === Number(log.siteId)) return true;
+        const sDbId = site.dbId || site.id;
+        if (sDbId && log.siteId && Number(sDbId) === Number(log.siteId)) return true;
         if (site.siteRef && log.siteRef && String(site.siteRef).trim().toUpperCase() === String(log.siteRef).trim().toUpperCase()) return true;
         if (site.id && log.siteRef && String(site.id).trim().toUpperCase() === String(log.siteRef).trim().toUpperCase()) return true;
+        if (site.customerName && log.customerName && site.customerName.trim().toLowerCase() === log.customerName.trim().toLowerCase()) return true;
         return false;
       });
 
@@ -670,7 +690,111 @@ const Salary = ({ onOpenFestivals }) => {
 
   // Active employee or active site for detailed drill-down views
   const activeEmployee = activeEmployeeId ? salaryRows.find(r => r.id === activeEmployeeId) : null;
-  const activeSite = activeSiteId ? siteSalaryRows.find(s => s.id === activeSiteId || s.siteRef === activeSiteId || s.dbId === activeSiteId) : null;
+  const activeSite = useMemo(() => {
+    if (!activeSiteId && !tabParams?.siteId && !tabParams?.site) return null;
+
+    const queryId = String(activeSiteId || tabParams?.siteId || tabParams?.site?.id || tabParams?.site?.dbId || '').trim();
+    const queryRef = String(tabParams?.site?.siteRef || tabParams?.site?.siteCode || '').trim();
+    const queryCust = String(tabParams?.customerName || tabParams?.site?.customerName || '').toLowerCase().trim();
+
+    // 1. Try to find in computed siteSalaryRows
+    const found = siteSalaryRows.find(s => {
+      const sId = String(s.id || '').trim();
+      const sDbId = String(s.dbId || '').trim();
+      const sRef = String(s.siteRef || '').trim();
+      const sCust = (s.customerName || '').toLowerCase().trim();
+
+      if (queryId && (sId === queryId || sDbId === queryId || sRef === queryId)) return true;
+      if (queryRef && (sRef === queryRef || sId === queryRef)) return true;
+      if (queryCust && sCust && sCust === queryCust) return true;
+      if (activeSiteId && (sId === String(activeSiteId) || sDbId === String(activeSiteId) || sRef === String(activeSiteId) || sCust === String(activeSiteId).toLowerCase())) return true;
+      return false;
+    });
+
+    if (found) return found;
+
+    // 2. If not found in siteSalaryRows, look in sites array or tabParams.site
+    const baseSite = (sites || []).find(s => {
+      const sId = String(s.id || '').trim();
+      const sDbId = String(s.dbId || '').trim();
+      const sRef = String(s.siteRef || '').trim();
+      const sCust = (s.customerName || '').toLowerCase().trim();
+      if (queryId && (sId === queryId || sDbId === queryId || sRef === queryId)) return true;
+      if (queryRef && (sRef === queryRef || sId === queryRef)) return true;
+      if (queryCust && sCust && sCust === queryCust) return true;
+      return false;
+    }) || tabParams?.site;
+
+    if (baseSite) {
+      const sRef = baseSite.siteRef || baseSite.siteCode || baseSite.id || (baseSite.dbId ? ('SITE-' + String(baseSite.dbId).padStart(3, '0')) : 'SITE');
+      return {
+        id: sRef,
+        siteRef: sRef,
+        dbId: baseSite.dbId || baseSite.id || null,
+        customerName: baseSite.customerName || 'Customer Site',
+        location: baseSite.location || baseSite.siteRef || '',
+        fullAddress: baseSite.fullAddress || baseSite.address || '',
+        phone: baseSite.phone || '',
+        status: baseSite.status || 'Running',
+        startDate: baseSite.startDate || '',
+        targetDate: baseSite.targetDate || '',
+        totalDays: 0,
+        totalLaborCost: 0,
+        totalHours: 0,
+        workerCount: 0,
+        workers: [],
+        shifts: []
+      };
+    }
+
+    return null;
+  }, [activeSiteId, tabParams, siteSalaryRows, sites]);
+
+  // Keep document title synced with active view (Employee Statement or Site Labor Sheet)
+  // so browser Print / Save to PDF always defaults to the employee/site name and date.
+  useEffect(() => {
+    const origTitle = document.title;
+    if (activeEmployee) {
+      const monthName = formatMonthName(selectedMonth);
+      const cleanName = (activeEmployee.name || 'Employee').replace(/[/\\?%*:|"<>]/g, '-').trim();
+      document.title = `${cleanName} - Salary Statement - ${monthName}`;
+    } else if (activeSite) {
+      const monthName = formatMonthName(selectedMonth);
+      const cleanSite = (activeSite.customerName || 'Site').replace(/[/\\?%*:|"<>]/g, '-').trim();
+      document.title = `${cleanSite} - Labor Cost Statement - ${monthName}`;
+    }
+    return () => {
+      document.title = origTitle;
+    };
+  }, [activeEmployee, activeSite, selectedMonth]);
+
+  const handlePrintEmployeeStatement = () => {
+    const origTitle = document.title;
+    const monthName = formatMonthName(selectedMonth);
+    const cleanName = (activeEmployee?.name || 'Employee').replace(/[/\\?%*:|"<>]/g, '-').trim();
+    const pdfTitle = `${cleanName} - Salary Statement - ${monthName}`;
+    document.title = pdfTitle;
+    const onAfterPrint = () => {
+      document.title = origTitle;
+      window.removeEventListener('afterprint', onAfterPrint);
+    };
+    window.addEventListener('afterprint', onAfterPrint);
+    window.print();
+  };
+
+  const handlePrintSiteStatement = () => {
+    const origTitle = document.title;
+    const monthName = formatMonthName(selectedMonth);
+    const cleanSite = (activeSite?.customerName || 'Site').replace(/[/\\?%*:|"<>]/g, '-').trim();
+    const pdfTitle = `${cleanSite} - Labor Cost Statement - ${monthName}`;
+    document.title = pdfTitle;
+    const onAfterPrint = () => {
+      document.title = origTitle;
+      window.removeEventListener('afterprint', onAfterPrint);
+    };
+    window.addEventListener('afterprint', onAfterPrint);
+    window.print();
+  };
 
   // Dynamic print calculations for active employee (allows excluding Thursday & Festival extra days from printed statement)
   const printBenefitsIncluded = Boolean(
@@ -1152,7 +1276,7 @@ const Salary = ({ onOpenFestivals }) => {
                   </button>
                 )}
                 <button
-                  onClick={() => window.print()}
+                  onClick={handlePrintEmployeeStatement}
                   className="btn-primary"
                   style={{
                     padding: '6px 14px',
@@ -1454,13 +1578,13 @@ const Salary = ({ onOpenFestivals }) => {
                     </td>
                   </tr>
 
-                  {/* 2. Thursday Off Allowance (Permanent Member) */}
+                  {/* 2. Thursday Payable Allowance (Permanent Member) */}
                   {activeEmployee.isPermanent && (
                     <tr className="no-print" style={{ background: '#FFFFFF', borderBottom: '1px solid #F0EAE4' }}>
                       <td colSpan="4" style={{ padding: '13px 18px', textAlign: 'left' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <span style={{ fontSize: '13px', fontWeight: '800', color: '#111827' }}>
-                            Thursday Off
+                            Thursday Payable
                           </span>
                           <span style={{
                             background: '#ECFDF5',
@@ -1762,7 +1886,7 @@ const Salary = ({ onOpenFestivals }) => {
                   {activeEmployee.isPermanent && printThursdayIncluded && (
                     <tr className="salary-print-total-row" style={{ display: 'none', background: '#FFFFFF', borderTop: '1px solid #E5E7EB' }}>
                       <td colSpan="2" style={{ padding: '7px 14px', fontSize: '12px', color: '#047857', fontWeight: '700', textAlign: 'left' }}>
-                        Thursday Off
+                        Thursday Payable
                       </td>
                       <td style={{ padding: '7px 14px', fontSize: '12px', color: '#047857', fontWeight: '800', textAlign: 'center' }}>
                         +{formatDays(activeEmployee.finalThursdayDays)} Days
@@ -2206,9 +2330,6 @@ const Salary = ({ onOpenFestivals }) => {
                 <div style={{ fontSize: '11px', color: '#6B7280' }}>{activeEmployee.name}</div>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '10.5px', color: '#6B7280', marginBottom: '4px' }}>Modern Interior CRM • System Generated</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
                 <div style={{ width: '160px', borderBottom: '1.5px solid #111827', marginBottom: '8px' }}></div>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: '#111827' }}>Authorized Signatory</div>
                 <div style={{ fontSize: '11px', color: '#6B7280' }}>Modern Interior Management</div>
@@ -2223,36 +2344,72 @@ const Salary = ({ onOpenFestivals }) => {
         <div>
           {/* Back Button & Top Navigation */}
           <div style={{ marginBottom: '20px' }}>
-            <button
-              onClick={() => setActiveSiteId(null)}
-              className="no-print"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: '#fff',
-                border: '1px solid #D1D5DB',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: '700',
-                color: '#374151',
-                cursor: 'pointer',
-                marginBottom: '16px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                transition: 'all 0.15s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--gold, #A56A30)';
-                e.currentTarget.style.color = 'var(--gold, #A56A30)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#D1D5DB';
-                e.currentTarget.style.color = '#374151';
-              }}
-            >
-              <i className="fa-solid fa-arrow-left"></i> Back to All Sites
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+              <button
+                onClick={() => {
+                  setActiveSiteId(null);
+                  if (tabParams?.site && onNavigate) {
+                    onNavigate('sites');
+                  }
+                }}
+                className="no-print"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: '#fff',
+                  border: '1px solid #D1D5DB',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  color: '#374151',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  transition: 'all 0.15s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--gold, #A56A30)';
+                  e.currentTarget.style.color = 'var(--gold, #A56A30)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#D1D5DB';
+                  e.currentTarget.style.color = '#374151';
+                }}
+              >
+                <i className="fa-solid fa-arrow-left"></i> {tabParams?.site ? 'Back to Customers' : 'Back to All Sites'}
+              </button>
+
+              {tabParams?.site && (
+                <button
+                  onClick={() => setActiveSiteId(null)}
+                  className="no-print"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: '#FAF8F5',
+                    border: '1px solid #E2D9CF',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    color: '#4A2C17',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--gold, #A56A30)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#E2D9CF';
+                  }}
+                >
+                  <i className="fa-solid fa-list-check"></i> All Sites Labor Summary
+                </button>
+              )}
+            </div>
 
             {/* Printable Official Site Header (Only visible on print) */}
             <div className="salary-print-header" style={{ display: 'none' }}>
@@ -2301,7 +2458,7 @@ const Salary = ({ onOpenFestivals }) => {
               }}>
                 <div><strong>Site:</strong> {activeSite.siteRef}: {activeSite.customerName}</div>
                 <div><strong>Location:</strong> {activeSite.location || activeSite.fullAddress || 'Assigned Location'}</div>
-                <div><strong>Total Labor Cost:</strong> <span style={{ color: '#065F46', fontWeight: '800' }}>₹{activeSite.totalLaborCost.toLocaleString('en-IN')}</span></div>
+                <div><strong>Total Labor Cost:</strong> <span style={{ color: '#065F46', fontWeight: '800' }}>₹{(activeSite.totalLaborCost || 0).toLocaleString('en-IN')}</span></div>
               </div>
             </div>
 
@@ -2352,7 +2509,7 @@ const Salary = ({ onOpenFestivals }) => {
                   {formatMonthName(selectedMonth)}
                 </span>
                 <button
-                  onClick={() => window.print()}
+                  onClick={handlePrintSiteStatement}
                   className="btn-primary"
                   style={{
                     padding: '8px 16px',
@@ -2382,7 +2539,7 @@ const Salary = ({ onOpenFestivals }) => {
                 Total Site Labor Cost (Billing)
               </div>
               <div style={{ fontSize: '26px', fontWeight: '800', color: '#4A2C17', marginTop: '6px' }}>
-                ₹{activeSite.totalLaborCost.toLocaleString('en-IN')}
+                ₹{(activeSite.totalLaborCost || 0).toLocaleString('en-IN')}
               </div>
             </div>
 
@@ -2391,7 +2548,7 @@ const Salary = ({ onOpenFestivals }) => {
                 Total Man-Days Logged
               </div>
               <div style={{ fontSize: '24px', fontWeight: '800', color: '#8C5521', marginTop: '6px' }}>
-                {formatDays(activeSite.totalDays)} Days
+                {formatDays(activeSite.totalDays || 0)} Days
               </div>
             </div>
 
@@ -2455,7 +2612,7 @@ const Salary = ({ onOpenFestivals }) => {
                 fontWeight: '800',
                 border: siteTableTab === 'workers' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #D1C2AF'
               }}>
-                {activeSite.workers.length}
+                {(activeSite.workers || []).length}
               </span>
             </button>
 
@@ -2489,7 +2646,7 @@ const Salary = ({ onOpenFestivals }) => {
                 fontWeight: '800',
                 border: siteTableTab === 'attendance' ? '1px solid rgba(255,255,255,0.2)' : '1px solid #D1C2AF'
               }}>
-                {activeSite.shifts.length}
+                {(activeSite.shifts || []).length}
               </span>
             </button>
           </div>
@@ -2530,7 +2687,7 @@ const Salary = ({ onOpenFestivals }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {activeSite.workers.length === 0 ? (
+                    {(activeSite.workers || []).length === 0 ? (
                       <tr>
                         <td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
                           <i className="fa-regular fa-folder-open" style={{ fontSize: '28px', color: '#D1D5DB', marginBottom: '8px', display: 'block' }}></i>
@@ -2538,7 +2695,7 @@ const Salary = ({ onOpenFestivals }) => {
                         </td>
                       </tr>
                     ) : (
-                      activeSite.workers.map((worker) => (
+                      (activeSite.workers || []).map((worker) => (
                         <tr key={worker.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                           <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
                             <div style={{ fontWeight: '700', color: '#111827', fontSize: '13px' }}>{worker.name}</div>
@@ -2588,7 +2745,7 @@ const Salary = ({ onOpenFestivals }) => {
                       ))
                     )}
                   </tbody>
-                  {activeSite.workers.length > 0 && (
+                  {(activeSite.workers || []).length > 0 && (
                     <tfoot>
                       <tr style={{
                         background: '#FAF8F5',
@@ -2600,16 +2757,16 @@ const Salary = ({ onOpenFestivals }) => {
                           Total Project Labor Expense
                         </td>
                         <td style={{ padding: '16px 18px', fontSize: '14px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
-                          {formatDays(activeSite.totalDays)} Days
+                          {formatDays(activeSite.totalDays || 0)} Days
                         </td>
                         <td style={{ padding: '16px 18px', fontSize: '12px', color: '#78716C', fontWeight: '700', textAlign: 'center' }}>
                           Avg: ₹{activeSite.totalDays > 0 ? Math.round(activeSite.totalLaborCost / activeSite.totalDays).toLocaleString('en-IN') : 0}/day
                         </td>
                         <td style={{ padding: '16px 18px', fontSize: '18px', fontWeight: '800', color: '#4A2C17', textAlign: 'right' }}>
-                          ₹{activeSite.totalLaborCost.toLocaleString('en-IN')}
+                          ₹{(activeSite.totalLaborCost || 0).toLocaleString('en-IN')}
                         </td>
                         <td style={{ padding: '16px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800', textAlign: 'center' }}>
-                          {activeSite.shifts.length} shifts
+                          {(activeSite.shifts || []).length} shifts
                         </td>
                       </tr>
                     </tfoot>
@@ -2654,14 +2811,14 @@ const Salary = ({ onOpenFestivals }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {activeSite.shifts.length === 0 ? (
+                    {(activeSite.shifts || []).length === 0 ? (
                       <tr>
                         <td colSpan="6" style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
                           No individual punch records found for this site.
                         </td>
                       </tr>
                     ) : (
-                      activeSite.shifts.map((log, idx) => {
+                      (activeSite.shifts || []).map((log, idx) => {
                         const empObj = employees.find(e => e.dbId === log.userId || String(e.id) === String(log.empId));
                         const rate = Number(log.dailyRate || empObj?.dailySalary || 0);
                         const dayVal = parseFloat(log.dayValue) || 1.0;
@@ -2733,7 +2890,7 @@ const Salary = ({ onOpenFestivals }) => {
                       })
                     )}
                   </tbody>
-                  {activeSite.shifts.length > 0 && (
+                  {(activeSite.shifts || []).length > 0 && (
                     <tfoot>
                       <tr style={{
                         background: '#FAF8F5',
@@ -2742,16 +2899,16 @@ const Salary = ({ onOpenFestivals }) => {
                         fontWeight: '800'
                       }}>
                         <td style={{ padding: '14px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800', textAlign: 'left' }} colSpan="3">
-                          Total Shifts: {activeSite.shifts.length}
+                          Total Shifts: {(activeSite.shifts || []).length}
                         </td>
                         <td style={{ padding: '14px 18px', fontSize: '13px', color: '#4A2C17', fontWeight: '800', textAlign: 'center' }}>
                           {activeSite.totalHours} hrs
                         </td>
                         <td style={{ padding: '14px 18px', fontSize: '13px', color: '#8C5521', fontWeight: '800', textAlign: 'center' }}>
-                          {formatDays(activeSite.totalDays)} Days
+                          {formatDays(activeSite.totalDays || 0)} Days
                         </td>
                         <td style={{ padding: '14px 18px', fontSize: '16px', fontWeight: '800', color: '#4A2C17', textAlign: 'right' }}>
-                          ₹{activeSite.totalLaborCost.toLocaleString('en-IN')}
+                          ₹{(activeSite.totalLaborCost || 0).toLocaleString('en-IN')}
                         </td>
                       </tr>
                     </tfoot>
@@ -2775,9 +2932,6 @@ const Salary = ({ onOpenFestivals }) => {
                 <div style={{ width: '160px', borderBottom: '1.5px solid #111827', marginBottom: '8px' }}></div>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: '#111827' }}>Site Supervisor</div>
                 <div style={{ fontSize: '11px', color: '#6B7280' }}>Modern Interior Field Ops</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '10.5px', color: '#6B7280', marginBottom: '4px' }}>Modern Interior CRM • System Generated</div>
               </div>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ width: '160px', borderBottom: '1.5px solid #111827', marginBottom: '8px' }}></div>
@@ -3765,7 +3919,7 @@ const Salary = ({ onOpenFestivals }) => {
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#111827' }}>
-                    Thursday Off Days:
+                    Thursday Payable Days:
                   </label>
                   <button
                     type="button"

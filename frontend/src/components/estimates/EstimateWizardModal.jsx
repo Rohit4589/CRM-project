@@ -6,7 +6,11 @@ const EstimateWizardModal = ({
   estimates = [],
   onClose,
   onProceed,
-  inline = false
+  inline = false,
+  initialSiteId = '',
+  initialSite = null,
+  fromCustomer = false,
+  onNavigate
 }) => {
   const [selectedSiteId, setSelectedSiteId] = useState('');
   const [orderNo, setOrderNo] = useState('');
@@ -42,7 +46,7 @@ const EstimateWizardModal = ({
   // Scroll to top when opening in content area
   useEffect(() => {
     if (inline) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo(0, 0);
     }
   }, [inline]);
 
@@ -116,6 +120,17 @@ const EstimateWizardModal = ({
 
   const [selectedRooms, setSelectedRooms] = useState(() => getCategoriesForType('Residential'));
 
+  // Auto-select site ONCE when initialSiteId or initialSite is provided
+  const hasAutoSelected = useRef(false);
+  useEffect(() => {
+    if (hasAutoSelected.current) return;
+    const target = initialSiteId || initialSite?.id || initialSite?.dbId || initialSite?.siteRef || initialSite?.customerName;
+    if (target && sites && sites.length > 0) {
+      handleSiteSelect(target);
+      hasAutoSelected.current = true;
+    }
+  }, [initialSiteId, initialSite, sites]);
+
   // Update rooms if catalog loads or project type changes
   useEffect(() => {
     setSelectedRooms(getCategoriesForType(projectType));
@@ -134,9 +149,9 @@ const EstimateWizardModal = ({
     const siteVal = (valOrEvent && typeof valOrEvent === 'object' && valOrEvent.target)
       ? valOrEvent.target.value
       : valOrEvent;
-    setSelectedSiteId(siteVal);
 
     if (!siteVal) {
+      setSelectedSiteId('');
       setCustomerName('');
       setPhone('');
       setEmail('');
@@ -149,10 +164,13 @@ const EstimateWizardModal = ({
     const site = sites.find(s => 
       String(s.dbId || s.id) === String(siteVal) ||
       String(s.siteRef || s.site_ref) === String(siteVal) ||
-      String(s.id) === String(siteVal)
+      String(s.siteCode || '') === String(siteVal) ||
+      String(s.id) === String(siteVal) ||
+      (s.customerName && s.customerName.toLowerCase() === String(siteVal).toLowerCase())
     );
 
     if (site) {
+      setSelectedSiteId(String(site.dbId || site.id));
       const rawRef = site.siteRef || site.site_ref || site.siteCode || site.id;
       const match = String(rawRef || '').match(/\d+/);
       const oNum = match ? (parseInt(match[0], 10) < 1000 ? String(parseInt(match[0], 10)).padStart(3, '0') : match[0]) : String(rawRef || '');
@@ -257,28 +275,54 @@ const EstimateWizardModal = ({
       <div className="estimate-modal-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
           {inline && (
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                background: '#FFFFFF',
-                border: '1.5px solid #D1C2AF',
-                borderRadius: '8px',
-                padding: '8px 14px',
-                color: '#4A2C17',
-                fontSize: '13px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 1px 3px rgba(74, 44, 23, 0.08)'
-              }}
-              title="Back to Estimates List"
-            >
-              <i className="fa-solid fa-arrow-left"></i>
-              <span>Back to Estimates</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {fromCustomer ? (
+                <button
+                  type="button"
+                  onClick={() => onNavigate && onNavigate('customers')}
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1.5px solid #D1C2AF',
+                    borderRadius: '8px',
+                    padding: '8px 14px',
+                    color: '#4A2C17',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 1px 3px rgba(74, 44, 23, 0.08)'
+                  }}
+                  title="Back to Customers"
+                >
+                  <i className="fa-solid fa-arrow-left"></i>
+                  <span>Back to Customers</span>
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  background: '#FFFFFF',
+                  border: '1.5px solid #D1C2AF',
+                  borderRadius: '8px',
+                  padding: '8px 14px',
+                  color: '#4A2C17',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 1px 3px rgba(74, 44, 23, 0.08)'
+                }}
+                title="View All Estimates"
+              >
+                <i className="fa-solid fa-list"></i>
+                <span>All Estimates</span>
+              </button>
+            </div>
           )}
           <div>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#2B2520', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
