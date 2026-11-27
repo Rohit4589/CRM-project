@@ -24,21 +24,28 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
           <div>
             <div style={{display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>
               <span style={{
-                background: 'rgba(165, 106, 48, 0.1)',
+                background: 'rgba(165, 106, 48, 0.14)',
                 color: 'var(--gold, #A56A30)',
-                fontWeight: '700',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                fontSize: '11px'
+                fontWeight: '800',
+                padding: '4px 12px',
+                borderRadius: '6px',
+                fontSize: '16px',
+                letterSpacing: '0.5px',
+                border: '1.5px solid rgba(165, 106, 48, 0.3)'
               }}>
                 {selectedSite.id}
               </span>
               <h2 style={{margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827'}}>
                 {selectedSite.customerName}
               </h2>
+              {getStatusBadge && (
+                <div style={{display: 'inline-flex', alignItems: 'center', marginLeft: '2px'}}>
+                  {getStatusBadge(selectedSite.status)}
+                </div>
+              )}
             </div>
             <div style={{fontSize: '12px', color: '#6B7280', marginTop: '2px'}}>
-              Site Location: <strong>{selectedSite.location}</strong>
+              Site Reference: <strong>{selectedSite.location}</strong>
             </div>
           </div>
           <button
@@ -54,21 +61,7 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
 
         <div style={{padding: '20px'}}>
           
-          {/* Status and Progress */}
-          <div style={{
-            background: '#F9FAFB', padding: '14px', borderRadius: '8px',
-            border: '1px solid #E5E7EB', marginBottom: '18px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-          }}>
-            <div>
-              <div style={{fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600'}}>Current Status</div>
-              <div style={{marginTop: '4px'}}>{getStatusBadge(selectedSite.status)}</div>
-            </div>
-            <div style={{textAlign: 'right'}}>
-              <div style={{fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', fontWeight: '600'}}>Progress</div>
-              <div style={{fontSize: '18px', fontWeight: '700', color: 'var(--gold, #A56A30)'}}>{selectedSite.progress || 0}%</div>
-            </div>
-          </div>
+
 
           {/* Contact & Referral Info */}
           <div style={{marginBottom: '18px'}}>
@@ -151,11 +144,7 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
               <div style={{display: 'flex', gap: '8px'}}>
                 <i className="fa-solid fa-map-location-dot" style={{color: 'var(--gold, #A56A30)', marginTop: '3px'}}></i>
                 <div>
-                  {selectedSite.refName && (
-                    <div style={{fontWeight: '600', color: '#111827', marginBottom: '4px'}}>
-                      Ref: {selectedSite.refName}
-                    </div>
-                  )}
+                  
                   <div>{selectedSite.fullAddress}</div>
                   {selectedSite.latLng && (
                     <div style={{fontSize: '12px', color: '#6B7280', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap'}}>
@@ -190,10 +179,7 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
                 <span style={{color: '#6B7280'}}>Started: </span>
                 <strong>{selectedSite.startDate || 'N/A'}</strong>
               </div>
-              <div>
-                <span style={{color: '#6B7280'}}>Target Completion: </span>
-                <strong>{selectedSite.targetDate || 'Ongoing'}</strong>
-              </div>
+              
             </div>
           </div>
 
@@ -233,44 +219,7 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
             </div>
           )}
 
-          {/* Project Folder Card */}
-          <div style={{marginBottom: '16px'}}>
-            <h4 style={{margin: '0 0 8px 0', fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: '700'}}>
-              Project Folder (AutoCad, SketchUp, Estimates, Bills)
-            </h4>
-            <div style={{
-              padding: '12px 14px', background: '#FDFBF7', border: '1px solid #EAE1D5',
-              borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              gap: '12px', flexWrap: 'wrap'
-            }}>
-              <div style={{minWidth: 0, flex: 1}}>
-                <div style={{fontSize: '11px', color: '#7A4518', fontWeight: '700', textTransform: 'uppercase', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '6px'}}>
-                  <i className="fa-solid fa-folder-tree" style={{color: '#A56A30'}}></i> Standard Folder Structure
-                </div>
-                <div style={{
-                  fontSize: '11.5px', color: '#4B5563', fontFamily: 'monospace',
-                  wordBreak: 'break-all', lineHeight: '1.4'
-                }}>
-                  {selectedSite.projectFolder || 'Ready to auto-create on disk'}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => onOpenFolder && onOpenFolder(selectedSite)}
-                style={{
-                  background: 'rgba(165, 106, 48, 0.1)', color: 'var(--gold, #A56A30)',
-                  border: '1px solid rgba(165, 106, 48, 0.3)', borderRadius: '6px',
-                  padding: '7px 14px', fontWeight: '700', fontSize: '12px', cursor: 'pointer',
-                  display: 'inline-flex', alignItems: 'center', gap: '6px', flexShrink: 0,
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(165, 106, 48, 0.18)'; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(165, 106, 48, 0.1)'; }}
-              >
-                <i className="fa-solid fa-folder-open"></i> Open in Explorer
-              </button>
-            </div>
-          </div>
+          
 
           {/* Quick Shortcuts Toolbar */}
           {onNavigate && (
@@ -284,7 +233,12 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
                 type="button"
                 onClick={() => {
                   setSelectedSite(null);
-                  onNavigate('estimates');
+                  onNavigate('estimates', { 
+                    openWizard: true, 
+                    fromCustomer: true,
+                    siteId: selectedSite.id || selectedSite.dbId || selectedSite.siteRef, 
+                    site: selectedSite 
+                  });
                 }}
                 style={{
                   padding: '9px 12px',
@@ -311,7 +265,13 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
                 type="button"
                 onClick={() => {
                   setSelectedSite(null);
-                  onNavigate('salary');
+                  onNavigate('salary', { 
+                    viewMode: 'site', 
+                    siteId: selectedSite.id || selectedSite.dbId || selectedSite.siteRef, 
+                    search: selectedSite.customerName,
+                    customerName: selectedSite.customerName,
+                    site: selectedSite 
+                  });
                 }}
                 style={{
                   padding: '9px 12px',
@@ -347,34 +307,7 @@ const SiteDetailsModal = ({ selectedSite, setSelectedSite, openEditModal, getSta
             gap: '12px'
           }}>
             {/* Delete Customer on Left */}
-            {onDelete ? (
-              <button
-                type="button"
-                onClick={() => {
-                  const targetId = selectedSite.id || selectedSite.dbId;
-                  setSelectedSite(null);
-                  onDelete(targetId);
-                }}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '6px',
-                  border: '1px solid #FECACA',
-                  background: '#FEF2F2',
-                  color: '#DC2626',
-                  cursor: 'pointer',
-                  fontWeight: '600',
-                  fontSize: '12.5px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.background = '#FEE2E2'; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = '#FEF2F2'; }}
-              >
-                <i className="fa-solid fa-trash-can"></i> Delete Customer
-              </button>
-            ) : <div />}
+            <div />
 
             {/* Close & Edit Actions on Right */}
             <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>

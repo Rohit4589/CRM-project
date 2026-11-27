@@ -3,7 +3,8 @@ import React from 'react';
 const CustomerBillsModal = ({ site, bills = [], onSelectBill, onClose, onNewBill }) => {
   if (!site) return null;
 
-  const siteRef = site.siteCode ? `SITE-${site.siteCode}` : (site.siteRef || `SITE-${site.id}`);
+  const rawNum = String(site.siteCode || site.siteRef || site.id || '').replace(/[^0-9]/g, '');
+  const orderBadge = rawNum ? (rawNum.length < 3 ? rawNum.padStart(3, '0') : rawNum) : (site.siteRef || site.id);
 
   // Format date helper
   const formatDate = (dateStr) => {
@@ -40,7 +41,7 @@ const CustomerBillsModal = ({ site, bills = [], onSelectBill, onClose, onNewBill
           background: '#fff',
           borderRadius: '12px',
           width: '100%',
-          maxWidth: '680px',
+          maxWidth: '650px',
           maxHeight: '88vh',
           boxShadow: '0 20px 40px rgba(74, 44, 23, 0.25)',
           border: '1.5px solid #D1C2AF',
@@ -62,23 +63,24 @@ const CustomerBillsModal = ({ site, bills = [], onSelectBill, onClose, onNewBill
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{
-                background: 'rgba(165, 106, 48, 0.12)',
-                color: 'var(--gold, #A56A30)',
-                padding: '2px 8px',
-                borderRadius: '5px',
-                fontSize: '11px',
-                fontWeight: '800',
-                fontFamily: 'monospace'
+                background: '#FAF4EE',
+                color: '#8C5521',
+                border: '1px solid #EAD8C7',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '800'
               }}>
-                {siteRef}
+                {orderBadge}
               </span>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#111827' }}>
                 {site.customerName}
               </h3>
             </div>
-            <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
-              <i className="fa-solid fa-file-invoice" style={{ color: 'var(--gold, #A56A30)', marginRight: '5px' }}></i>
-              <strong>{bills.length} Quotation{bills.length === 1 ? '' : 's'} / Bill{bills.length === 1 ? '' : 's'} on Record</strong> · {site.location || 'Site Location'}
+            <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>{site.location || site.siteRef || 'Site Location'}</span>
+              <span>•</span>
+              <span>{bills.length} {bills.length === 1 ? 'Quotation' : 'Quotations'} on Record</span>
             </div>
           </div>
 
@@ -103,16 +105,16 @@ const CustomerBillsModal = ({ site, bills = [], onSelectBill, onClose, onNewBill
           {bills.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9CA3AF', background: '#FAF8F5', borderRadius: '10px', border: '1px dashed #D1C2AF' }}>
               <i className="fa-regular fa-file-excel" style={{ fontSize: '32px', color: '#D1C2AF', marginBottom: '8px', display: 'block' }}></i>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#4B5563' }}>No bills found for this customer</div>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#4B5563' }}>No estimates found for this customer</div>
               <div style={{ fontSize: '12px', marginTop: '4px' }}>Click the button below to create a new quotation for {site.customerName}.</div>
             </div>
           ) : (
             bills.map((bill, index) => {
-              // Extract revision or bill number from estimate_number (e.g. "187-03" -> "BILL #3")
               const rawNum = String(bill.estimate_number || '');
               const revMatch = rawNum.match(/-0*(\d+)$/);
-              const billTag = revMatch ? `BILL #${revMatch[1]}` : (rawNum ? `#${rawNum}` : `BILL #${index + 1}`);
-              const orderNo = `#${rawNum.replace(/-\d+$/, '') || bill.id}`;
+              const quotationTitle = revMatch 
+                ? `Quotation #${parseInt(revMatch[1], 10)}` 
+                : (bills.length > 1 ? `Quotation #${bills.length - index}` : 'Quotation');
               const amount = Number(bill.grand_total || bill.final_total || bill.total_amount || 0);
               const status = bill.order_status || bill.site_status || bill.status || 'Running';
 
@@ -144,24 +146,12 @@ const CustomerBillsModal = ({ site, bills = [], onSelectBill, onClose, onNewBill
                 >
                   {/* Left: Bill Identification & Date */}
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                      <span style={{ fontWeight: '800', color: '#111827', fontSize: '15px' }}>
+                        {quotationTitle}
+                      </span>
                       <span style={{
-                        background: '#FAF4EE',
-                        color: 'var(--gold, #8C5521)',
-                        fontWeight: '800',
                         fontSize: '11px',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        border: '1px solid #EAD8C7',
-                        letterSpacing: '0.5px'
-                      }}>
-                        {billTag}
-                      </span>
-                      <span style={{ fontWeight: '800', color: '#111827', fontSize: '14px' }}>
-                        Order {orderNo}
-                      </span>
-                      <span style={{
-                        fontSize: '10.5px',
                         padding: '2px 8px',
                         borderRadius: '10px',
                         fontWeight: '700',
@@ -172,14 +162,14 @@ const CustomerBillsModal = ({ site, bills = [], onSelectBill, onClose, onNewBill
                       </span>
                     </div>
 
-                    <div style={{ fontSize: '11.5px', color: '#6B7280', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '12px', color: '#6B7280', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                       <span>
-                        <i className="fa-regular fa-calendar" style={{ marginRight: '4px', color: 'var(--gold, #A56A30)' }}></i>
+                        <i className="fa-regular fa-calendar" style={{ marginRight: '5px', color: 'var(--gold, #A56A30)' }}></i>
                         {formatDate(bill.created_at || bill.date)}
                       </span>
                       {bill.project_type && (
                         <span>
-                          <i className="fa-solid fa-shapes" style={{ marginRight: '4px', color: 'var(--gold, #A56A30)' }}></i>
+                          <i className="fa-solid fa-shapes" style={{ marginRight: '5px', color: 'var(--gold, #A56A30)' }}></i>
                           {bill.project_type}
                         </span>
                       )}
@@ -189,8 +179,8 @@ const CustomerBillsModal = ({ site, bills = [], onSelectBill, onClose, onNewBill
                   {/* Right: Bill Amount & View Button */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '10px', color: '#78716C', fontWeight: '700', textTransform: 'uppercase' }}>Final Total</div>
-                      <div style={{ fontSize: '16px', fontWeight: '800', color: '#4A2C17', marginTop: '1px' }}>
+                      <div style={{ fontSize: '10px', color: '#78716C', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Final Total</div>
+                      <div style={{ fontSize: '17px', fontWeight: '800', color: '#4A2C17', marginTop: '1px' }}>
                         ₹{amount.toLocaleString('en-IN')}
                       </div>
                     </div>
@@ -202,7 +192,7 @@ const CustomerBillsModal = ({ site, bills = [], onSelectBill, onClose, onNewBill
                         onSelectBill(bill);
                       }}
                       style={{
-                        padding: '7px 12px',
+                        padding: '7px 14px',
                         borderRadius: '6px',
                         background: 'var(--gold, #4A2C17)',
                         color: '#fff',
@@ -245,21 +235,21 @@ const CustomerBillsModal = ({ site, bills = [], onSelectBill, onClose, onNewBill
                 onNewBill(site);
               }}
               style={{
-                background: '#fff',
+                background: '#FAF8F5',
                 border: '1px solid #D1C2AF',
                 color: 'var(--gold, #8C5521)',
-                padding: '6px 12px',
+                padding: '7px 14px',
                 borderRadius: '6px',
                 fontSize: '12px',
                 fontWeight: '700',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px'
+                gap: '6px'
               }}
             >
               <i className="fa-solid fa-plus"></i>
-              <span>Create New Bill for {site.customerName}</span>
+              <span>Create New Estimate</span>
             </button>
           ) : <div />}
 
@@ -267,7 +257,7 @@ const CustomerBillsModal = ({ site, bills = [], onSelectBill, onClose, onNewBill
             type="button"
             onClick={onClose}
             style={{
-              padding: '6px 16px',
+              padding: '7px 16px',
               borderRadius: '6px',
               border: '1px solid #D1C2AF',
               background: '#fff',

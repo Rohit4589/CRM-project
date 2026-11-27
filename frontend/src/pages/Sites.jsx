@@ -213,8 +213,11 @@ const Sites = ({ onNavigate }) => {
       }
     }
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    const updatedTargetDate = newStatus === 'Completed' ? (site.targetDate || todayStr) : (site.targetDate || '');
+
     // Optimistic UI update
-    setSites(prev => prev.map(s => (s.id === site.id || s.dbId === targetId ? { ...s, status: newStatus } : s)));
+    setSites(prev => prev.map(s => (s.id === site.id || s.dbId === targetId ? { ...s, status: newStatus, targetDate: updatedTargetDate } : s)));
     showToast(`Customer "${site.customerName}" shifted to ${newStatus}`, 'success');
 
     try {
@@ -224,8 +227,8 @@ const Sites = ({ onNavigate }) => {
         email: site.email || '',
         location: site.location || '',
         fullAddress: site.fullAddress || '',
-        startDate: site.startDate || '',
-        targetDate: site.targetDate || '',
+        startDate: site.startDate || todayStr,
+        targetDate: updatedTargetDate,
         status: newStatus,
         progress: site.progress || 0,
         notes: site.notes || ''
@@ -354,8 +357,8 @@ const Sites = ({ onNavigate }) => {
       location: site.location || '',
       fullAddress: site.fullAddress || '',
       latLng: site.latLng || '',
-      startDate: site.startDate || '',
-      targetDate: site.targetDate || '',
+      startDate: site.startDate || new Date().toISOString().split('T')[0],
+      targetDate: site.targetDate || (site.status === 'Completed' ? new Date().toISOString().split('T')[0] : ''),
       notes: site.notes || '',
       contactPersons: Array.isArray(site.contactPersons) ? site.contactPersons : [],
       progress: site.progress || 0
@@ -720,7 +723,7 @@ const Sites = ({ onNavigate }) => {
       <div className="page-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px'}}>
         <div>
           <h1 className="page-title" style={{margin: 0, fontSize: '24px', fontWeight: '700', color: 'var(--navy, #111827)'}}>
-            Sites
+            Customers
           </h1>
           <p style={{margin: '4px 0 0 0', fontSize: '13px', color: '#7D6C5E'}}>
             Project locations & clients
@@ -728,42 +731,7 @@ const Sites = ({ onNavigate }) => {
         </div>
 
         <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          {/* F: Drive Folder Bridge Status Pill */}
-          <button
-            type="button"
-            onClick={bridgeStatus.online ? handleSyncAllFolders : () => setShowBridgeModal(true)}
-            title={bridgeStatus.online ? "F:\\ Drive Bridge is connected. Click to sync all site folders to F:\\ drive." : "Click to view instructions on starting the F:\\ Drive Folder Bridge"}
-            disabled={isSyncingFolders}
-            style={{
-              padding: '8px 14px',
-              borderRadius: '8px',
-              fontSize: '12.5px',
-              fontWeight: '700',
-              border: bridgeStatus.online ? '1px solid #A7F3D0' : '1px solid #D1C2AF',
-              background: bridgeStatus.online ? '#ECFDF5' : '#FFFFFF',
-              color: bridgeStatus.online ? '#065F46' : '#7D6C5E',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '7px',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <span style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: bridgeStatus.online ? '#10B981' : '#9CA3AF',
-              boxShadow: bridgeStatus.online ? '0 0 6px #10B981' : 'none'
-            }}></span>
-            <span>
-              {bridgeStatus.online
-                ? (isSyncingFolders ? 'Syncing to F:\\...' : 'F:\\ Drive Connected (Sync All)')
-                : 'F:\\ Bridge Offline'}
-            </span>
-            <i className={`fa-solid ${bridgeStatus.online ? (isSyncingFolders ? 'fa-spinner fa-spin' : 'fa-folder-tree') : 'fa-circle-info'}`} style={{ fontSize: '11px', color: bridgeStatus.online ? '#059669' : '#A56A30' }}></i>
-          </button>
+          {/* F: Drive Folder Bridge Status Pill (Hidden on front page as requested) */}
 
           <button className="btn-primary" onClick={openAddModal} style={{boxShadow: '0 2px 8px rgba(74, 44, 23, 0.28)'}}>
             <i className="fa-solid fa-plus"></i> Add Customer

@@ -175,12 +175,7 @@ const Header = ({ onLogout, onToggleSidebar, user, lang = 'en', onLangChange, on
               <span className="portal-badge-text">{t.workerPortal}</span>
             </span>
           </div>
-        ) : (
-          <div className="header-search">
-            <i className="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search..." />
-          </div>
-        )}
+        ) : null}
       </div>
 
       <div className="header-right">

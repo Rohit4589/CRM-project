@@ -151,11 +151,21 @@ function App() {
       case 'attendance':
         return <Attendance lang={lang} initialDate={tabParams?.date} />;
       case 'salary':
-        return <Salary lang={lang} onOpenFestivals={() => setShowFestivalModal(true)} />;
+        return (
+          <Salary 
+            lang={lang} 
+            onOpenFestivals={() => setShowFestivalModal(true)} 
+            initialViewMode={tabParams?.viewMode || (tabParams?.siteId || tabParams?.site ? 'site' : 'employee')}
+            initialSiteId={tabParams?.siteId || tabParams?.site?.id || tabParams?.site?.dbId || null}
+            initialSearch={tabParams?.search || tabParams?.customerName || ''}
+            tabParams={tabParams}
+            onNavigate={handleTabChange}
+          />
+        );
       case 'reports':
         return <Reports />;
       case 'estimates':
-        return <Estimates onNavigate={handleTabChange} />;
+        return <Estimates onNavigate={handleTabChange} initialSearch={tabParams?.search} tabParams={tabParams} />;
       case 'todo-list':
         return <TodoList onNavigate={handleTabChange} />;
       case 'products-rates':
